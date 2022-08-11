@@ -1,0 +1,32 @@
+<!-- _sidebar.md -->
+
+* 人物控制器
+  * [Fighter控制器](zh-cn/main-fighter-ctrlers/FighterCtrler)
+  * [Mc控制器](zh-cn/main-fighter-ctrlers/FighterMcCtrler)
+  * [Effect控制器](zh-cn/main-fighter-ctrlers/FighterEffectCtrl)
+  * [Voice控制器](zh-cn/main-fighter-ctrlers/FighterVoiceCtrler)
+  * [Buff控制器](zh-cn/main-fighter-ctrlers/FighterBuffCtrler)
+* 其他控制器
+  * [攻击对象控制器](zh-cn/other-ctrlers/FighterAttackerCtrler)
+  * [辅助人物控制器](zh-cn/other-ctrlers/AssisiterCtrler)
+* 核心对象类
+  * [人物主体](zh-cn/core-object-classes/FighterMain)
+  * [人物动作](zh-cn/core-object-classes/FighterAction)
+  * [人物MC](zh-cn/core-object-classes/FighterMC)
+  * [辅助人物主体](zh-cn/core-object-classes/Assisiter)
+  * [攻击对象主体](zh-cn/core-object-classes/FighterAttacker)
+  * [飞行道具主体](zh-cn/core-object-classes/Bullet)
+* 数据模型类
+  * [攻击模型](zh-cn/data-model-classes/FighterHitModel)
+  * [攻击值对象](zh-cn/data-model-classes/HitVO)
+* 抽象接口类
+  * [基元游戏对象](zh-cn/abstract-interface-classes/BaseGameSprite)
+  * [游戏对象接口](zh-cn/abstract-interface-classes/IGameSprite)
+* 底层工具类
+  * [游戏控制器](zh-cn/base-tool-classes/GameCtrl)
+  * [战斗效果控制器](zh-cn/base-tool-classes/EffectCtrl)
+  * [游戏场景](zh-cn/base-tool-classes/GameState)
+  * [游戏摄像机](zh-cn/base-tool-classes/GameCamera)
+  * [对局数据](zh-cn/base-tool-classes/GameRunDataVO)
+  * [游戏渲染器](zh-cn/base-tool-classes/GameRender)
+  * [游戏事件](zh-cn/base-tool-classes/GameEvent)
