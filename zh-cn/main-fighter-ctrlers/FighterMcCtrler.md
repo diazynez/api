@@ -12,7 +12,7 @@
 
 使用示例：
 
-- [详细介绍](zh-cn/FighterEffectCtrl.html)
+- [详细介绍](zh-cn/main-fighter-ctrlers/FighterEffectCtrl)
 
 ```actionscript
 var effect = parent.$mc_ctrler.effectCtrler;        //将人物的effect控制器赋值到变量effect
@@ -590,6 +590,8 @@ parent.$mc_ctrler.endAct();
 
 使用示例：
 
+[详细介绍](zh-cn/core-object-classes/Bullet)
+
 ```actionscript
 parent.$mc_ctrler.fire("zh1atm",{x:{start:15,hit:3},y:0,hold:2,hits:1,hp:100});
 
@@ -633,7 +635,8 @@ hp:int(血量,默认为100)
 
 使用示例：
 
-- [详细介绍](zh-cn/FighterAttackerCtrler.html)
+- [详细介绍](zh-cn/main-fighter-ctrlers/FighterAttackerCtrler)
+- [详细介绍](zh-cn/core-object-classes/FighterAttacker)
 
 ```actionscript
 parent.$mc_ctrler.addAttacker("bsmc",{applyG:false});
@@ -780,7 +783,7 @@ speed:Number(吸引速度)
 
 使用示例：
 
-- [详细介绍](zh-cn/FighterAction.html)
+- [详细介绍](zh-cn/core-object-classes/FighterAction)
 
 ```actionscript
 var fighterAcion:* = parent.$mc_ctrler.getAction();
@@ -838,7 +841,7 @@ parent.$mc_ctrler.doLose();
 
 使用示例：
 
-- [详细介绍](zh-cn/FighterMC.html)
+- [详细介绍](zh-cn/core-object-classes/FighterMC)
 
 ```actionscript
 var fighterMC:* = parent.$mc_ctrler.getFighterMc();

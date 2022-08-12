@@ -21,7 +21,7 @@ var hp1:Number = parent.$fighter_ctrler.hp;     //将当前血量值赋值到变
 
 类型：Number
 
-说明：人物的最大耐力值（默认为100）
+说明：人物的耐力最大值（默认为100）
 
 使用示例：
 
@@ -53,7 +53,7 @@ var speed1:Number = parent.$fighter_ctrler.speed;       //将当前速度值赋�
 
 ```actionscript
 $fighter_ctrler.jumpPower = 12;     //设置人物的跳跃能力值为12
-var jP1:Number = parent.$fighter_ctrler.jumpPower;      //将当前跳跃能力值赋值到变量jP1
+var jumpPower1:Number = parent.$fighter_ctrler.jumpPower;      //将当前跳跃能力值赋值到变量jumpPower1
 ```
 
 > ###### heavy
@@ -79,7 +79,7 @@ var heavy1:Number = parent.$fighter_ctrler.heavy;       //将当前体格值赋�
 
 ```actionscript
 $fighter_ctrler.defenseType = 1;        //设置人物的防御类型值为1
-var dT1:Number = parent.$fighter_ctrler.defenseType;        //将当前防御类型值赋值到变量dT1
+var defenseType1:int = parent.$fighter_ctrler.defenseType;        //将当前防御类型值赋值到变量defenseType1
 ```
 
 > ###### self
@@ -116,9 +116,11 @@ parent.$fighter_ctrler.target.$mc_ctrler.setHurtAction("招21");  // 使敌人�
 
 使用示例：
 
+[详细介绍](zh-cn/data-model-classes/FighterHitModel)
+
 
 ```actionscript
-parent.$fighter_ctrler.hitModel.setPowerRate(2);        //将自身的攻击力倍数设置为2
+var hitModel = parent.$fighter_ctrler.hitModel;       //将攻击模型赋值到变量hitModel
 ```
 
 ### 方法
@@ -133,7 +135,7 @@ parent.$fighter_ctrler.hitModel.setPowerRate(2);        //将自身的攻击力�
 
 使用示例：
 
-- [详细介绍](zh-cn/FighterMain)
+- [详细介绍](zh-cn/core-object-classes/FighterMain)
 
 ```actionscript
 var tSP = parent.$fighter_ctrler.getTargetSP();
@@ -145,7 +147,7 @@ var tSP = parent.$fighter_ctrler.getTargetSP();
 
 返回类型：int
 
-说明：获取敌人的状态对象
+说明：获取敌人的状态号
 
 0=正常，40=硬直，10=正在攻击，11=正在使用技能，12=正在使用必杀，13=正在使用超必杀，14=正在跳跃，15=正在瞬步，16=正在反制，20=正在防御，21=被打，22=击飞，23=击倒，24=击倒弹起，30=死亡，50=正在卍解，60=开场，61=胜利，62=失败
 
@@ -529,7 +531,7 @@ parent.$fighter_ctrler.loseHpPercent(0.15);
 
 使用示例：
 
-- [详细介绍](zh-cn/FighterMcCtrler.html)
+- [详细介绍](zh-cn/main-fighter-ctrlers/FighterMcCtrler)
 
 ```actionscript
 var mcCtrl:* = parent.$fighter_ctrler.getMcCtrl();
@@ -545,7 +547,7 @@ var mcCtrl:* = parent.$fighter_ctrler.getMcCtrl();
 
 使用示例：
 
-- [详细介绍](zh-cn/FighterEffectCtrl.html)
+- [详细介绍](zh-cn/main-fighter-ctrlers/FighterEffectCtrl)
 
 ```actionscript
 var effectCtrl:* = parent.$fighter_ctrler.getEffectCtrl();
@@ -561,7 +563,7 @@ var effectCtrl:* = parent.$fighter_ctrler.getEffectCtrl();
 
 使用示例：
 
-- [详细介绍](zh-cn/FighterVoiceCtrler.html)
+- [详细介绍](zh-cn/main-fighter-ctrlers/FighterVoiceCtrler)
 
 ```actionscript
 var voiceCtrl:* = parent.$fighter_ctrler.getVoiceCtrl();
