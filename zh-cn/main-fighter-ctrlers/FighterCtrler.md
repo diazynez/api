@@ -14,7 +14,7 @@
 
 ```actionscript
 $fighter_ctrler.hp = 800;       //设置人物的血量值为800
-var hp1:Number = parent.$fighter_ctrler.hp;     //将当前血量值赋值到变量hp1
+var hp1: Number = parent.$fighter_ctrler.hp;     //将当前血量值赋值到变量hp1
 ```
 
 > ###### energy
@@ -27,7 +27,7 @@ var hp1:Number = parent.$fighter_ctrler.hp;     //将当前血量值赋值到变
 
 ```actionscript
 $fighter_ctrler.energy = 150;       //设置人物的最大耐力值为150
-var energy1:Number = parent.$fighter_ctrler.energy;     //将当前最大耐力值赋值到变量energy1
+var energy1: Number = parent.$fighter_ctrler.energy;     //将当前最大耐力值赋值到变量energy1
 ```
 
 > ###### speed
@@ -40,7 +40,7 @@ var energy1:Number = parent.$fighter_ctrler.energy;     //将当前最大耐力�
 
 ```actionscript
 $fighter_ctrler.speed = 12;     //设置人物的速度值为12
-var speed1:Number = parent.$fighter_ctrler.speed;       //将当前速度值赋值到变量speed
+var speed1: Number = parent.$fighter_ctrler.speed;       //将当前速度值赋值到变量speed
 ```
 
 > ###### jumpPower
@@ -53,7 +53,7 @@ var speed1:Number = parent.$fighter_ctrler.speed;       //将当前速度值赋�
 
 ```actionscript
 $fighter_ctrler.jumpPower = 12;     //设置人物的跳跃能力值为12
-var jumpPower1:Number = parent.$fighter_ctrler.jumpPower;      //将当前跳跃能力值赋值到变量jumpPower1
+var jumpPower1: Number = parent.$fighter_ctrler.jumpPower;      //将当前跳跃能力值赋值到变量jumpPower1
 ```
 
 > ###### heavy
@@ -66,7 +66,7 @@ var jumpPower1:Number = parent.$fighter_ctrler.jumpPower;      //将当前跳跃
 
 ```actionscript
 $fighter_ctrler.heavy = 3;      //设置人物的体格值为3
-var heavy1:Number = parent.$fighter_ctrler.heavy;       //将当前体格值赋值到变量heavy1
+var heavy1: Number = parent.$fighter_ctrler.heavy;       //将当前体格值赋值到变量heavy1
 ```
 
 > ###### defenseType
@@ -79,7 +79,7 @@ var heavy1:Number = parent.$fighter_ctrler.heavy;       //将当前体格值赋�
 
 ```actionscript
 $fighter_ctrler.defenseType = 1;        //设置人物的防御类型值为1
-var defenseType1:int = parent.$fighter_ctrler.defenseType;        //将当前防御类型值赋值到变量defenseType1
+var defenseType1: int = parent.$fighter_ctrler.defenseType;        //将当前防御类型值赋值到变量defenseType1
 ```
 
 > ###### self
@@ -99,13 +99,13 @@ parent.$fighter_ctrler.self.$mc_ctrler.setHurtAction("招21");  // 使自身进�
 
 类型：DisplayObject
 
-说明：敌人的显示对象（只读）
+说明：对方的显示对象（只读）
 
 使用示例：
 
 ```actionscript
-parent.$fighter_ctrler.target.visible = true/false;     //将敌人设置为显示/消失
-parent.$fighter_ctrler.target.$mc_ctrler.setHurtAction("招21");  // 使敌人进入反制状态
+parent.$fighter_ctrler.target.visible = true/false;     //将对方设置为显示/消失
+parent.$fighter_ctrler.target.$mc_ctrler.setHurtAction("招21");  // 使对方进入反制状态
 ```
 
 > ###### hitModel
@@ -131,7 +131,7 @@ var hitModel = parent.$fighter_ctrler.hitModel;       //将攻击模型赋值到
 
 返回类型：IGameSprite
 
-说明：获取敌人对象（可用于控制敌人）
+说明：获取对方的游戏对象（可用于控制对方）
 
 使用示例：
 
@@ -147,7 +147,7 @@ var tSP = parent.$fighter_ctrler.getTargetSP();
 
 返回类型：int
 
-说明：获取敌人的状态号
+说明：获取对方的状态号
 
 0=正常，40=硬直，10=正在攻击，11=正在使用技能，12=正在使用必杀，13=正在使用超必杀，14=正在跳跃，15=正在瞬步，16=正在反制，20=正在防御，21=被打，22=击飞，23=击倒，24=击倒弹起，30=死亡，50=正在卍解，60=开场，61=胜利，62=失败
 
@@ -159,7 +159,7 @@ if (parent.$fighter_ctrler.getTargetState() == 21)
 {
     parent.$fighter_ctrler.speed = 12;
 
-}   //当敌人的状态是被打时，设置我方人物的速度值为12
+}   //当对方的状态是被打时，设置我方人物的速度值为12
 ```
 
 > ###### setTargetVelocity
@@ -168,7 +168,7 @@ if (parent.$fighter_ctrler.getTargetState() == 21)
 
 返回类型：void
 
-说明：设置敌人受力
+说明：设置对方受力
 
 使用示例：
 
@@ -182,7 +182,7 @@ parent.$fighter_ctrler.setTargetVelocity(1,1);
 
 返回类型：void
 
-说明：设置敌人阻力
+说明：设置对方阻力
 
 使用示例：
 
@@ -196,7 +196,7 @@ parent.$fighter_ctrler.setTargetDamping(0.1,0.1);
 
 返回类型：Boolean
 
-说明：判断敌人是否在距离自身的一定范围内（格式为：[左,右],[上,下]）
+说明：判断对方是否在距离自身的一定范围内（格式为：[左,右],[上,下]）
 
 使用示例：
 
@@ -204,7 +204,7 @@ parent.$fighter_ctrler.setTargetDamping(0.1,0.1);
 if (parent.$fighter_ctrler.targetInRange([0,100],[-50,50]))
 {
     parent.$fighter_ctrler.speed = 12;
-}   //当敌人在该范围内时，设置我方人物的速度值为12
+}   //当对方在该范围内时，设置我方人物的速度值为12
 ```
 
 > ###### justHit
@@ -213,7 +213,7 @@ if (parent.$fighter_ctrler.targetInRange([0,100],[-50,50]))
 
 返回类型：Boolean
 
-说明：判断敌人是否被指定攻击面命中（参数1：传入攻击ID，参数2：防御时是否调用）
+说明：判断对方是否被指定攻击面命中（参数1：传入攻击ID，参数2：防御时是否调用）
 
 使用示例：
 
@@ -221,7 +221,7 @@ if (parent.$fighter_ctrler.targetInRange([0,100],[-50,50]))
 if (parent.$fighter_ctrler.justHit("k1",false))
 {
     parent.$fighter_ctrler.speed = 12;
-}   //当敌人被k1atm打中，并为真命中时，设置我方人物的速度值为12
+}   //当对方被k1atm打中，并为真命中时，设置我方人物的速度值为12
 ```
 
 > ###### defineAction
@@ -335,7 +335,7 @@ $fighter_ctrler.initMc(mc);
 使用示例：
 
 ```actionscript
-var cHitsArr:Array = parent.$fighter_ctrler.getCurrentHits();
+var cHitsArr: Array = parent.$fighter_ctrler.getCurrentHits();
 ```
 
 > ###### getBodyArea
@@ -349,7 +349,7 @@ var cHitsArr:Array = parent.$fighter_ctrler.getCurrentHits();
 使用示例：
 
 ```actionscript
-var bodyArea:Rectangle = parent.$fighter_ctrler.getBodyArea();
+var bodyArea: Rectangle = parent.$fighter_ctrler.getBodyArea();
 ```
 
 > ###### getHitCheckRect
@@ -363,7 +363,7 @@ var bodyArea:Rectangle = parent.$fighter_ctrler.getBodyArea();
 使用示例：
 
 ```actionscript
-var hitArea:Rectangle = parent.$fighter_ctrler.getHitCheckRect("zh1atm");
+var hitArea: Rectangle = parent.$fighter_ctrler.getHitCheckRect("zh1atm");
 ```
 
 > ###### getCurrentRect
@@ -391,7 +391,7 @@ var curArea:Rectangle = parent.$fighter_ctrler.getCurrentRect(new Rectangle(-7, 
 使用示例：
 
 ```actionscript
-var aiArea:Rectangle = parent.$fighter_ctrler.getHitRange("kanmian");
+var aiArea: Rectangle = parent.$fighter_ctrler.getHitRange("kanmian");
 ```
 
 > ###### doWanKai
@@ -415,7 +415,7 @@ parent.$fighter_ctrler.doWanKai(2);     //变身为人物的一段
 
 返回类型：void
 
-说明：使自身面对敌人
+说明：使自身面对对方
 
 使用示例：
 
@@ -443,7 +443,7 @@ parent.$fighter_ctrler.moveOnce(0,0);
 
 返回类型：void
 
-说明：移动到敌人的位置（x/y填null则横/纵向不进行移动）（x : X位置偏移，y : Y位置偏移，setDirect : 是否面向敌人）
+说明：移动到对方的位置（x/y填null则横/纵向不进行移动）（x : X位置偏移，y : Y位置偏移，setDirect : 是否面向对方）
 
 使用示例：
 
@@ -457,7 +457,7 @@ parent.$fighter_ctrler.moveToTarget(0,0,true);
 
 返回类型：void
 
-说明：设置穿越 （不碰撞敌人，但是被打判定仍然以被打面为准）
+说明：设置穿越 （不碰撞对方，但是被打判定仍然以被打面为准）
 
 使用示例：
 
@@ -534,7 +534,7 @@ parent.$fighter_ctrler.loseHpPercent(0.15);
 - [详细介绍](zh-cn/main-fighter-ctrlers/FighterMcCtrler)
 
 ```actionscript
-var mcCtrl:* = parent.$fighter_ctrler.getMcCtrl();
+var mcCtrl = parent.$fighter_ctrler.getMcCtrl();
 ```
 
 > ###### getEffectCtrl
@@ -550,7 +550,7 @@ var mcCtrl:* = parent.$fighter_ctrler.getMcCtrl();
 - [详细介绍](zh-cn/main-fighter-ctrlers/FighterEffectCtrl)
 
 ```actionscript
-var effectCtrl:* = parent.$fighter_ctrler.getEffectCtrl();
+var effectCtrl = parent.$fighter_ctrler.getEffectCtrl();
 ```
 
 > ###### getVoiceCtrl
@@ -566,5 +566,5 @@ var effectCtrl:* = parent.$fighter_ctrler.getEffectCtrl();
 - [详细介绍](zh-cn/main-fighter-ctrlers/FighterVoiceCtrler)
 
 ```actionscript
-var voiceCtrl:* = parent.$fighter_ctrler.getVoiceCtrl();
+var voiceCtrl = parent.$fighter_ctrler.getVoiceCtrl();
 ```

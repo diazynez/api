@@ -590,7 +590,8 @@ parent.$mc_ctrler.endAct();
 
 使用示例：
 
-[详细介绍](zh-cn/core-object-classes/Bullet)
+- [详细介绍](zh-cn/core-object-classes/Bullet)
+
 
 ```actionscript
 parent.$mc_ctrler.fire("zh1atm",{x:{start:15,hit:3},y:0,hold:2,hits:1,hp:100});
@@ -734,7 +735,7 @@ parent.$mc_ctrler.hurtFly(-10,0);
 
 返回类型：void
 
-说明：判定指定攻击是否打中敌人，是则跳转到相应的帧标签（参数1：检测的攻击ID，不含”atm“，参数2：检测成功后跳转到的相应帧标签，参数3：如果检测失败，是否跳转到站立，参数4：对方防御时是否继续攻击）
+说明：判定指定攻击是否打中对方，是则跳转到相应的帧标签（参数1：检测的攻击ID，不含”atm“，参数2：检测成功后跳转到的相应帧标签，参数3：如果检测失败，是否跳转到站立，参数4：对方防御时是否继续攻击）
 
 使用示例：
 
@@ -748,7 +749,7 @@ parent.$mc_ctrler.justHitToPlay("攻击ID","帧标签",false,false);
 
 返回类型：void
 
-说明：对敌人产生吸引力
+说明：对对方产生吸引力
 
 使用示例：
 
@@ -760,7 +761,7 @@ parent.$mc_ctrler.moveTarget({followmc: "move_mc"});
 
 x:Number(水平位置),
 y:Number(竖直位置), 
-followmc:String(设置此值时以该影片剪辑为中心吸引敌人，此处应填写影片剪辑的名称),
+followmc:String(设置此值时以该影片剪辑为中心吸引对方，此处应填写影片剪辑的名称),
 speed:Number(吸引速度)
 或
 {x:Number,y:Number}(水平、竖直吸引分速度）
@@ -786,7 +787,7 @@ speed:Number(吸引速度)
 - [详细介绍](zh-cn/core-object-classes/FighterAction)
 
 ```actionscript
-var fighterAcion:* = parent.$mc_ctrler.getAction();
+var fighterAcion = parent.$mc_ctrler.getAction();
 ```
 
 > ###### sayIntro
@@ -844,7 +845,7 @@ parent.$mc_ctrler.doLose();
 - [详细介绍](zh-cn/core-object-classes/FighterMC)
 
 ```actionscript
-var fighterMC:* = parent.$mc_ctrler.getFighterMc();
+var fighterMC = parent.$mc_ctrler.getFighterMc();
 ```
 
 > ###### getCurAction
@@ -858,7 +859,7 @@ var fighterMC:* = parent.$mc_ctrler.getFighterMc();
 使用示例：
 
 ```actionscript
-var curAcion:String = parent.$mc_ctrler.getCurAction();
+var curAcion: String = parent.$mc_ctrler.getCurAction();
 ```
 
 > ###### setMc

@@ -58,11 +58,11 @@ var oFighter = $assisterCtrler.owner_fighter_ctrler;        //将辅助人物的
 
 返回类型：IGameSprite
 
-说明：获取敌人对象
+说明：获取对方的游戏对象
 
 使用示例：
 
-- [详细介绍](https://diazynez.github.io/api/FighterMain.html)
+- [详细介绍](zh-cn/core-object-classes/FighterMain)
 
 ```actionscript
 var target = $assisterCtrler.getTarget();
@@ -74,11 +74,11 @@ var target = $assisterCtrler.getTarget();
 
 返回类型：IGameSprite
 
-说明：获取主人对象
+说明：获取主人的游戏对象
 
 使用示例：
 
-- [详细介绍](https://diazynez.github.io/api/FighterMain.html)
+- [详细介绍](zh-cn/core-object-classes/FighterMain)
 
 ```actionscript
 var owner = $assisterCtrler.getOwner();
@@ -90,11 +90,11 @@ var owner = $assisterCtrler.getOwner();
 
 返回类型：Assister
 
-说明：获取自身对象
+说明：获取自身的游戏对象
 
 使用示例：
 
-- [详细介绍](https://diazynez.github.io/api/Assister.html)
+- [详细介绍](zh-cn/core-object-classes/Assister)
 
 ```actionscript
 var self = $assisterCtrler.getSelf();
@@ -192,7 +192,7 @@ $assisterCtrler.endAct();
 
 返回类型：void
 
-说明：移动到敌人的位置（x/y填null则横/纵向不进行移动）（x : X位置偏移，y : Y位置偏移，setDirect : 是否面向敌人）
+说明：移动到对方的位置（x/y填null则横/纵向不进行移动）（x : X位置偏移，y : Y位置偏移，setDirect : 是否面向对方）
 
 使用示例：
 
@@ -206,7 +206,7 @@ $assisterCtrler.moveToTarget(0,0,true);
 
 返回类型：void
 
-说明：使自身面对敌人
+说明：使自身面对对方
 
 使用示例：
 
@@ -318,7 +318,7 @@ $assisterCtrler.setHitTarget("atm1","碰到");
 
 返回类型：Boolean
 
-说明：判断敌人是否被指定攻击面命中（参数1：检测的攻击ID，不含”atm“，参数2：检测成功后跳转到的相应帧标签，参数3：防御时是否调用）
+说明：判断对方是否被指定攻击面命中（参数1：检测的攻击ID，不含”atm“，参数2：检测成功后跳转到的相应帧标签，参数3：防御时是否调用）
 
 使用示例：
 
@@ -327,7 +327,7 @@ $assisterCtrler.setHitTarget("atm1","碰到");
 if ($assisterCtrler.justHit("atm1"))
 {
     $assisterCtrler.finish();
-}   //当敌人被atm1打中，并为真命中时，结束自己
+}   //当对方被atm1打中，并为真命中时，结束自己
 
 //用法2
 $assisterCtrler.justHit("atm1","击中")
@@ -342,6 +342,8 @@ $assisterCtrler.justHit("atm1","击中")
 说明：发射子弹、波（即飞行道具）
 
 使用示例：
+
+- [详细介绍](zh-cn/core-object-classes/Bullet)
 
 ```actionscript
 $assisterCtrler.fire("zh1atm",{x:{start:15,hit:3},y:0,hold:2,hits:1,hp:100});
@@ -385,7 +387,7 @@ hp:int(血量,默认为100)
 
 使用示例：
 
-- [详细介绍](https://diazynez.github.io/api/FighterAttackerCtrler.html)
+- [详细介绍](zh-cn/main-fighter-ctrlers/FighterAttackerCtrler)
 
 ```actionscript
 $assisterCtrler.addAttacker("bsmc",{applyG:false});

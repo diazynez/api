@@ -27,7 +27,7 @@ function get $self_main(): * {for each(var i: * in parent.parent.parent.getGameS
 
 ```actionscript
 $self_main.qi = 300;       //设置人物当前气量值为300
-var qi1:Number = $self_main.qi;     //将当前气量值赋值到变量qi1
+var qi1: Number = $self_main.qi;     //将当前气量值赋值到变量qi1
 ```
 
 > ###### qiMax
@@ -40,7 +40,7 @@ var qi1:Number = $self_main.qi;     //将当前气量值赋值到变量qi1
 
 ```actionscript
 $self_main.qiMax = 300;       //设置人物当前气量最大值为300
-var qiMax1:Number = $self_main.qiMax;     //将当前气量最大值赋值到变量qiMax1
+var qiMax1: Number = $self_main.qiMax;     //将当前气量最大值赋值到变量qiMax1
 ```
 
 > ###### energy
@@ -53,7 +53,7 @@ var qiMax1:Number = $self_main.qiMax;     //将当前气量最大值赋值到变
 
 ```actionscript
 $self_main.energy = 50;       //设置人物当前耐力值为50
-var energy1:Number = $self_main.energy;     //将当前耐力值赋值到变量energy1
+var energy1: Number = $self_main.energy;     //将当前耐力值赋值到变量energy1
 ```
 
 > ###### energyMax
@@ -66,7 +66,7 @@ var energy1:Number = $self_main.energy;     //将当前耐力值赋值到变量e
 
 ```actionscript
 $self_main.energyMax = 150;       //设置人物当前耐力最大值为150
-var energyMax1:Number = $self_main.energyMax;     //将当前耐力最大值赋值到变量energyMax1
+var energyMax1: Number = $self_main.energyMax;     //将当前耐力最大值赋值到变量energyMax1
 ```
 
 > ###### energyOverLoad
@@ -103,7 +103,7 @@ $self_main.energyOverLoad = true;       //设置人物为耐力过载状态
 
 ```actionscript
 $self_main.fzqi = 100;       //设置人物当前辅助冷却值为100
-var fzqi1:Number = $self_main.fzqi;     //将当前辅助冷却值赋值到变量fzqi1
+var fzqi1: Number = $self_main.fzqi;     //将当前辅助冷却值赋值到变量fzqi1
 ```
 
 > ###### fzqiMax
@@ -115,7 +115,7 @@ var fzqi1:Number = $self_main.fzqi;     //将当前辅助冷却值赋值到变�
 使用示例：
 
 ```actionscript
-var fzqiMax1:Number = $self_main.fzqiMax;     //将当前辅助冷却最大值赋值到变量fzqiMax1
+var fzqiMax1: Number = $self_main.fzqiMax;     //将当前辅助冷却最大值赋值到变量fzqiMax1
 ```
 
 > ###### speed
@@ -128,7 +128,7 @@ var fzqiMax1:Number = $self_main.fzqiMax;     //将当前辅助冷却最大值�
 
 ```actionscript
 $self_main.speed = 12;       //设置人物当前速度值为12
-var speed1:Number = $self_main.speed;     //将当前速度值赋值到变量speed1
+var speed1: Number = $self_main.speed;     //将当前速度值赋值到变量speed1
 ```
 
 > ###### jumpPower
@@ -141,7 +141,7 @@ var speed1:Number = $self_main.speed;     //将当前速度值赋值到变量spe
 
 ```actionscript
 $self_main.jumpPower = 12;       //设置人物当前跳跃能力值为12
-var jumpPower1:Number = $self_main.jumpPower;     //将当前跳跃能力值赋值到变量jumpPower1
+var jumpPower1: Number = $self_main.jumpPower;     //将当前跳跃能力值赋值到变量jumpPower1
 ```
 
 > ###### isSteelBody
@@ -200,7 +200,7 @@ FighterVO中的属性包含：id (String)、name (String)、comicType (int)、fi
 
 类型：MosouEnemyVO
 
-说明：人物的无双敌人数据
+说明：人物的无双敌军数据
 
 > ###### airHitTimes
 
@@ -253,7 +253,7 @@ if ($self_main.actionState == 21)
 
 ```actionscript
 $self_main.defenseType = 1;        //设置人物当前防御类型值为1
-var defenseType1:int = $self_main.defenseType;        //将当前防御类型值赋值到变量defenseType1
+var defenseType1: int = $self_main.defenseType;        //将当前防御类型值赋值到变量defenseType1
 ```
 
 > ###### lastHitVO
@@ -282,23 +282,159 @@ var lastHitVO = $self_main.lastHitVO;        //将最后一次受击的攻击值
 $self_main.introSaid = true;        //设置人物执行过开场动作
 ```
 
-###### 
+> ###### 3.5增加 mosouLogic
 
-###### 未完待续
+类型：MosouFighterLogic
 
-### 方法
+说明：无双角色逻辑
 
-> ###### speedUp
+> ###### hurtHit
 
-传入参数：upVal:Number = 0, hold:Number = 5
+类型：HitVO
 
-返回类型：void
+说明：人物当前受击的攻击值对象
 
-说明：设置速度增加（参数1：增加倍数，参数2：持续时长）
+使用示例：
+
+- [详细介绍](zh-cn/data-model-classes/HitVO)
+
+```actionscript
+var hurtHit = $self_main.hurtHit;        //将当前受击的攻击值对象赋值到变量hurtHit
+```
+
+> ###### defenseHit
+
+类型：HitVO
+
+说明：人物当前防御受击（假命中）的攻击值对象
+
+使用示例：
+
+- [详细介绍](zh-cn/data-model-classes/HitVO)
+
+```actionscript
+var defenseHit = $self_main.defenseHit;        //将当前防御受击（假命中）的攻击值对象赋值到变量defenseHit
+```
+
+> ###### targetTeams
+
+类型：Vector.\<TeamVO\>
+
+说明：包含对方小队成员的动态数组
 
 使用示例：
 
 ```actionscript
-buffCtrl.speedUp(0.3,15);
+var targetTeams = $self_main.targetTeams;        //将对方小队成员的动态数组赋值到变量targetTeams
 ```
 
+> ###### colorTransform
+
+类型：ColorTransform
+
+说明：人物的颜色调整或颜色转换对象
+
+使用示例：
+
+```actionscript
+$self_main.colorTransform.greenOffset = -85;        //将人物调为2P配色
+var colorTransform = $self_main.colorTransform;        //将颜色对象赋值到变量colorTransform
+```
+
+> ###### attackRate
+
+类型：Number
+
+说明：人物的攻击力倍率
+
+使用示例：
+
+```actionscript
+$self_main.attackRate = 1.5;        //设置人物当前攻击力倍率为1.5
+var attackRate1: Number = $self_main.attackRate;        //将当前攻击力倍率赋值到变量attackRate1
+```
+
+### 方法
+
+> ###### changeColor
+
+传入参数：v:ColorTransform
+
+返回类型：void
+
+说明：修改人物的颜色
+
+使用示例：
+
+```actionscript
+$self_main.changeColor(new ColorTransform(1, 1, 1, 1, -255, -255, -255, 0));        //将自身调为纯黑色
+```
+
+> ###### resumeColor
+
+传入参数：无
+
+返回类型：void
+
+说明：复原人物的颜色
+
+使用示例：
+
+```actionscript
+$self_main.resumeColor();
+```
+
+> ###### 3.5增加 getMosouLogic
+
+传入参数：无
+
+返回类型：MosouFighterLogic
+
+说明：获取无双角色逻辑
+
+> ###### setActive
+
+传入参数：v:Boolean
+
+返回类型：void
+
+说明：设置自身的活动状态，若设置为非活动状态，则会结束幽步特效、结束钢身发光、结束残影特效
+
+使用示例：
+
+```actionscript
+$self_main.setActive(false);
+```
+
+> ##### currentHurtDamage
+
+传入参数：无
+
+返回类型：int
+
+说明：获取本次被打过程受到的总伤害（计算规则是连招本身1倍的伤害（无视attackRate的数值） * 【当前的】attackRate，因此不完全等同于真实连招伤害）
+
+使用示例：
+
+```actionscript
+var currentHurtDamage: int = $self_main.currentHurtDamage();        //将当前受到的总伤害赋值到变量currentHurtDamage
+```
+
+> ##### getLastHurtHitVO
+
+传入参数：无
+
+返回类型：HitVO
+
+说明：获取最后一次受击的攻击值对象
+
+使用示例：
+
+- [详细介绍](zh-cn/data-model-classes/HitVO)
+
+```actionscript
+var lastHurtHitVO = $self_main.getLastHurtHitVO();        //将当前最后一次受击的攻击值对象赋值到变量lastHurtHitVO
+```
+
+
+未完待续

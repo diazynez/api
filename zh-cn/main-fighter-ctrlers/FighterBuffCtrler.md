@@ -11,7 +11,7 @@ function get $self_main(): * {for each(var i: * in parent.parent.parent.parent.g
 ```actionscript
 //辅助人物使用下方代码：
 var buffCtrl = $assisterCtrler.getOwner().getBuffCtrl();        //主人的控制器
-var buffCtrl = $assisterCtrler.getTarget().getBuffCtrl();        //敌方的控制器
+var buffCtrl = $assisterCtrler.getTarget().getBuffCtrl();        //对方的控制器
 ```
 
 ### 方法

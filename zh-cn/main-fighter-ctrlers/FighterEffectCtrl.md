@@ -176,7 +176,7 @@ parent.$effect_ctrler.ghostStep();
 
 返回类型：void
 
-说明：结束幽步特效
+说明：结束残影特效
 
 使用示例：
 
@@ -337,3 +337,18 @@ parent.$effect_ctrler.startGlow(0);
 ```actionscript
 parent.$effect_ctrler.endGlow();
 ```
+
+> ###### 3.5增加 clean
+
+传入参数：无
+
+返回类型：void
+
+说明：结束幽步特效、结束钢身发光、结束残影特效
+
+使用示例：
+
+```actionscript
+parent.$effect_ctrler.clean();
+```
+

@@ -86,7 +86,7 @@ $attacker_ctrler.damping(0.8,0);
 
 返回类型：void
 
-说明：移动到敌人的位置
+说明：移动到对方的位置
 
 使用示例：
 
@@ -184,7 +184,7 @@ $attacker_ctrler.setHitTarget("kj1atm","碰到");
 
 返回类型：Boolean
 
-说明：判断敌人是否被指定攻击面命中（参数表示检测的攻击ID，不含”atm“）
+说明：判断对方是否被指定攻击面命中（参数表示检测的攻击ID，不含”atm“）
 
 使用示例：
 
@@ -192,7 +192,7 @@ $attacker_ctrler.setHitTarget("kj1atm","碰到");
 if ($attacker_ctrler.justHit("zh2"))
 {
     $attacker_ctrler.removeSelf();
-}   //当敌人被zh2atm打中，并为真命中时，删除自身
+}   //当对方被zh2atm打中，并为真命中时，删除自身
 ```
 
 > ###### setCrossMap
@@ -215,7 +215,7 @@ $attacker_ctrler.setCrossMap(false);
 
 返回类型：void
 
-说明：停止追踪敌人
+说明：停止追踪对方
 
 使用示例：
 
@@ -246,6 +246,8 @@ $attacker_ctrler.removeSelf();
 说明：发射子弹、波（即飞行道具）
 
 使用示例：
+
+- [详细介绍](zh-cn/core-object-classes/Bullet)
 
 ```actionscript
 $attacker_ctrler.fire("zh1atm",{x:{start:15,hit:3},y:0,hold:2,hits:1,hp:100});
