@@ -11,7 +11,7 @@
 使用示例：
 
 ```actionscript
-var effect = $assisterCtrler.effect;        //将辅助人物的effect控制器赋值到变量effect
+var effectCtrl = $assisterCtrler.effect;
 ```
 
 > ###### hitModel
@@ -30,24 +30,24 @@ $assisterCtrler.hitModel.setPowerRate(2);       //将自身的攻击力倍数设
 
 类型：FighterMcCtrler
 
-说明：辅助人物的主人的mc控制器（只读）
+说明：辅助人物的主人的Mc控制器（只读）
 
 使用示例：
 
 ```actionscript
-var oMc = $assisterCtrler.owner_mc_ctrler;      //将辅助人物的主人的mc控制器赋值到变量oMc
+var oMc = $assisterCtrler.owner_mc_ctrler;
 ```
 
 > ###### owner_fighter_ctrler
 
 类型：FighterCtrler
 
-说明：辅助人物的主人的fighter控制器（只读）
+说明：辅助人物的主人的Fighter控制器（只读）
 
 使用示例：
 
 ```actionscript
-var oFighter = $assisterCtrler.owner_fighter_ctrler;        //将辅助人物的主人的fighter控制器赋值到变量oFighter
+var oFighter = $assisterCtrler.owner_fighter_ctrler;
 ```
 
 ### 方法

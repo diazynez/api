@@ -120,7 +120,7 @@ parent.$fighter_ctrler.target.$mc_ctrler.setHurtAction("招21");  // 使对方�
 
 
 ```actionscript
-var hitModel = parent.$fighter_ctrler.hitModel;       //将攻击模型赋值到变量hitModel
+var hitModel = parent.$fighter_ctrler.hitModel;
 ```
 
 ### 方法
@@ -527,7 +527,7 @@ parent.$fighter_ctrler.loseHpPercent(0.15);
 
 返回类型：FighterMcCtrler
 
-说明：获取mc控制器
+说明：获取Mc控制器
 
 使用示例：
 
@@ -543,7 +543,7 @@ var mcCtrl = parent.$fighter_ctrler.getMcCtrl();
 
 返回类型：FighterEffectCtrl
 
-说明：获取effect控制器
+说明：获取Effect控制器
 
 使用示例：
 
@@ -559,7 +559,7 @@ var effectCtrl = parent.$fighter_ctrler.getEffectCtrl();
 
 返回类型：FighterVoiceCtrler
 
-说明：获取voice控制器
+说明：获取Voice控制器
 
 使用示例：
 

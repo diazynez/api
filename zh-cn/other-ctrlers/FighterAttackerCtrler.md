@@ -6,12 +6,12 @@
 
 类型：FighterEffectCtrl
 
-说明：攻击对象的effect控制器
+说明：攻击对象的主人的Effect控制器
 
 使用示例：
 
 ```actionscript
-var effect = $attacker_ctrler.effect;       //将攻击对象的effect控制器赋值到变量effect
+var effectCtrl = $attacker_ctrler.effect;
 ```
 
 > ###### ownerMc
@@ -23,31 +23,31 @@ var effect = $attacker_ctrler.effect;       //将攻击对象的effect控制器�
 使用示例：
 
 ```actionscript
-var oMc = $attacker_ctrler.ownerMc;     //将攻击对象的主人的mc控制器赋值到变量oMc
+var oMc = $attacker_ctrler.ownerMc;
 ```
 
 > ###### owner_mc_ctrler
 
 类型：FighterMcCtrler
 
-说明：攻击对象的主人的mc控制器（只读）
+说明：攻击对象的主人的Mc控制器（只读）
 
 使用示例：
 
 ```actionscript
-var oMc = $attacker_ctrler.owner_mc_ctrler;     //将攻击对象的主人的mc控制器赋值到变量oMc
+var oMc = $attacker_ctrler.owner_mc_ctrler;
 ```
 
 > ###### owner_fighter_ctrler
 
 类型：FighterCtrler
 
-说明：攻击对象的主人的fighter控制器（只读）
+说明：攻击对象的主人的Fighter控制器（只读）
 
 使用示例：
 
 ```actionscript
-var oFighter = $attacker_ctrler.owner_fighter_ctrler;       //将攻击对象的主人的fighter控制器赋值到变量oFighter
+var oFighter = $attacker_ctrler.owner_fighter_ctrler;
 ```
 
 ### 方法

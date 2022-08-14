@@ -115,7 +115,7 @@ var fzqi1: Number = $self_main.fzqi;     //将当前辅助冷却值赋值到变�
 使用示例：
 
 ```actionscript
-var fzqiMax1: Number = $self_main.fzqiMax;     //将当前辅助冷却最大值赋值到变量fzqiMax1
+var fzqiMax1: Number = $self_main.fzqiMax;
 ```
 
 > ###### speed
@@ -153,7 +153,7 @@ var jumpPower1: Number = $self_main.jumpPower;     //将当前跳跃能力值赋
 使用示例：
 
 ```actionscript
-$self_main.isSteelBody = true;       //设置人物为钢身（白）状态
+$self_main.isSteelBody = true;
 ```
 
 > ###### isSuperSteelBody
@@ -165,7 +165,7 @@ $self_main.isSteelBody = true;       //设置人物为钢身（白）状态
 使用示例：
 
 ```actionscript
-$self_main.isSuperSteelBody = true;       //设置人物为钢身（金）状态
+$self_main.isSuperSteelBody = true;
 ```
 
 > ###### data
@@ -211,7 +211,7 @@ FighterVO中的属性包含：id (String)、name (String)、comicType (int)、fi
 使用示例：
 
 ```actionscript
-$self_main.airHitTimes = 0;       //设置人物当前空中可攻击次数为0
+$self_main.airHitTimes = 0;
 ```
 
 > ###### jumpTimes
@@ -223,7 +223,7 @@ $self_main.airHitTimes = 0;       //设置人物当前空中可攻击次数为0
 使用示例：
 
 ```actionscript
-$self_main.jumpTimes = 0;       //设置人物当前可跳跃次数为0
+$self_main.jumpTimes = 0;
 ```
 
 > ###### actionState
@@ -267,7 +267,7 @@ var defenseType1: int = $self_main.defenseType;        //将当前防御类型�
 - [详细介绍](zh-cn/data-model-classes/HitVO)
 
 ```actionscript
-var lastHitVO = $self_main.lastHitVO;        //将最后一次受击的攻击值对象赋值到变量lastHitVO
+var lastHitVO = $self_main.lastHitVO;
 ```
 
 > ###### 3.5增加 introSaid
@@ -279,7 +279,7 @@ var lastHitVO = $self_main.lastHitVO;        //将最后一次受击的攻击值
 使用示例：
 
 ```actionscript
-$self_main.introSaid = true;        //设置人物执行过开场动作
+$self_main.introSaid = true;
 ```
 
 > ###### 3.5增加 mosouLogic
@@ -299,7 +299,7 @@ $self_main.introSaid = true;        //设置人物执行过开场动作
 - [详细介绍](zh-cn/data-model-classes/HitVO)
 
 ```actionscript
-var hurtHit = $self_main.hurtHit;        //将当前受击的攻击值对象赋值到变量hurtHit
+var hurtHit = $self_main.hurtHit;
 ```
 
 > ###### defenseHit
@@ -313,7 +313,7 @@ var hurtHit = $self_main.hurtHit;        //将当前受击的攻击值对象赋�
 - [详细介绍](zh-cn/data-model-classes/HitVO)
 
 ```actionscript
-var defenseHit = $self_main.defenseHit;        //将当前防御受击（假命中）的攻击值对象赋值到变量defenseHit
+var defenseHit = $self_main.defenseHit;
 ```
 
 > ###### targetTeams
@@ -325,7 +325,7 @@ var defenseHit = $self_main.defenseHit;        //将当前防御受击（假命�
 使用示例：
 
 ```actionscript
-var targetTeams = $self_main.targetTeams;        //将对方小队成员的动态数组赋值到变量targetTeams
+var targetTeams = $self_main.targetTeams;
 ```
 
 > ###### colorTransform
@@ -417,7 +417,7 @@ $self_main.setActive(false);
 使用示例：
 
 ```actionscript
-var currentHurtDamage: int = $self_main.currentHurtDamage();        //将当前受到的总伤害赋值到变量currentHurtDamage
+var currentHurtDamage: int = $self_main.currentHurtDamage();
 ```
 
 > ##### getLastHurtHitVO
@@ -433,8 +433,219 @@ var currentHurtDamage: int = $self_main.currentHurtDamage();        //将当前�
 - [详细介绍](zh-cn/data-model-classes/HitVO)
 
 ```actionscript
-var lastHurtHitVO = $self_main.getLastHurtHitVO();        //将当前最后一次受击的攻击值对象赋值到变量lastHurtHitVO
+var lastHurtHitVO = $self_main.getLastHurtHitVO();
 ```
+
+> ##### hurtBreakHit
+
+传入参数：无
+
+返回类型：Boolean
+
+说明：检测本次被打过程是否存在破防攻击
+
+使用示例：
+
+```actionscript
+if ($self_main.hurtBreakHit())
+{
+	$self_main.speed = 12;
+}   //当本次被打过程存在破防攻击时，设置我方人物的速度值为12
+```
+
+> ##### clearHurtHits
+
+传入参数：无
+
+返回类型：void
+
+说明：清空当前的被打记录
+
+使用示例：
+
+```actionscript
+$self_main.clearHurtHits();
+```
+
+> ###### getCtrler
+
+传入参数：无
+
+返回类型：FighterCtrler
+
+说明：获取Fighter控制器
+
+使用示例：
+
+- [详细介绍](zh-cn/main-fighter-ctrlers/FighterCtrler)
+
+```actionscript
+var fighterCtrl = $self_main.getCtrler();
+```
+
+> ###### 3.3增加 getBuffCtrl
+
+传入参数：无
+
+返回类型：FighterBuffCtrler
+
+说明：获取Buff控制器
+
+使用示例：
+
+- [详细介绍](zh-cn/main-fighter-ctrlers/FighterBuffCtrler)
+
+```actionscript
+var buffCtrl = $self_main.getBuffCtrl();
+```
+
+> ###### getCurrentTarget
+
+传入参数：无
+
+返回类型：IGameSprite
+
+说明：获取对方的游戏对象（可用于控制对方）
+
+使用示例：
+
+- [详细介绍](zh-cn/core-object-classes/FighterMain)
+
+```actionscript
+var tSP = $self_main.getCurrentTarget();
+```
+
+> ###### getTargets
+
+传入参数：无
+
+返回类型：Vector.\<IGameSprite\>
+
+说明：获取对方队伍的所有存活的游戏对象
+
+使用示例：
+
+- [详细介绍](zh-cn/core-object-classes/FighterMain)
+
+```actionscript
+var targets = $self_main.getTargets();
+```
+
+> ###### getMC
+
+传入参数：无
+
+返回类型：FighterMC
+
+说明：获取人物MC
+
+使用示例：
+
+- [详细介绍](zh-cn/core-object-classes/FighterMain)
+
+```actionscript
+var fighterMC = $self_main.getMC();
+```
+
+> ###### 3.5增加 initMosouFighter
+
+传入参数：v:MosouFighterVO
+
+返回类型：void
+
+说明：初始化无双角色
+
+> ###### 3.5增加 initMosouEnemy
+
+传入参数：v:MosouEnemyVO
+
+返回类型：void
+
+说明：初始化无双敌军
+
+> ###### 3.5增加 updateProperties
+
+传入参数：无
+
+返回类型：void
+
+说明：初始化/更新角色属性
+
+> ###### setActionCtrl
+
+传入参数：ctrler:IFighterActionCtrl
+
+返回类型：void
+
+说明：设置Action控制器
+
+使用示例：
+
+```actionscript
+//此接口无法单独使用，使用方法详见其他成品代码
+```
+
+> ###### 3.5增加 initlized
+
+传入参数：无
+
+返回类型：Boolean
+
+说明：检测Fighter控制器是否已被定义
+
+使用示例：
+
+```actionscript
+if ($self_main.initlized())
+{
+	$self_main.speed = 12;
+}   //当Fighter控制器已被定义时，设置我方人物的速度值为12
+```
+
+> ###### initlize
+
+传入参数：无
+
+返回类型：void
+
+说明：初始化角色
+
+使用示例：
+
+```actionscript
+//此接口无法单独使用，使用方法详见其他成品代码
+```
+
+> ###### 3.5增加 onMcInited
+
+传入参数：无
+
+返回类型：void
+
+说明：初始化无双角色MC
+
+使用示例：
+
+```actionscript
+//此接口无法单独使用，使用方法详见其他成品代码
+```
+
+> ###### 3.5增加 initAttackAddDmg
+
+传入参数：normal:int, skill:int = 0, bisha:int = 0
+
+返回类型：void
+
+说明：初始化增伤数值
+
+使用示例：
+
+```actionscript
+$self_main.initAttackAddDmg(100, 100, 100);
+```
+
+
+
 
 
 未完待续

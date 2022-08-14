@@ -8,14 +8,14 @@
 
 类型：FighterEffectCtrl
 
-说明：人物的effect控制器
+说明：人物的Effect控制器
 
 使用示例：
 
 - [详细介绍](zh-cn/main-fighter-ctrlers/FighterEffectCtrl)
 
 ```actionscript
-var effect = parent.$mc_ctrler.effectCtrler;        //将人物的effect控制器赋值到变量effect
+var effectCtrl = parent.$mc_ctrler.effectCtrler;
 ```
 
 ### 方法
@@ -669,8 +669,13 @@ function setAttackerCtrler(attackerCtrler:*):void{
 
 使用示例：
 
+- [详细介绍](zh-cn/main-fighter-ctrlers/FighterAttackerCtrler)
+
 ```actionscript
-parent.$mc_ctrler.getAttacker("bsmc").move(4,4);
+if (parent.$mc_ctrler.getAttacker("bsmc"))
+{
+	parent.$mc_ctrler.getAttacker("bsmc").move(4, 4);
+}   //如果存在名为bsmc的攻击对象，将其运动设置为(4, 4)
 ```
 
 > ###### isApplyG
@@ -916,7 +921,7 @@ parent.$mc_ctrler.touchFloor();
 
 ```actionscript
 parent.$mc_ctrler.moveMC(mc1, 0, 0);        //将mc1移动到与主人物相同的坐标
-x/y参数为非Number类型对象时的情况的用途不明，待后续补充
+//x/y参数为非Number类型对象时的情况的用途不明，待后续补充
 ```
 
 > ###### FVO专用 setFly
