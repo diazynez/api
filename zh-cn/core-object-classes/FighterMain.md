@@ -961,7 +961,7 @@ $self_main.die();
 $self_main.relive();
 ```
 
-> ###### isMosouEnemy
+> ###### 3.5增加 isMosouEnemy
 
 传入参数：无
 
@@ -969,7 +969,7 @@ $self_main.relive();
 
 说明：判断是否是无双敌军
 
-> ###### isMosouBoss
+> ###### 3.5增加 isMosouBoss
 
 传入参数：无
 
