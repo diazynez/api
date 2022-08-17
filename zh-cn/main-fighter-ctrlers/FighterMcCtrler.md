@@ -887,12 +887,14 @@ parent.$mc_ctrler.setMc();
 
 返回类型：void
 
-说明：被打（参数1：指定攻击值对象，参数2：攻击范围矩形）
+说明：产生被打效果（参数1：指定攻击值对象，参数2：攻击命中部分的范围矩形）
+
+属于[人物主体的beHit方法](zh-cn/core-object-classes/FighterMain?id=behit)的一部分
 
 使用示例：
 
 ```actionscript
-parent.$mc_ctrler.beHit();
+parent.$mc_ctrler.beHit(null);        //产生一次无效的攻击，但是可以触发对方的反制效果
 ```
 
 > ###### touchFloor

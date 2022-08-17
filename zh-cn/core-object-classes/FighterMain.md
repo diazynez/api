@@ -644,8 +644,335 @@ if ($self_main.initlized())
 $self_main.initAttackAddDmg(100, 100, 100);
 ```
 
+> ###### renderAnimate
 
+传入参数：无
 
+返回类型：void
 
+说明：渲染一次人物动画
 
-未完待续
+使用示例：
+
+```actionscript
+$self_main.renderAnimate();
+```
+
+> ###### render
+
+传入参数：无
+
+返回类型：void
+
+说明：渲染一次人物属性和控制器
+
+使用示例：
+
+```actionscript
+$self_main.render();
+```
+
+> ###### jump
+
+传入参数：无
+
+返回类型：void
+
+说明：进行一次跳跃运动
+
+使用示例：
+
+```actionscript
+$self_main.jump();
+```
+
+> ###### getCurrentHits
+
+传入参数：无
+
+返回类型：Array
+
+说明：调用[Fighter控制器的getCurrentHits方法](zh-cn/main-fighter-ctrlers/FighterCtrler?id=getcurrenthits)，但是优先获取灵压爆发的攻击面
+
+使用示例：
+
+```actionscript
+var cHitsArr: Array = $self_main.getCurrentHits();
+```
+
+> ###### getBodyArea
+
+传入参数：无
+
+返回类型：Rectangle
+
+说明：调用[Fighter控制器的getBodyArea方法](zh-cn/main-fighter-ctrlers/FighterCtrler?id=getbodyarea)
+
+使用示例：
+
+```actionscript
+var bodyArea: Rectangle = $self_main.getBodyArea();
+```
+
+> ###### hit
+
+传入参数：hitvo:HitVO, target:IGameSprite
+
+返回类型：void
+
+说明：产生攻击效果（参数1：指定攻击值对象，参数2：指定的目标游戏对象）
+
+包含效果：双方层级交换、自身集气、HITS的UI刷新、计分板得分增加
+
+使用示例：
+
+```actionscript
+$self_main.hit($self_main.getCtrler().hitModel.getHitVO("k1"), $self_main.getCurrentTarget());
+```
+
+> ###### beHit
+
+传入参数：hitvo:HitVO, hitRect:Rectangle = null
+
+返回类型：void
+
+说明：产生被打效果（参数1：指定攻击值对象，参数2：攻击命中部分的范围矩形）
+
+包含效果：被打效果、产生于攻击面对应的推移、自身集气
+
+使用示例：
+
+```actionscript
+$self_main.getCurrentTarget().beHit($self_main.getCtrler().hitModel.getHitVO("k1"), $self_main.getCurrentTarget().getBodyArea());
+```
+
+> ###### hasEnergy
+
+传入参数：v:Number, allowOverflow:Boolean = false
+
+返回类型：Boolean
+
+说明：判断是否具有指定耐力值（参数1：指定耐力数值，参数2：是否允许耐力溢出，允许时只要未处于耐力过载状态均返回true）
+
+使用示例：
+
+```actionscript
+var has50Energy: Boolean = $self_main.hasEnergy(50);
+```
+
+> ###### useEnergy
+
+传入参数：v:Number
+
+返回类型：void
+
+说明：消耗耐力值，并使得此后的24帧内不会进行自然的耐力恢复，若此次耐力消耗后耐力不足，则会进入耐力过载状态
+
+使用示例：
+
+```actionscript
+$self_main.useEnergy(50);
+```
+
+> ###### useQi
+
+传入参数：v:Number
+
+返回类型：Boolean
+
+说明：消耗气量值，若气量值不足则不会发生消耗并返回false，若足够则会发生消耗并返回true
+
+使用示例：
+
+```actionscript
+$self_main.useQi(100);        //如果拥有≥100气量值，则消耗100气量值
+if ($self_main.useQi(100)) $self_main.hp += 500;        //如果拥有≥100气量值，则消耗100气量值并增加500血量值
+```
+
+> ###### addQi
+
+传入参数：v:Number
+
+返回类型：void
+
+说明：增加气量值
+
+使用示例：
+
+```actionscript
+$self_main.addQi(100);
+```
+
+> ###### sayIntro
+
+传入参数：无
+
+返回类型：void
+
+说明：将[introSaid属性](zh-cn/core-object-classes/FighterMain?id=_35增加-introsaid)设置为true并调用[Mc控制器的sayIntro方法](zh-cn/main-fighter-ctrlers/FighterMcCtrler?id=sayintro)
+
+使用示例：
+
+```actionscript
+$self_main.sayIntro();
+```
+
+> ###### win
+
+传入参数：无
+
+返回类型：void
+
+说明：调用[Mc控制器的doWin方法](zh-cn/main-fighter-ctrlers/FighterMcCtrler?id=dowin)
+
+使用示例：
+
+```actionscript
+$self_main.win();
+```
+
+> ###### idle
+
+传入参数：无
+
+返回类型：void
+
+说明：调用[Mc控制器的idle方法](zh-cn/main-fighter-ctrlers/FighterMcCtrler?id=idle)
+
+使用示例：
+
+```actionscript
+$self_main.idle();
+```
+
+> ###### lose
+
+传入参数：无
+
+返回类型：void
+
+说明：调用[Mc控制器的doLose方法](zh-cn/main-fighter-ctrlers/FighterMcCtrler?id=dolose)
+
+使用示例：
+
+```actionscript
+$self_main.lose();
+```
+
+> ###### getHitRange
+
+传入参数：id:String
+
+返回类型：Rectangle
+
+说明：调用[Fighter控制器的getHitRange方法](zh-cn/main-fighter-ctrlers/FighterCtrler?id=gethitrange)
+
+使用示例：
+
+```actionscript
+var aiArea: Rectangle = $self_main.getHitRange("kanmian");
+```
+
+> ###### energyExplode
+
+传入参数：无
+
+返回类型：void
+
+说明：产生一次灵压爆发
+
+使用示例：
+
+```actionscript
+$self_main.energyExplode();
+```
+
+> ###### replaceSkill
+
+传入参数：无
+
+返回类型：void
+
+说明：产生一次替身术
+
+使用示例：
+
+```actionscript
+$self_main.replaceSkill();
+```
+
+> ###### getArea
+
+传入参数：无
+
+返回类型：Rectangle
+
+说明：调用[getBodyArea方法](zh-cn/core-object-classes/FighterMain?id=getbodyarea)
+
+使用示例：
+
+```actionscript
+var bodyArea: Rectangle = $self_main.getArea();
+```
+
+> ###### hasWankai
+
+传入参数：无
+
+返回类型：Boolean
+
+说明：检测自身是否具有变身能力（仅限于JK变身，不包含SJK、WJK)
+
+使用示例：
+
+```actionscript
+var hasWankai: Boolean = $self_main.hasWankai();
+```
+
+> ###### die
+
+传入参数：无
+
+返回类型：void
+
+说明：使自身进入死亡状态（不会造成胜负判定）
+
+包含内容：血量值归零、[isAlive属性](zh-cn/abstract-interface-classes/BaseGameSprite?id=isalive)设置为false、播放倒地动作
+
+使用示例：
+
+```actionscript
+$self_main.die();
+```
+
+> ###### relive
+
+传入参数：reset:Boolean = false
+
+返回类型：void
+
+说明：使自身复活（不会造成胜负判定）
+
+包含内容：血量值回满、气量值归零（仅限参数为true时有效）、[isAlive属性](zh-cn/abstract-interface-classes/BaseGameSprite?id=isalive)设置为true、恢复站立
+
+使用示例：
+
+```actionscript
+$self_main.relive();
+```
+
+> ###### isMosouEnemy
+
+传入参数：无
+
+返回类型：Boolean
+
+说明：判断是否是无双敌军
+
+> ###### isMosouBoss
+
+传入参数：无
+
+返回类型：Boolean
+
+说明：判断是否是无双头目
