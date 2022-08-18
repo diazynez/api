@@ -1,4 +1,4 @@
-# Mc控制器
+# aMc控制器
 
 ### 属性
 
@@ -264,7 +264,7 @@ parent.$mc_ctrler.setAttack();
 
 返回类型：void
 
-说明：设置可技能1（SJ）
+说明：设置可砍技1（SJ）
 
 使用示例：
 
@@ -278,7 +278,7 @@ parent.$mc_ctrler.setSkill1();
 
 返回类型：void
 
-说明：设置可技能2（WJ）
+说明：设置可砍技2（WJ）
 
 使用示例：
 
@@ -479,7 +479,7 @@ parent.$mc_ctrler.setTouchFloor("跳招2",true);
 使用示例：
 
 ```actionscript
-parent.$mc_ctrler.setHitTarget("kj10","砍技12");
+parent.$mc_ctrler.setHitTarget("kj10atm","砍技12");
 ```
 
 > ###### setHurtAction

@@ -124,7 +124,7 @@ $assisterCtrler.setApplyG(false);
 
 使用示例：
 
-[defineAction](../../tools/defineAction.html ':include :type=iframe width=100% height=491px')
+[defineAction](../../tools/defineAction.html ':include :type=iframe width=100% height=513px')
 
 ```actionscript
 $assisterCtrler.defineAction("tk" ,{power:30 , hitType:1 , hitx:2 , hity:6 , hurtTime:300 , hurtType:0 , isBreakDef:false});

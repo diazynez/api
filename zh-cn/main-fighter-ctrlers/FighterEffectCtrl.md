@@ -50,7 +50,7 @@ parent.$effect_ctrler.endShake();
 
 返回类型：void
 
-说明：设置瞬步特效
+说明：设置冲刺特效
 
 使用示例：
 
@@ -238,6 +238,20 @@ parent.$effect_ctrler.slowDown(0.5);
 
 ```actionscript
 parent.$effect_ctrler.shine(0xffffff);
+```
+
+> ###### FVO专用 specialStep
+
+传入参数：无
+
+返回类型：void
+
+说明：设置特殊步特效
+
+使用示例：
+
+```actionscript
+parent.$effect_ctrler.specialStep();
 ```
 
 > ###### bisha

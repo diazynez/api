@@ -6,7 +6,7 @@
 	<script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.4.1/jquery.js"></script>
 	<script src="https://cdn.bootcss.com/clipboard.js/2.0.4/clipboard.min.js"></script>
 </head>
-<body onMouseOver="hitTypefunc()">
+<body onMouseOver="hitTypefunc()" style="background:#ffffff">
 	<h1>defineAction自动化编写器</h1>
 	<form>
 		<p>id:<input type="text" id="id"></p>
@@ -20,6 +20,7 @@
 		powerRate:<input type="text" id="powerRate" value=1 onkeyup="clearNoNum(this)"><br />
 		checkDirect:<select id="checkDirect"><option value="true">true</option><option value="false">false</option></select><br />
 		slowDown:<input type="text" id="slowDown" value=0 onkeyup="clearNoNum(this)"> ※3.5增加<br />
+		focusTarget:<select id="focusTarget"><option value="false">false</option><option value="true">true</option></select> ※3.5增加<br />
 		doubleHurtType:<select id="doubleHurtType"><option value="0">0：击退</option><option value="1">1：击倒</option></select> ※FVO专用<br />
 	</form>
 	<br />
@@ -32,6 +33,7 @@
 			if ($('#powerRate').val() != "1") output+=' , powerRate:'+$('#powerRate').val();
 			if ($('#checkDirect').val() != "true") output+=' , checkDirect:'+$('#checkDirect').val();
 			if ($('#slowDown').val() != "0") output+=' , slowDown:'+$('#slowDown').val();
+			if ($('#focusTarget').val() != "false") output+=' , focusTarget:'+$('#focusTarget').val();
 			if ($('#doubleHurtType').val() != 0) output+=' , doubleHurtType:'+$('#doubleHurtType').val();
 			output+='});'
 			document.getElementById("test").innerText=output;
