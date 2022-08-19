@@ -785,7 +785,7 @@ speed:Number(吸引速度)
 
 返回类型：FighterAction
 
-说明：获取人物活动
+说明：获取人物动作
 
 使用示例：
 

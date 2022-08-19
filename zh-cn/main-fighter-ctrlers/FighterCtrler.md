@@ -330,7 +330,7 @@ $fighter_ctrler.initMc(mc);
 
 返回类型：Array
 
-说明：返回自身目前场上存在的一般攻击面，返回当前包含自身所有HitVO的数组
+说明：获取自身当前场上存在的一般攻击面，返回当前包含自身所有[攻击值对象](zh-cn/data-model-classes/HitVO)的数组
 
 使用示例：
 
