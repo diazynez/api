@@ -507,7 +507,7 @@ parent.$mc_ctrler.setHurtAction("招22");
 使用示例：
 
 ```actionscript
-parent.$mc_ctrler.move(8,0);
+parent.$mc_ctrler.move(8, 0);
 ```
 
 > ###### movePercent
@@ -521,7 +521,7 @@ parent.$mc_ctrler.move(8,0);
 使用示例：
 
 ```actionscript
-parent.$mc_ctrler.movePercent(1,0);
+parent.$mc_ctrler.movePercent(1, 0);
 ```
 
 > ###### stopMove
@@ -549,7 +549,7 @@ parent.$mc_ctrler.stopMove();
 使用示例：
 
 ```actionscript
-parent.$mc_ctrler.damping(0.8,0);
+parent.$mc_ctrler.damping(0.8, 0);
 ```
 
 > ###### dampingPercent
@@ -563,7 +563,7 @@ parent.$mc_ctrler.damping(0.8,0);
 使用示例：
 
 ```actionscript
-parent.$mc_ctrler.dampingPercent(0.1,0);
+parent.$mc_ctrler.dampingPercent(0.1, 0);
 ```
 
 > ###### endAct
@@ -667,6 +667,8 @@ function setAttackerCtrler(attackerCtrler:*):void{
 
 说明：获取通过addAttacker加入的对象（可用于控制攻击对象）
 
+注：有多个同名攻击对象时优先获取最早登场的一个
+
 使用示例：
 
 - [详细介绍](zh-cn/main-fighter-ctrlers/FighterAttackerCtrler)
@@ -745,7 +747,7 @@ parent.$mc_ctrler.hurtFly(-10,0);
 使用示例：
 
 ```actionscript
-parent.$mc_ctrler.justHitToPlay("攻击ID","帧标签",false,false);
+parent.$mc_ctrler.justHitToPlay("攻击ID", "帧标签", false, false);
 ```
 
 > ###### moveTarget

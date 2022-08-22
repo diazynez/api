@@ -1,4 +1,4 @@
-# Attacker控制器
+# 攻击对象控制器
 
 ### 属性
 
@@ -63,7 +63,7 @@ var oFighter = $attacker_ctrler.owner_fighter_ctrler;
 使用示例：
 
 ```actionscript
-$attacker_ctrler.move(8,0);
+$attacker_ctrler.move(8, 0);
 ```
 
 > ###### damping
@@ -77,7 +77,7 @@ $attacker_ctrler.move(8,0);
 使用示例：
 
 ```actionscript
-$attacker_ctrler.damping(0.8,0);
+$attacker_ctrler.damping(0.8, 0);
 ```
 
 > ###### moveToTarget
@@ -91,7 +91,7 @@ $attacker_ctrler.damping(0.8,0);
 使用示例：
 
 ```actionscript
-$attacker_ctrler.moveToTarget(0,0);
+$attacker_ctrler.moveToTarget(0, 0);
 ```
 
 > ###### endAct
@@ -175,7 +175,7 @@ $attacker_ctrler.setTouchFloor("落地");
 使用示例：
 
 ```actionscript
-$attacker_ctrler.setHitTarget("kj1atm","碰到");
+$attacker_ctrler.setHitTarget("kj1atm", "碰到");
 ```
 
 > ###### justHit

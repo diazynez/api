@@ -173,7 +173,7 @@ if (parent.$fighter_ctrler.getTargetState() == 21)
 使用示例：
 
 ```actionscript
-parent.$fighter_ctrler.setTargetVelocity(1,1);
+parent.$fighter_ctrler.setTargetVelocity(1, 1);
 ```
 
 > ###### setTargetDamping
@@ -187,7 +187,7 @@ parent.$fighter_ctrler.setTargetVelocity(1,1);
 使用示例：
 
 ```actionscript
-parent.$fighter_ctrler.setTargetDamping(0.1,0.1);
+parent.$fighter_ctrler.setTargetDamping(0.1, 0.1);
 ```
 
 > ###### targetInRange
@@ -201,7 +201,7 @@ parent.$fighter_ctrler.setTargetDamping(0.1,0.1);
 使用示例：
 
 ```actionscript
-if (parent.$fighter_ctrler.targetInRange([0,100],[-50,50]))
+if (parent.$fighter_ctrler.targetInRange([0, 100], [-50, 50]))
 {
     parent.$fighter_ctrler.speed = 12;
 }   //当对方在该范围内时，设置我方人物的速度值为12
@@ -218,7 +218,7 @@ if (parent.$fighter_ctrler.targetInRange([0,100],[-50,50]))
 使用示例：
 
 ```actionscript
-if (parent.$fighter_ctrler.justHit("k1",false))
+if (parent.$fighter_ctrler.justHit("k1", false))
 {
     parent.$fighter_ctrler.speed = 12;
 }   //当对方被k1atm打中，并为真命中时，设置我方人物的速度值为12
@@ -265,7 +265,7 @@ doubleHurtType:int = 0（第二击是否击倒）
 使用示例：
 
 ```actionscript
-$fighter_ctrler.defineBishaFace("XX特写1",bs1face);
+$fighter_ctrler.defineBishaFace("XX特写1", bs1face);
 ```
 
 > ###### defineHurtSound
@@ -279,7 +279,7 @@ $fighter_ctrler.defineBishaFace("XX特写1",bs1face);
 使用示例：
 
 ```actionscript
-$fighter_ctrler.defineHurtSound(snd_hurt1,snd_hurt1);
+$fighter_ctrler.defineHurtSound(snd_hurt1, snd_hurt1);
 ```
 
 > ###### defineHurtFlySound
@@ -293,7 +293,7 @@ $fighter_ctrler.defineHurtSound(snd_hurt1,snd_hurt1);
 使用示例：
 
 ```actionscript
-$fighter_ctrler.defineHurtFlySound(snd_hurt2,snd_hurt2);
+$fighter_ctrler.defineHurtFlySound(snd_hurt2, snd_hurt2);
 ```
 
 > ###### defineDieSound
@@ -307,7 +307,7 @@ $fighter_ctrler.defineHurtFlySound(snd_hurt2,snd_hurt2);
 使用示例：
 
 ```actionscript
-$fighter_ctrler.defineDieSound(snd_hurt3,snd_hurt3);
+$fighter_ctrler.defineDieSound(snd_hurt3, snd_hurt3);
 ```
 
 > ###### initMc
@@ -335,7 +335,7 @@ $fighter_ctrler.initMc(mc);
 使用示例：
 
 ```actionscript
-var cHitsArr: Array = parent.$fighter_ctrler.getCurrentHits();
+var curHitsArr: Array = parent.$fighter_ctrler.getCurrentHits();
 ```
 
 > ###### getBodyArea
@@ -344,7 +344,7 @@ var cHitsArr: Array = parent.$fighter_ctrler.getCurrentHits();
 
 返回类型：Rectangle
 
-说明：获取人物被打面的位置和大小，不存在被打面返回null
+说明：获取人物被打面当前在场景中的位置和大小，不存在被打面返回null
 
 使用示例：
 
@@ -358,7 +358,7 @@ var bodyArea: Rectangle = parent.$fighter_ctrler.getBodyArea();
 
 返回类型：Rectangle
 
-说明：获取指定的MovieClip的位置和大小，不存在该MovieClip返回null
+说明：根据元件名称获取元件当前在场景中的判定范围矩形（参数：判定面的名称）
 
 使用示例：
 
@@ -372,12 +372,12 @@ var hitArea: Rectangle = parent.$fighter_ctrler.getHitCheckRect("zh1atm");
 
 返回类型：Rectangle
 
-说明：将一个矩形的相对坐标转换为游戏中的绝对坐标（参数1：传入的矩形，参数2：游戏内缓存的矩形ID）
+说明：将一个矩形的相对坐标转换为游戏场景中的绝对坐标（参数1：传入的矩形，参数2：游戏内缓存的矩形ID）
 
 使用示例：
 
 ```actionscript
-var curArea:Rectangle = parent.$fighter_ctrler.getCurrentRect(new Rectangle(-7, -30, 15, 55), null);
+var curArea: Rectangle = parent.$fighter_ctrler.getCurrentRect(new Rectangle(-7, -30, 15, 55), null);
 ```
 
 > ###### getHitRange
@@ -386,7 +386,7 @@ var curArea:Rectangle = parent.$fighter_ctrler.getCurrentRect(new Rectangle(-7, 
 
 返回类型：Rectangle
 
-说明：获取AI判定面的范围（参数：判定面的ID）
+说明：获取AI判定面当前在场景中的范围（参数：判定面的ID）
 
 使用示例：
 
@@ -448,7 +448,7 @@ parent.$fighter_ctrler.moveOnce(0,0);
 使用示例：
 
 ```actionscript
-parent.$fighter_ctrler.moveToTarget(0,0,true);
+parent.$fighter_ctrler.moveToTarget(0, 0, true);
 ```
 
 > ###### setCross

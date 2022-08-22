@@ -13,7 +13,7 @@
 使用示例：
 
 ```actionscript
-parent.$fighter_ctrler.getVoiceCtrl().setVoice(0,[snd1,snd2]);      //设定被打声音（随机）
+parent.$fighter_ctrler.getVoiceCtrl().setVoice(0, [snd1, snd2]);      //设定被打声音（随机）
 
 /*
 
@@ -35,5 +35,5 @@ parent.$fighter_ctrler.getVoiceCtrl().setVoice(0,[snd1,snd2]);      //设定被�
 使用示例：
 
 ```actionscript
-parent.$fighter_ctrler.getVoiceCtrl().playVoice(0,1);
+parent.$fighter_ctrler.getVoiceCtrl().playVoice(0, 1);
 ```

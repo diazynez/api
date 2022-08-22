@@ -13,7 +13,7 @@
 使用示例：
 
 ```actionscript
-parent.$effect_ctrler.shake(5,5);
+parent.$effect_ctrler.shake(5, 5);
 ```
 
 > ###### startShake
@@ -27,7 +27,7 @@ parent.$effect_ctrler.shake(5,5);
 使用示例：
 
 ```actionscript
-parent.$effect_ctrler.startShake(5,5);
+parent.$effect_ctrler.startShake(5, 5);
 ```
 
 > ###### endShake
@@ -195,7 +195,7 @@ parent.$effect_ctrler.endGhostStep();
 使用示例：
 
 ```actionscript
-parent.$effect_ctrler.shadow(255,255,255);
+parent.$effect_ctrler.shadow(255, 255, 255);
 ```
 
 > ###### endShadow
@@ -321,7 +321,7 @@ parent.$effect_ctrler.endWanKai();
 使用示例：
 
 ```actionscript
-$effect_ctrler.setBishaFace("XX特写1",bs1face);
+$effect_ctrler.setBishaFace("XX特写1", bs1face);
 ```
 
 > ###### 3.3增加 startGlow

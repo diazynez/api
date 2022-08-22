@@ -4,6 +4,9 @@
 
 ```actionscript
 //同一对象内只需要写一次，若报错请删除
+```
+
+```actionscript
 //主人物使用下方代码：
 function get $self_main(): * {for each(var i: * in parent.parent.parent.parent.getGameSprites()) if (i.getDisplay() == parent) return i;}
 ```

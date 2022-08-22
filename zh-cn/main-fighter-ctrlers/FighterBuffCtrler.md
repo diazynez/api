@@ -27,7 +27,7 @@ var buffCtrl = $assisterCtrler.getTarget().getBuffCtrl();        //对方的控�
 使用示例：
 
 ```actionscript
-buffCtrl.speedUp(0.3,15);
+buffCtrl.speedUp(0.3, 15);
 ```
 
 > ###### attackUp
@@ -41,7 +41,7 @@ buffCtrl.speedUp(0.3,15);
 使用示例：
 
 ```actionscript
-buffCtrl.attackUp(0.3,15);
+buffCtrl.attackUp(0.3, 15);
 ```
 
 > ###### defenseUp
@@ -55,7 +55,7 @@ buffCtrl.attackUp(0.3,15);
 使用示例：
 
 ```actionscript
-buffCtrl.defenseUp(0.3,15);
+buffCtrl.defenseUp(0.3, 15);
 ```
 
 > ###### speedDown
@@ -69,7 +69,7 @@ buffCtrl.defenseUp(0.3,15);
 使用示例：
 
 ```actionscript
-buffCtrl.speedDown(0.3,15);
+buffCtrl.speedDown(0.3, 15);
 ```
 
 > ###### attackDown
@@ -83,7 +83,7 @@ buffCtrl.speedDown(0.3,15);
 使用示例：
 
 ```actionscript
-buffCtrl.attackDown(0.3,15);
+buffCtrl.attackDown(0.3, 15);
 ```
 
 > ###### defenseDown
@@ -97,5 +97,5 @@ buffCtrl.attackDown(0.3,15);
 使用示例：
 
 ```actionscript
-buffCtrl.defenseDown(0.3,15);
+buffCtrl.defenseDown(0.3, 15);
 ```

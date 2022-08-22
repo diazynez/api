@@ -1,4 +1,4 @@
-# Assister控制器
+# 辅助人物控制器
 
 ### 属性
 
@@ -197,7 +197,7 @@ $assisterCtrler.endAct();
 使用示例：
 
 ```actionscript
-$assisterCtrler.moveToTarget(0,0,true);
+$assisterCtrler.moveToTarget(0, 0, true);
 ```
 
 > ###### setDirectToTarget
@@ -225,7 +225,7 @@ $assisterCtrler.setDirectToTarget();
 使用示例：
 
 ```actionscript
-$assisterCtrler.move(8,0);
+$assisterCtrler.move(8, 0);
 ```
 
 > ###### damping
@@ -239,7 +239,7 @@ $assisterCtrler.move(8,0);
 使用示例：
 
 ```actionscript
-$assisterCtrler.damping(0.8,0);
+$assisterCtrler.damping(0.8, 0);
 ```
 
 > ###### stop
@@ -309,7 +309,7 @@ $assisterCtrler.setTouchFloor("落地");
 使用示例：
 
 ```actionscript
-$assisterCtrler.setHitTarget("atm1","碰到");
+$assisterCtrler.setHitTarget("atm1", "碰到");
 ```
 
 > ###### justHit
