@@ -13,13 +13,13 @@
   <!-- 框架导入 -->
   <link href="favicon.png" rel="shortcut icon" />
   <link href="favicon.png" type="image/x-icon" rel="bookmark" />
-  <script>setTimeout('document.getElementById("app").innerHTML = "加载失败，Docsify未能初始化。"', 5000)</script>
+  <script>setTimeout('document.getElementById("app").innerHTML = "加载失败，服务未能初始化。"', 10000)</script>
   <script language="JavaScript">
 	var d = new Date();
 	if (d.getHours() > 4 && d.getHours() < 18)
-		document.write('<link rel="stylesheet" href="//unpkg.com/docsify-themeable@0/dist/css/theme-simple.css" id="theme_css" />');
+		document.write('<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/docsify-themeable@0/dist/css/theme-simple.css" id="theme_css" />');
 	else
-		document.write('<link rel="stylesheet" href="//unpkg.com/docsify-themeable@0/dist/css/theme-simple-dark.css" id="theme_css" />');
+		document.write('<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/docsify-themeable@0/dist/css/theme-simple-dark.css" id="theme_css" />');
   </script>
 </head>
 <body>
@@ -102,22 +102,22 @@
 	}*/
   </script>
   <!-- Docsify -->
-  <script src="//unpkg.com/docsify/lib/docsify.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/docsify/lib/docsify.min.js"></script>
   <script src="js/search.min.js"></script>
-  <script src="//unpkg.com/docsify-copy-code/dist/docsify-copy-code.min.js"></script>
-  <script src="//unpkg.com/docsify-pagination/dist/docsify-pagination.min.js"></script>
-  <script src="//unpkg.com/prismjs@1/components/prism-actionscript.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/docsify-copy-code/dist/docsify-copy-code.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/docsify-pagination/dist/docsify-pagination.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/prismjs@1/components/prism-actionscript.min.js"></script>
   <!-- 主题切换效果 -->
   <script type="text/javascript">
 	function openDark()
 	{
 		if (document.getElementById('theme_css').href.indexOf('dark') != -1)
 		{
-			document.getElementById('theme_css').href = '//unpkg.com/docsify-themeable@0/dist/css/theme-simple.css';
+			document.getElementById('theme_css').href = '//cdn.jsdelivr.net/npm/docsify-themeable@0/dist/css/theme-simple.css';
 		}
 		else
 		{
-			document.getElementById('theme_css').href = '//unpkg.com/docsify-themeable@0/dist/css/theme-simple-dark.css';
+			document.getElementById('theme_css').href = '//cdn.jsdelivr.net/npm/docsify-themeable@0/dist/css/theme-simple-dark.css';
 		}
 	}
   </script>
