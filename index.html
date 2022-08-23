@@ -17,9 +17,9 @@
   <script language="JavaScript">
 	var d = new Date();
 	if (d.getHours() > 4 && d.getHours() < 18)
-		document.write('<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/docsify-themeable@0/dist/css/theme-simple.css" id="theme_css" />');
+		document.write('<link rel="stylesheet" href="css/theme-simple.css" id="theme_css" />');
 	else
-		document.write('<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/docsify-themeable@0/dist/css/theme-simple-dark.css" id="theme_css" />');
+		document.write('<link rel="stylesheet" href="css/theme-simple-dark.css" id="theme_css" />');
   </script>
 </head>
 <body>
@@ -102,22 +102,22 @@
 	}*/
   </script>
   <!-- Docsify -->
-  <script src="//cdn.jsdelivr.net/npm/docsify/lib/docsify.min.js"></script>
+  <script src="https://lf6-cdn-tos.bytecdntp.com/cdn/expire-1-M/docsify/4.12.2/docsify.min.js"></script>
   <script src="js/search.min.js"></script>
-  <script src="//cdn.jsdelivr.net/npm/docsify-copy-code/dist/docsify-copy-code.min.js"></script>
-  <script src="//cdn.jsdelivr.net/npm/docsify-pagination/dist/docsify-pagination.min.js"></script>
-  <script src="//cdn.jsdelivr.net/npm/prismjs@1/components/prism-actionscript.min.js"></script>
+  <script src="https://lf9-cdn-tos.bytecdntp.com/cdn/expire-1-M/docsify-copy-code/2.1.1/docsify-copy-code.min.js"></script>
+  <script src="js/docsify-pagination.min.js"></script>
+  <script src="https://lf9-cdn-tos.bytecdntp.com/cdn/expire-1-M/prism/9000.0.1/components/prism-actionscript.min.js"></script>
   <!-- 主题切换效果 -->
   <script type="text/javascript">
 	function openDark()
 	{
 		if (document.getElementById('theme_css').href.indexOf('dark') != -1)
 		{
-			document.getElementById('theme_css').href = '//cdn.jsdelivr.net/npm/docsify-themeable@0/dist/css/theme-simple.css';
+			document.getElementById('theme_css').href = 'css/theme-simple.css';
 		}
 		else
 		{
-			document.getElementById('theme_css').href = '//cdn.jsdelivr.net/npm/docsify-themeable@0/dist/css/theme-simple-dark.css';
+			document.getElementById('theme_css').href = 'css/theme-simple-dark.css';
 		}
 	}
   </script>
