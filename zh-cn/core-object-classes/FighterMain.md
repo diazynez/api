@@ -528,7 +528,7 @@ var tSP = $self_main.getCurrentTarget();
 
 使用示例：
 
-- [详细介绍](zh-cn/core-object-classes/FighterMain)
+- [详细介绍](zh-cn/abstract-interface-classes/IGameSprite)
 
 ```actionscript
 var targets = $self_main.getTargets();

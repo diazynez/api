@@ -636,7 +636,7 @@ hp:int(血量,默认为100)
 
 使用示例：
 
-- [详细介绍](zh-cn/main-fighter-ctrlers/FighterAttackerCtrler)
+- [详细介绍](zh-cn/other-ctrlers/FighterAttackerCtrler)
 - [详细介绍](zh-cn/core-object-classes/FighterAttacker)
 
 ```actionscript

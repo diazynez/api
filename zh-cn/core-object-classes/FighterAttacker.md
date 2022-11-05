@@ -315,26 +315,10 @@ $self_main.gotoAndStop("帧标签");
 
 使用示例：
 
-- [详细介绍](zh-cn/core-object-classes/FighterMain)
+- [详细介绍](zh-cn/abstract-interface-classes/IGameSprite)
 
 ```actionscript
 var targets = $self_main.getTargets();
-```
-
-> ###### getTarget
-
-传入参数：无
-
-返回类型：IGameSprite
-
-说明：获取对方的游戏对象（可用于控制对方）
-
-使用示例：
-
-- [详细介绍](zh-cn/core-object-classes/FighterMain)
-
-```actionscript
-var target = $self_main.getTarget();
 ```
 
 > ###### removeSelf
@@ -392,5 +376,5 @@ var checkHitRect: Rectangle = $self_main.getCheckHitRect("zh1atm");
 使用示例：
 
 ```actionscript
-$self_main.hit($self_main.getOwner().getCtrler().hitModel.getHitVO("k1"), $self_main.getTarget());
+$self_main.hit($self_main.getOwner().getCtrler().hitModel.getHitVO("k1"), $self_main.getOwner().getCurrentTarget());
 ```
