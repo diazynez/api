@@ -30,7 +30,7 @@ function getFighterAttacker(name: String): *
 }
 
 //写法3：
-//注：此写法使用前提是目标攻击对象内已含有$self_main的定义，使用此写法的情况下有多个同名攻击对象时优先获取最晚登场的一个
+//注：此写法使用前提是目标攻击对象内已含有$self_main的定义，使用此写法的情况下有多个同名攻击对象时优先获取最晚登场的一个（若最晚登场的攻击对象已移除，此方法无法获取次晚登场的攻击对象）
 function getFighterAttacker(name: String): *
 {
 	return this[name].$self_main;
@@ -138,7 +138,7 @@ $self_main.rangeX = new Point(0, 100);
 使用示例：
 
 ```actionscript
-$self_main.followTargetY = new Point(-50, 50);
+$self_main.rangeY = new Point(-50, 50);
 ```
 
 > ###### name

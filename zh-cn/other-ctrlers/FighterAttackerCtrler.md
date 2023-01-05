@@ -257,13 +257,14 @@ $attacker_ctrler.fire("zh1atm",{x:{start:15,hit:3},y:0,hold:2,hits:1,hp:100});
 
 x:Number(水平固定速度)
 或
-{start:Number(开始速度),add:Number(加速度),max:Number(最大速度),min:Number(最小速度),hit:Number(攻击到速度)},(水平可变速度)
+{start:Number(开始速度),add:Number(加速度),max:Number(最大速度),min:Number(最小速度),hit:Number(命中速度)},(水平可变速度)
 y:Number(竖直固定速度)
 或
-{start:Number(开始速度),add:Number(加速度),max:Number(最大速度),min:Number(最小速度),hit:Number(攻击到速度)},(竖直可变速度)
+{start:Number(开始速度),add:Number(加速度),max:Number(最大速度),min:Number(最小速度),hit:Number(命中速度)},(竖直可变速度)
 hold:int(存在时长),
 hits:int(攻击次数),
-hp:int(血量,默认为100)
+hp:int(血量,默认为100),
+effect:{shadow:[0,0,0]}(残影效果，FVO专用)
 */
 
 /*
