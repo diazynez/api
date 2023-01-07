@@ -249,6 +249,8 @@ $attacker_ctrler.removeSelf();
 
 - [详细介绍](zh-cn/core-object-classes/Bullet)
 
+[fire](../../tools/fire.html ':include :type=iframe width=100% height=653px')
+
 ```actionscript
 $attacker_ctrler.fire("zh1atm",{x:{start:15,hit:3},y:0,hold:2,hits:1,hp:100});
 

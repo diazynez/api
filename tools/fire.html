@@ -1,0 +1,91 @@
+<!doctype html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<title>fire自动化编写器</title>
+	<script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.4.1/jquery.js"></script>
+	<script src="https://cdn.bootcss.com/clipboard.js/2.0.4/clipboard.min.js"></script>
+</head>
+<body style="background:#ffffff">
+	<h1>fire自动化编写器</h1>
+	<form>
+		<h3>选择控制器：<select id="select_ctrl"><option value="parent.$mc_ctrler">Mc控制器</option><option value="$attacker_ctrler">攻击对象控制器</option><option value="$assisterCtrler">辅助人物控制器</option></select><br /></h3>
+		<p>id: <input type="text" id="id"></p>
+		x: <select id="select_x" onchange="xfunc()"><option value="1">固定速度</option><option value="2">可变速度</option></select><br />
+		<div id="select_x1">&nbsp;&nbsp;&nbsp;&nbsp;<input type="text" id="x" value=0 onkeyup="clearNoNum(this)"><br /></div>
+		<div id="select_x2" style="display:none">
+			&nbsp;&nbsp;&nbsp;&nbsp;start: <input type="text" id="x_start" value=0 onkeyup="clearNoNum(this)"><br />
+			&nbsp;&nbsp;&nbsp;&nbsp;add: <input type="text" id="x_add" onkeyup="clearNoNum(this)"><br />
+			&nbsp;&nbsp;&nbsp;&nbsp;max: <input type="text" id="x_max" onkeyup="clearNoNum(this)"><br />
+			&nbsp;&nbsp;&nbsp;&nbsp;min: <input type="text" id="x_min" onkeyup="clearNoNum(this)"><br />
+			&nbsp;&nbsp;&nbsp;&nbsp;hit: <input type="text" id="x_hit" onkeyup="clearNoNum(this)"><br />
+		</div>
+		y: <select id="select_y" onchange="yfunc()"><option value="1">固定速度</option><option value="2">可变速度</option></select><br />
+		<div id="select_y1">&nbsp;&nbsp;&nbsp;&nbsp;<input type="text" id="y" value=0 onkeyup="clearNoNum(this)"><br /></div>
+		<div id="select_y2" style="display:none">
+			&nbsp;&nbsp;&nbsp;&nbsp;start: <input type="text" id="y_start" value=0 onkeyup="clearNoNum(this)"><br />
+			&nbsp;&nbsp;&nbsp;&nbsp;add: <input type="text" id="y_add" onkeyup="clearNoNum(this)"><br />
+			&nbsp;&nbsp;&nbsp;&nbsp;max: <input type="text" id="y_max" onkeyup="clearNoNum(this)"><br />
+			&nbsp;&nbsp;&nbsp;&nbsp;min: <input type="text" id="y_min" onkeyup="clearNoNum(this)"><br />
+			&nbsp;&nbsp;&nbsp;&nbsp;hit: <input type="text" id="y_hit" onkeyup="clearNoNum(this)"><br />
+		</div>
+		hold: <input type="text" id="hold" value=0 onkeyup="clearNoNum(this)"><br />
+		hits: <input type="text" id="hits" value=0 onkeyup="clearNoNum(this)"><br />
+		hp: <input type="text" id="hp" value=0 onkeyup="clearNoNum(this)"><br />
+		effect: <input type="text" id="effect1" onkeyup="clearNoNum(this)" style="width:25px;"><input type="text" id="effect2" onkeyup="clearNoNum(this)" style="width:25px;"><input type="text" id="effect3" onkeyup="clearNoNum(this)" style="width:25px;"> ※FVO专用<br />
+	</form>
+	<br />
+	<button onClick="doOutput()">生成</button><button id="btn" data-clipboard-target="#test">复制</button><br /><br />
+	<span id="test"></span>
+	<script>
+		//获值
+		function doOutput(){
+			var output = $('#select_ctrl').val()+'.fire("'+$('#id').val()+'",{x:';
+			if ($('#select_x').val() == 1) output+=$('#x').val();
+			else {
+				output+='{start:'+$('#x_start').val();
+				if ($('#x_add').val().length > 0) output+=',add:'+$('#x_add').val();
+				if ($('#x_max').val().length > 0) output+=',max:'+$('#x_max').val();
+				if ($('#x_min').val().length > 0) output+=',min:'+$('#x_min').val();
+				if ($('#x_hit').val().length > 0) output+=',hit:'+$('#x_hit').val();
+				output+='}';
+			}
+			output+=',y:';
+			if ($('#select_y').val() == 1) output+=$('#y').val();
+			else {
+				output+='{start:'+$('#y_start').val();
+				if ($('#y_add').val().length > 0) output+=',add:'+$('#y_add').val();
+				if ($('#y_max').val().length > 0) output+=',max:'+$('#y_max').val();
+				if ($('#y_min').val().length > 0) output+=',min:'+$('#y_min').val();
+				if ($('#y_hit').val().length > 0) output+=',hit:'+$('#y_hit').val();
+				output+='}';
+			}
+			if ($('#hold').val() != "0") output+=',hold:'+$('#hold').val();
+			if ($('#hits').val() != "0") output+=',hits:'+$('#hits').val();
+			if ($('#hp').val() != "0") output+=',hp:'+$('#hp').val();
+			if ($('#effect1').val().length > 0 && $('#effect2').val().length > 0 && $('#effect3').val().length > 0) output+=',effect:{shadow:['+$('#effect1').val()+','+$('#effect2').val()+','+$('#effect3').val()+']';
+			output+='});'
+			document.getElementById("test").innerText=output;
+		}
+		//复制
+		var btn = document.getElementById('btn');
+		var clipboard = new ClipboardJS(btn);
+		clipboard.on('success', function (e) {alert("复制完成");});
+		//显示
+		function xfunc() {
+			document.getElementById("select_x1").style.display=document.getElementById("select_x").value == 1?"block":"none";
+			document.getElementById("select_x2").style.display=document.getElementById("select_x").value == 2?"block":"none";
+		}
+		function yfunc() {
+			document.getElementById("select_y1").style.display=document.getElementById("select_y").value == 1?"block":"none";
+			document.getElementById("select_y2").style.display=document.getElementById("select_y").value == 2?"block":"none";
+		}
+		//删除非数字
+		function clearNoNum(obj){   obj.value = obj.value.replace(/[^\d.]/g,"");  //清除“数字”和“.”以外的字符  
+			obj.value = obj.value.replace(/^\./g,"");  //验证第一个字符是数字而不是. 
+			obj.value = obj.value.replace(/\.{2,}/g,"."); //只保留第一个. 清除多余的.   
+			obj.value = obj.value.replace(".","$#$").replace(/\./g,"").replace("$#$",".");
+		}	
+	</script>
+</body>
+</html>

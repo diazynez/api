@@ -345,6 +345,8 @@ $assisterCtrler.justHit("atm1","击中")
 
 - [详细介绍](zh-cn/core-object-classes/Bullet)
 
+[fire](../../tools/fire.html ':include :type=iframe width=100% height=653px')
+
 ```actionscript
 $assisterCtrler.fire("zh1atm",{x:{start:15,hit:3},y:0,hold:2,hits:1,hp:100});
 
@@ -390,6 +392,8 @@ effect:{shadow:[0,0,0]}(残影效果，FVO专用)
 
 - [详细介绍](zh-cn/other-ctrlers/FighterAttackerCtrler)
 - [详细介绍](zh-cn/core-object-classes/FighterAttacker)
+
+[addAttacker](../../tools/addAttacker.html ':include :type=iframe width=100% height=531px')
 
 ```actionscript
 $assisterCtrler.addAttacker("bsmc",{applyG:false});

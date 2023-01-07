@@ -1,0 +1,103 @@
+<!doctype html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<title>addAttacker自动化编写器</title>
+	<script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.4.1/jquery.js"></script>
+	<script src="https://cdn.bootcss.com/clipboard.js/2.0.4/clipboard.min.js"></script>
+</head>
+<body style="background:#ffffff">
+	<h1>addAttacker自动化编写器</h1>
+	<form>
+		<h3>选择控制器：<select id="select_ctrl"><option value="parent.$mc_ctrler">Mc控制器</option><option value="$assisterCtrler">辅助人物控制器</option></select><br /></h3>
+		<p>mcName: <input type="text" id="mcName"></p>
+		x: <br />
+		&nbsp;&nbsp;&nbsp;&nbsp;moveToTarget: <select id="x_moveToTarget"><option value="false">false</option><option value="true">true</option></select><br />
+		&nbsp;&nbsp;&nbsp;&nbsp;followTarget: <select id="x_followTarget"><option value="false">false</option><option value="true">true</option></select><br />
+		&nbsp;&nbsp;&nbsp;&nbsp;offset: <input type="text" id="x_offset" onkeyup="clearNoNum(this)"><br />
+		&nbsp;&nbsp;&nbsp;&nbsp;range: <input type="text" id="x_range1" onkeyup="clearNoNum(this)" style="width:33px;"><input type="text" id="x_range2" onkeyup="clearNoNum(this)" style="width:33px;"><br />
+		y: <br />
+		&nbsp;&nbsp;&nbsp;&nbsp;moveToTarget: <select id="y_moveToTarget"><option value="false">false</option><option value="true">true</option></select><br />
+		&nbsp;&nbsp;&nbsp;&nbsp;followTarget: <select id="y_followTarget"><option value="false">false</option><option value="true">true</option></select><br />
+		&nbsp;&nbsp;&nbsp;&nbsp;offset: <input type="text" id="y_offset" onkeyup="clearNoNum(this)"><br />
+		&nbsp;&nbsp;&nbsp;&nbsp;range: <input type="text" id="y_range1" onkeyup="clearNoNum(this)" style="width:33px;"><input type="text" id="y_range2" onkeyup="clearNoNum(this)" style="width:33px;"><br />
+		applyG: <select id="applyG"><option value="true">true</option><option value="false">false</option></select><br />
+	</form>
+	<br />
+	<button onClick="doOutput()">生成</button><button id="btn" data-clipboard-target="#test">复制</button><br /><br />
+	<span id="test"></span>
+	<script>
+		//获值
+		function doOutput(){
+			var output = $('#select_ctrl').val()+'.addAttacker("'+$('#mcName').val()+'", {';
+			var xExist = false;
+			var xStr = 'x: {';
+			if ($('#x_moveToTarget').val() == 'true') {
+				xStr+='moveToTarget: '+$('#x_moveToTarget').val();
+				xExist = true;
+			}
+			if ($('#x_followTarget').val() == 'true') {
+				if (xExist) xStr+=', ';
+				xStr+='followTarget: '+$('#x_followTarget').val();
+				xExist = true;
+			}
+			if ($('#x_offset').val().length > 0) {
+				if (xExist) xStr+=', ';
+				xStr+='offset: '+$('#x_offset').val();
+				xExist = true;
+			}
+			if ($('#x_range1').val().length > 0 && $('#x_range2').val().length > 0) {
+				if (xExist) xStr+=', ';
+				xStr+='range: ['+$('#x_range1').val()+', '+$('#x_range2').val()+']';
+				xExist = true;
+			}
+			xStr+='}';
+			if (xExist) output+=xStr;
+			var yExist = false;
+			var yStr = '';
+			if (xExist) yStr+=', ';
+			yStr+='y: {';
+			if ($('#y_moveToTarget').val() == 'true') {
+				yStr+='moveToTarget: '+$('#y_moveToTarget').val();
+				yExist = true;
+			}
+			if ($('#y_followTarget').val() == 'true') {
+				if (yExist) yStr+=', ';
+				yStr+='followTarget: '+$('#y_followTarget').val();
+				yExist = true;
+			}
+			if ($('#y_offset').val().length > 0) {
+				if (yExist) yStr+=', ';
+				yStr+='offset: '+$('#y_offset').val();
+				yExist = true;
+			}
+			if ($('#y_range1').val().length > 0 && $('#y_range2').val().length > 0) {
+				if (yExist) yStr+=', ';
+				yStr+='range: ['+$('#y_range1').val()+', '+$('#y_range2').val()+']';
+				yExist = true;
+			}
+			yStr+='}';
+			if (yExist) output+=yStr;
+			if ($('#applyG').val() == 'false') {
+				if (xExist || yExist) output+=', ';
+				output+='applyG: '+$('#applyG').val();
+			}
+			output+='});'
+			output=output.replace(', {}','');
+			document.getElementById("test").innerText=output;
+		}
+		//复制
+		var btn = document.getElementById('btn');
+		var clipboard = new ClipboardJS(btn);
+		clipboard.on('success', function (e) {alert("复制完成");});
+		//显示
+		
+		//删除非数字
+		function clearNoNum(obj){   obj.value = obj.value.replace(/[^\d.]/g,"");  //清除“数字”和“.”以外的字符  
+			obj.value = obj.value.replace(/^\./g,"");  //验证第一个字符是数字而不是. 
+			obj.value = obj.value.replace(/\.{2,}/g,"."); //只保留第一个. 清除多余的.   
+			obj.value = obj.value.replace(".","$#$").replace(/\./g,"").replace("$#$",".");
+		}	
+	</script>
+</body>
+</html>

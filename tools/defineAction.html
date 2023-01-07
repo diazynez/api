@@ -9,26 +9,26 @@
 <body onMouseOver="hitTypefunc()" style="background:#ffffff">
 	<h1>defineAction自动化编写器</h1>
 	<form>
-		<p>id:<input type="text" id="id"></p>
-		power:<input type="text" id="power" value=0 onkeyup="clearNoNum(this)"><br />
-		hitType:<input type="range" id="hitType" value=1 min=1 max=11 onchange="hitTypefunc()">&nbsp;<a id="hitTypeshow">1:砍</a><br />
-		hitx:<input type="text" id="hitx" value=0 onkeyup="clearNoNum(this)"><br />
-		hity:<input type="text" id="hity" value=0 onkeyup="clearNoNum(this)"><br />
-		hurtTime:<input type="text" id="hurtTime" value=300 onkeyup="clearNoNum(this)"><br />
-		hurtType:<select id="hurtType"><option value="0">0：击退</option><option value="1">1：击倒</option></select><br />
-		isBreakDef:<select id="isBreakDef"><option value="false">false</option><option value="true">true</option></select><br />
-		powerRate:<input type="text" id="powerRate" value=1 onkeyup="clearNoNum(this)"><br />
-		checkDirect:<select id="checkDirect"><option value="true">true</option><option value="false">false</option></select><br />
-		slowDown:<input type="text" id="slowDown" value=0 onkeyup="clearNoNum(this)"> ※3.5增加<br />
-		focusTarget:<select id="focusTarget"><option value="false">false</option><option value="true">true</option></select> ※3.5增加<br />
-		doubleHurtType:<select id="doubleHurtType"><option value="0">0：击退</option><option value="1">1：击倒</option></select> ※FVO专用<br />
+		<p>id: <input type="text" id="id"></p>
+		power: <input type="text" id="power" value=0 onkeyup="clearNoNum(this)"><br />
+		hitType: <input type="range" id="hitType" value=1 min=1 max=11 onchange="hitTypefunc()">&nbsp;<a id="hitTypeshow">1:砍</a><br />
+		hitx: <input type="text" id="hitx" value=0 onkeyup="clearNoNum(this)"><br />
+		hity: <input type="text" id="hity" value=0 onkeyup="clearNoNum(this)"><br />
+		hurtTime: <input type="text" id="hurtTime" value=300 onkeyup="clearNoNum(this)"><br />
+		hurtType: <select id="hurtType"><option value="0">0：击退</option><option value="1">1：击倒</option></select><br />
+		isBreakDef: <select id="isBreakDef"><option value="false">false</option><option value="true">true</option></select><br />
+		powerRate: <input type="text" id="powerRate" value=1 onkeyup="clearNoNum(this)"><br />
+		checkDirect: <select id="checkDirect"><option value="true">true</option><option value="false">false</option></select><br />
+		slowDown: <input type="text" id="slowDown" value=0 onkeyup="clearNoNum(this)"> ※3.5增加<br />
+		focusTarget: <select id="focusTarget"><option value="false">false</option><option value="true">true</option></select> ※3.5增加<br />
+		doubleHurtType: <select id="doubleHurtType"><option value="0">0：击退</option><option value="1">1：击倒</option></select> ※FVO专用<br />
 	</form>
 	<br />
-	<button onClick="dooutput()">生成</button><button id="btn" data-clipboard-target="#test">复制</button><br /><br />
+	<button onClick="doOutput()">生成</button><button id="btn" data-clipboard-target="#test">复制</button><br /><br />
 	<span id="test"></span>
 	<script>
 		//获值
-		function dooutput(){
+		function doOutput(){
 			var output = '$fighter_ctrler.defineAction("'+$('#id').val()+'" ,{power:'+$('#power').val()+' , hitType:'+$('#hitType').val()+' , hitx:'+$('#hitx').val()+' , hity:'+$('#hity').val()+' , hurtTime:'+$('#hurtTime').val()+' , hurtType:'+$('#hurtType').val()+' , isBreakDef:'+$('#isBreakDef').val();
 			if ($('#powerRate').val() != "1") output+=' , powerRate:'+$('#powerRate').val();
 			if ($('#checkDirect').val() != "true") output+=' , checkDirect:'+$('#checkDirect').val();
@@ -37,7 +37,7 @@
 			if ($('#doubleHurtType').val() != 0) output+=' , doubleHurtType:'+$('#doubleHurtType').val();
 			output+='});'
 			document.getElementById("test").innerText=output;
-			}
+		}
 		//复制
 		var btn = document.getElementById('btn');
 		var clipboard = new ClipboardJS(btn);

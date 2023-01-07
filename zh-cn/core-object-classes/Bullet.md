@@ -320,7 +320,7 @@ $self_main.setVolume(0.5);
 
 返回类型：void
 
-说明：设置飞行道具的攻击值对象
+说明：设置飞行道具的[攻击值对象](zh-cn/data-model-classes/HitVO)
 
 使用示例：
 
@@ -384,6 +384,130 @@ $self_main.render();
 var mc1: MovieClip = $self_main.getDisplay();
 ```
 
+> ###### hit
 
+传入参数：hitvo:HitVO, target:IGameSprite
 
-## 未完待续！
+返回类型：void
+
+说明：产生攻击效果（参数1：指定攻击值对象，参数2：指定的目标游戏对象）
+
+包含效果：判定自身命中后的状态、主人集气、HITS的UI刷新、计分板得分增加
+
+使用示例：
+
+```actionscript
+$self_main.hit($self_main.owner.getCtrler().hitModel.getHitVO("k1"), $self_main.owner.getCurrentTarget());
+```
+
+> ###### beHit
+
+传入参数：hitvo:HitVO, hitRect:Rectangle = null
+
+返回类型：void
+
+说明：产生被打效果（参数1：指定攻击值对象，参数2：攻击命中部分的范围矩形）
+
+使用示例：
+
+```actionscript
+$self_main.beHit($self_main.owner.getCurrentTarget().getCtrler().hitModel.getHitVO("k1"), $self_main.owner.getBodyArea());
+```
+
+> ###### getCurrentHits
+
+传入参数：无
+
+返回类型：Array
+
+说明：获取自身的攻击面，返回包含自身的[攻击值对象](zh-cn/data-model-classes/HitVO)的数组
+
+使用示例：
+
+```actionscript
+var curHitsArr: Array = $self_main.getCurrentHits();
+```
+
+> ###### getArea
+
+传入参数：无
+
+返回类型：Rectangle
+
+说明：获取飞行道具当前在场景中的位置和大小
+
+使用示例：
+
+```actionscript
+var bodyArea: Rectangle = $self_main.getArea();
+```
+
+> ###### getBodyArea
+
+传入参数：无
+
+返回类型：Rectangle
+
+说明：获取飞行道具当前在场景中的位置和大小
+
+使用示例：
+
+```actionscript
+var bodyArea: Rectangle = $self_main.getBodyArea();
+```
+
+> ###### allowCrossMapXY
+
+传入参数：无
+
+返回类型：Boolean
+
+说明：判断飞行道具是否可穿过地图左右边缘（固定为true）
+
+使用示例：
+
+```actionscript
+var allowCrossMapXY: Boolean = $self_main.allowCrossMapXY();
+```
+
+> ###### allowCrossMapBottom
+
+传入参数：无
+
+返回类型：Boolean
+
+说明：判断飞行道具是否可穿过地图底部边缘（固定为false）
+
+使用示例：
+
+```actionscript
+var allowCrossMapBottom: Boolean = $self_main.allowCrossMapBottom();
+```
+
+> ###### getIsTouchSide
+
+传入参数：无
+
+返回类型：Boolean
+
+说明：判断飞行道具是否接触地图左右边缘（固定为false）
+
+使用示例：
+
+```actionscript
+var isTouchSide: Boolean = $self_main.getIsTouchSide();
+```
+
+> ###### setIsTouchSide
+
+传入参数：v:Boolean
+
+返回类型：void
+
+说明：无效果
+
+使用示例：
+
+```actionscript
+$self_main.setIsTouchSide(false);
+```
