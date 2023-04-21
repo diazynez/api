@@ -1,5 +1,9 @@
 # 攻击对象主体
 
+> 此类继承自[基元游戏对象](zh-cn/abstract-interface-classes/BaseGameSprite)，可使用此类的所有属性和方法
+>
+> 此类实现[游戏对象接口](zh-cn/abstract-interface-classes/IGameSprite)，符合该数据模型
+
 ### 获取实例
 
 ```actionscript

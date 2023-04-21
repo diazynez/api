@@ -228,11 +228,11 @@ parent.$effect_ctrler.slowDown(0.5);
 
 > ###### shine
 
-传入参数：color:uint = 16777215（3.3改动：color:uint = 16777215 , alpha:Number = 0.2）
+传入参数：color:uint = 16777215
 
 返回类型：void
 
-说明：设置闪光特效（参数1：颜色值，参数2：透明度）
+说明：设置闪光特效（参数：颜色值）
 
 使用示例：
 

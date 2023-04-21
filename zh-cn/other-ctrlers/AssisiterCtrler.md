@@ -124,7 +124,7 @@ $assisterCtrler.setApplyG(false);
 
 使用示例：
 
-[defineAction](../../tools/defineAction.html ':include :type=iframe width=100% height=513px')
+[defineAction](../../tools/defineAction.html ':include :type=iframe width=100% height=557px')
 
 ```actionscript
 $assisterCtrler.defineAction("tk" ,{power:30 , hitType:1 , hitx:2 , hity:6 , hurtTime:300 , hurtType:0 , isBreakDef:false});
@@ -133,13 +133,15 @@ $assisterCtrler.defineAction("tk" ,{power:30 , hitType:1 , hitx:2 , hity:6 , hur
 obj的定义:
 power:Number = 0（攻击力）
 hitType:int = 1（攻击类型）
-hitx:Number = 0（受力X）
-hity:Number = 0（受力Y）
+hitx:Number = 0（横向受力）
+hity:Number = 0（纵向受力）
 hurtTime:Number = 300（硬直时间）
 hurtType:int = 0（是否击倒）
 isBreakDef:Boolean = false（是否破防）
 powerRate:Number = 1（攻击力倍数）
-checkDirect:Boolean = true（是否开启背击破防特性）
+checkDirect:Boolean = true（是否背击破防）
+slowDown:Number = 0（慢放时间）
+focusTarget:Boolean = false（镜头聚焦到对方）
 doubleHurtType:int = 0（第二击是否击倒）
 */
 ```

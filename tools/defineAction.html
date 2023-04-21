@@ -9,6 +9,7 @@
 <body onMouseOver="hitTypefunc()" style="background:#ffffff">
 	<h1>defineAction自动化编写器</h1>
 	<form>
+		<h3>选择控制器：<select id="select_ctrl"><option value="$fighter_ctrler">Fighter控制器</option><option value="$assisterCtrler">辅助人物控制器</option></select><br /></h3>
 		<p>id: <input type="text" id="id"></p>
 		power: <input type="text" id="power" value=0 onkeyup="clearNoNum(this)"><br />
 		hitType: <input type="range" id="hitType" value=1 min=1 max=11 onchange="hitTypefunc()">&nbsp;<a id="hitTypeshow">1:砍</a><br />
@@ -29,7 +30,7 @@
 	<script>
 		//获值
 		function doOutput(){
-			var output = '$fighter_ctrler.defineAction("'+$('#id').val()+'" ,{power:'+$('#power').val()+' , hitType:'+$('#hitType').val()+' , hitx:'+$('#hitx').val()+' , hity:'+$('#hity').val()+' , hurtTime:'+$('#hurtTime').val()+' , hurtType:'+$('#hurtType').val()+' , isBreakDef:'+$('#isBreakDef').val();
+			var output = $('#select_ctrl').val()+'.defineAction("'+$('#id').val()+'" ,{power:'+$('#power').val()+' , hitType:'+$('#hitType').val()+' , hitx:'+$('#hitx').val()+' , hity:'+$('#hity').val()+' , hurtTime:'+$('#hurtTime').val()+' , hurtType:'+$('#hurtType').val()+' , isBreakDef:'+$('#isBreakDef').val();
 			if ($('#powerRate').val() != "1") output+=' , powerRate:'+$('#powerRate').val();
 			if ($('#checkDirect').val() != "true") output+=' , checkDirect:'+$('#checkDirect').val();
 			if ($('#slowDown').val() != "0") output+=' , slowDown:'+$('#slowDown').val();

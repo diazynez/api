@@ -1,5 +1,7 @@
 # 飞行道具主体
 
+> 此类实现[游戏对象接口](zh-cn/abstract-interface-classes/IGameSprite)，符合该数据模型
+
 ### 获取实例
 
 ```actionscript

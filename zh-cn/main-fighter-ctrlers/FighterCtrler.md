@@ -155,10 +155,8 @@ var tSP = parent.$fighter_ctrler.getTargetSP();
 
 ```actionscript
 if (parent.$fighter_ctrler.getTargetState() == 21)
-
 {
     parent.$fighter_ctrler.speed = 12;
-
 }   //当对方的状态是被打时，设置我方人物的速度值为12
 ```
 
@@ -234,7 +232,7 @@ if (parent.$fighter_ctrler.justHit("k1", false))
 
 使用示例：
 
-[defineAction](../../tools/defineAction.html ':include :type=iframe width=100% height=513px')
+[defineAction](../../tools/defineAction.html ':include :type=iframe width=100% height=557px')
 
 ```actionscript
 $fighter_ctrler.defineAction("tk" ,{power:30 , hitType:1 , hitx:2 , hity:6 , hurtTime:300 , hurtType:0 , isBreakDef:false});
