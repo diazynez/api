@@ -16,6 +16,11 @@ function get $self_main(): * {for each(var i: * in parent.parent.parent.getGameS
 ```
 
 ```actionscript
+//攻击对象使用下方代码获取主人物的主体：
+function get $owner_main(): * {for each(var i: * in parent.parent.parent.getGameSprites()) if (i.getDisplay() == $attacker_ctrler.owner_fighter_ctrler.self) return i;}
+```
+
+```actionscript
 //主人物使用下方代码获取指定攻击对象的主体（任选其一）：
 //注：有多个同名攻击对象时优先获取最早登场的一个
 
