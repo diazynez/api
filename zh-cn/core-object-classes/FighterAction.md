@@ -628,7 +628,7 @@ parent.$mc_ctrler.getAction().render();
 使用示例：
 
 ```actionscript
-parent.$mc_ctrler.getAction().setCD("cd_test", 10 * 30 * getDefinitionByName("net.play5d.game.bvn::GameConfig").FPS_GAME);        //设置名为cd_test、时长为10s的冷却
+parent.$mc_ctrler.getAction().setCD("cd_test", 10 * Math.pow(getDefinitionByName("net.play5d.game.bvn::GameConfig").FPS_GAME, 2));        //设置名为cd_test、时长为10s的冷却
 ```
 
 > ###### CDOK
@@ -637,7 +637,7 @@ parent.$mc_ctrler.getAction().setCD("cd_test", 10 * 30 * getDefinitionByName("ne
 
 返回类型：Boolean
 
-说明：调用XXXXXXXXXXXXXXXXXXX
+说明：判断冷却是否结束（不存在的冷却默认为已结束）
 
 使用示例：
 
@@ -647,4 +647,3 @@ if (parent.$mc_ctrler.getAction().CDOK("cd_test"))
 	parent.$fighter_ctrler.speed = 12;
 }   //当cd_test冷却结束时，设置我方人物的速度值为12
 ```
-
