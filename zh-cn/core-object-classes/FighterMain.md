@@ -15,10 +15,6 @@
 function get $self_main(): * {for each(var i: * in parent.parent.parent.parent.getGameSprites()) if (i.getDisplay() == parent) return i;}
 ```
 
-```actionscript
-//辅助人物、攻击对象、飞行道具使用下方代码：
-function get $self_main(): * {for each(var i: * in parent.parent.parent.getGameSprites()) if (i.getDisplay() == this) return i;}
-```
 
 ### 属性
 
