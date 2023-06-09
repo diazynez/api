@@ -55,10 +55,8 @@ if ($self_main.isTouchBottom)
 使用示例：
 
 ```actionscript
-if ($self_main.isAllowBeHit)
-{
-	$self_main.hp += 100;
-}   //当游戏对象允许受到攻击时，使其血量值增加100
+//设置游戏对象不允许受到攻击
+$self_main.isAllowBeHit = false;
 ```
 
 > ###### isCross
@@ -70,10 +68,8 @@ if ($self_main.isAllowBeHit)
 使用示例：
 
 ```actionscript
-if ($self_main.isCross)
-{
-	$self_main.hp += 100;
-}   //当游戏对象允许穿越时，使其血量值增加100
+//设置游戏对象可穿越
+$self_main.isCross = true;
 ```
 
 > ###### isAlive
@@ -91,7 +87,121 @@ if ($self_main.isAlive)
 }   //当游戏对象存活时，使其血量值增加100
 ```
 
-未完待续
+> ###### isAllowLoseHP
+
+类型：Boolean
+
+说明：游戏对象是否允许掉血（默认为true）
+
+使用示例：
+
+```
+//设置游戏对象不允许掉血
+$self_main.isAllowLoseHP = false;
+```
+
+> ###### isApplyG
+
+类型：Boolean
+
+说明：游戏对象是否开启重力（默认为true）
+
+使用示例：
+
+```
+//设置游戏对象关闭重力
+$self_main.isApplyG = false;
+```
+
+> ###### heavy
+
+类型：Number
+
+说明：游戏对象的体格值（默认为2）
+
+使用示例：
+
+```
+$self_main.heavy = 3;      //设置游戏对象的体格值为3
+var heavy1: Number = $self_main.heavy;       //将游戏对象当前体格值赋值到变量heavy1
+```
+
+> ###### hp
+
+类型：Number
+
+说明：游戏对象的生命值（默认为1000）
+
+使用示例：
+
+```
+$self_main.hp = 800;       //设置游戏对象的血量值为800
+var hp1: Number = $self_main.hp;     //将游戏对象当前血量值赋值到变量hp1
+```
+
+> ###### hpMax
+
+类型：Number
+
+说明：游戏对象的血量最大值（默认为1000）
+
+使用示例：
+
+```
+$self_main.hpMax = 800;       //设置游戏对象的血量最大值为800
+var hpMax1: Number = $self_main.hpMax;     //将游戏对象当前血量最大值赋值到变量hp1
+```
+
+> ###### defense
+
+类型：Number
+
+说明：游戏对象的格挡值（默认为0）
+
+使用示例：
+
+```
+//设置游戏对象格挡值为5，每次受到伤害产生5减免
+$self_main.defense = 5;
+```
+
+> ###### isAllowCrossX
+
+类型：Boolean
+
+说明：游戏对象是否可穿过地图左右边缘（默认为false）
+
+使用示例：
+
+```
+//设置游戏对象可穿过地图左右边缘
+$self_main.isAllowCrossX = true;
+```
+
+> ###### isAllowCrossBottom
+
+类型：Boolean
+
+说明：游戏对象是否可穿过地图底部边缘（默认为false）
+
+使用示例：
+
+```
+//设置游戏对象可穿过地图左右边缘
+$self_main.isAllowCrossBottom = true;
+```
+
+> ###### id
+
+类型：String
+
+说明：游戏对象的标识
+
+使用示例：
+
+```
+var id: String = $self_main.id;
+```
 
 ### 方法
 
