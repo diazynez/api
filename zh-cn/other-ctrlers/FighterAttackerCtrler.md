@@ -1,5 +1,14 @@
 # 攻击对象控制器
 
+### 实现接口
+
+```
+var $attacker_ctrler:*;
+function setAttackerCtrler(attackerCtrler:*):void{
+    $attacker_ctrler = attackerCtrler;
+}
+```
+
 ### 属性
 
 > ###### effect

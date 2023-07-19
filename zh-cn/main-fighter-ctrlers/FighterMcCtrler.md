@@ -771,12 +771,12 @@ parent.$mc_ctrler.moveTarget({followmc: "move_mc"});
 /*
 参数(params)填写说明，(小括号和中文字符均为提示文本，需要删除)
 
-x:Number(水平位置),
-y:Number(竖直位置), 
-followmc:String(设置此值时以该影片剪辑为中心吸引对方，此处应填写影片剪辑的名称),
-speed:Number(吸引速度)
+x: Number(水平位置),
+y: Number(竖直位置), 
+followmc: String(设置此值时以该影片剪辑为中心吸引对方，此处应填写影片剪辑的名称),
+speed: Number(吸引速度)
 或
-{x:Number,y:Number}(水平、竖直吸引分速度）
+speed: new Point(Number, Number)(水平、竖直吸引分速度）
 */
 
 /*
