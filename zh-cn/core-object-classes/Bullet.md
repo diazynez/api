@@ -346,7 +346,7 @@ var isDestoryed: Boolean = $self_main.isDestoryed();
 
 > ###### renderAnimate
 
-传入参数：无
+xxxxxxxxxx var tSP = $assisterCtrler.getSelf().getCurrentTarget();actionscriptFoldCopy
 
 返回类型：void
 
@@ -506,10 +506,4 @@ var isTouchSide: Boolean = $self_main.getIsTouchSide();
 
 返回类型：void
 
-说明：无效果
-
-使用示例：
-
-```actionscript
-$self_main.setIsTouchSide(false);
-```
+说明：设置游戏对象是否接触地图左右边缘（无效果）

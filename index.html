@@ -60,46 +60,46 @@
     window.$docsify = {
       name: 'BVN API',
       repo: 'https://github.com/diazynez',
-	  logo: 'favicon.png',
-	  coverpage:  ['/', '/zh-cn/', '/en-us/', '/vi-vn/', '/it-it/'],
-	  loadNavbar: false,
-	  loadSidebar: true,
-	  notFoundPage: {
-		'/': '_404.md',
-		'/zh-cn/': '_404.md',
-		'/en-us/': 'en-us/_404.md',
-		'/vi-vn/': 'vi-vn/_404.md',
-		'/it-it/': 'it-it/_404.md'
-	  },
-	  autoHeader: true,
-	  auto2top: true,
-	  mergeNavbar: true,
-	  formatUpdated: '{MM}/{DD} {HH}:{mm}',
-	  search: {
-		maxAge: 86400000, // 过期时间，单位毫秒，默认一天
-		paths: 'auto',
-		placeholder: {
-			'/': '搜索',
-			'/zh-cn/': '搜索',
-			'/en-us/': 'Type to search',
-			'/vi-vn/': 'Nhập để tìm kiếm',
-			'/it-it/': 'Digita per cercare'
-		},
-		noData: {
-			'/': '找不到结果',
-			'/zh-cn/': '找不到结果',
-			'/en-us/': 'No Results',
-			'/vi-vn/': 'Ko có kết quả',
-			'/it-it/': 'Nessun risultato'
-		},
-		depth: 2,
-		hideOtherSidebarContent: false, // 是否隐藏其他侧边栏内容
-		pathNamespaces: ['/', '/zh-cn/', '/en-us/', '/vi-vn/', '/it-it/']
-	  }
+	  	logo: 'favicon.png',
+	  	coverpage:  ['/', '/zh-cn/', '/en-us/', '/vi-vn/', '/it-it/'],
+	  	loadNavbar: false,
+	  	loadSidebar: true,
+		  notFoundPage: {
+				'/': '_404.md',
+				'/zh-cn/': '_404.md',
+				'/en-us/': 'en-us/_404.md',
+				'/vi-vn/': 'vi-vn/_404.md',
+				'/it-it/': 'it-it/_404.md'
+			  },
+		  autoHeader: true,
+		  auto2top: true,
+		  mergeNavbar: true,
+		  formatUpdated: '{MM}/{DD} {HH}:{mm}',
+		  search: {
+				maxAge: 86400000, // 过期时间，单位毫秒，默认一天
+				paths: 'auto',
+				placeholder: {
+					'/': '搜索',
+					'/zh-cn/': '搜索',
+					'/en-us/': 'Type to search',
+					'/vi-vn/': 'Nhập để tìm kiếm',
+					'/it-it/': 'Digita per cercare'
+				},
+				noData: {
+					'/': '找不到结果',
+					'/zh-cn/': '找不到结果',
+					'/en-us/': 'No Results',
+					'/vi-vn/': 'Ko có kết quả',
+					'/it-it/': 'Nessun risultato'
+				},
+				depth: Infinity,
+				hideOtherSidebarContent: false, // 是否隐藏其他侧边栏内容
+				pathNamespaces: ['/', '/zh-cn/', '/en-us/', '/vi-vn/', '/it-it/']
+			  }
     }
-	/*if (typeof navigator.serviceWorker !== 'undefined') {
+	if (typeof navigator.serviceWorker !== 'undefined') {
 		navigator.serviceWorker.register('sw.js')
-	}*/
+	}
   </script>
   <!-- Docsify -->
   <script src="https://lf6-cdn-tos.bytecdntp.com/cdn/expire-1-M/docsify/4.12.2/docsify.min.js"></script>
