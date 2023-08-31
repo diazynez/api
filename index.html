@@ -97,11 +97,14 @@
 				pathNamespaces: ['/', '/zh-cn/', '/en-us/', '/vi-vn/', '/it-it/']
 			  }
     }
-	if (typeof navigator.serviceWorker !== 'undefined') {
-		navigator.serviceWorker.register('sw.js')
-	}
   </script>
-  <!-- Docsify -->
+  <!-- 离线模式 -->
+  <script>
+	  if (typeof navigator.serviceWorker !== 'undefined') {
+	    navigator.serviceWorker.register('sw.js')
+	  }
+	</script>
+  <!-- Docsify框架导入 -->
   <script src="https://lf6-cdn-tos.bytecdntp.com/cdn/expire-1-M/docsify/4.12.2/docsify.min.js"></script>
   <script src="js/search.min.js"></script>
   <script src="https://lf9-cdn-tos.bytecdntp.com/cdn/expire-1-M/docsify-copy-code/2.1.1/docsify-copy-code.min.js"></script>
@@ -109,17 +112,17 @@
   <script src="https://lf9-cdn-tos.bytecdntp.com/cdn/expire-1-M/prism/9000.0.1/components/prism-actionscript.min.js"></script>
   <!-- 主题切换效果 -->
   <script type="text/javascript">
-	function openDark()
-	{
-		if (document.getElementById('theme_css').href.indexOf('dark') != -1)
+		function openDark()
 		{
-			document.getElementById('theme_css').href = 'css/theme-simple.css';
+			if (document.getElementById('theme_css').href.indexOf('dark') != -1)
+			{
+				document.getElementById('theme_css').href = 'css/theme-simple.css';
+			}
+			else
+			{
+				document.getElementById('theme_css').href = 'css/theme-simple-dark.css';
+			}
 		}
-		else
-		{
-			document.getElementById('theme_css').href = 'css/theme-simple-dark.css';
-		}
-	}
   </script>
 </body>
 </html>
