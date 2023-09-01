@@ -6,9 +6,9 @@
 
 > Fighter & Assist API Interface Help Docs
 
-- Complete interface content (but not finished yet)
-- Multilingual support (but too lazy to translate)
+- Complete interface content
 - Multi-page query function
+- Multilingual support
 - Offline reading
 
 [Game Official Website](http://bbs.1212321.com/)

@@ -6,9 +6,9 @@
 
 > Tài liệu trợ giúp về giao diện API của Fighter & Assist
 
-- Nội dung giao diện hoàn chỉnh (nhưng chưa hoàn thiện)
-- Hỗ trợ đa ngôn ngữ (nhưng quá lười dịch)
+- Nội dung giao diện hoàn chỉnh
 - Chức năng truy vấn nhiều trang
+- Hỗ trợ đa ngôn ngữ
 - Đọc ngoại tuyến
 
 [Trang web chính thức của trò chơi](http://bbs.1212321.com/)

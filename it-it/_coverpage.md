@@ -6,9 +6,9 @@
 
 > Documenti di aiuto per l'interfaccia API Fighter & Assist
 
-- Contenuto dell'interfaccia completo (ma non ancora terminato)
-- Supporto multilingue (ma troppo pigro per tradurre)
+- Contenuto dell'interfaccia completo
 - Funzione di query multipagina
+- Supporto multilingue
 - Lettura offline
 
 [Sito web ufficiale del gioco](http://bbs.1212321.com/)
