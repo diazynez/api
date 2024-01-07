@@ -346,7 +346,7 @@ var isDestoryed: Boolean = $self_main.isDestoryed();
 
 > ###### renderAnimate
 
-xxxxxxxxxx var tSP = $assisterCtrler.getSelf().getCurrentTarget();actionscriptFoldCopy
+传入参数：无
 
 返回类型：void
 
