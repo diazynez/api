@@ -256,7 +256,7 @@ parent.$mc_ctrler.getAction().jumpDown = "落";
 使用示例：
 
 ```actionscript
-parent.$mc_ctrler.getAction().defense = "瞬步";
+parent.$mc_ctrler.getAction().dash = "瞬步";
 ```
 
 > ###### FVO专用 dashBack

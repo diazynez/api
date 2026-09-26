@@ -924,13 +924,13 @@ parent.$mc_ctrler.touchFloor();
 
 返回类型：void
 
-说明：以我方的的位置为原点，移动指定元件
+说明：以我方的位置为原点，移动指定元件（需注意相对坐标问题，该函数作用元件一般需与我方角色处于相同显示对象层级，并非用于移动角色内的子元件）
 
 使用示例：
 
 ```actionscript
 parent.$mc_ctrler.moveMC(mc1, 0, 0);        //将mc1移动到与主人物相同的坐标
-//x/y参数为非Number类型对象时的情况的用途不明，待后续补充
+parent.$mc_ctrler.moveMC(mc1, {target:0}, {target:0});        //将mc1移动到与对方角色相同的坐标（原版该部分存在三处逻辑错误，不建议使用）
 ```
 
 > ###### FVO专用 setFly
