@@ -61,7 +61,17 @@ self.addEventListener('fetch', event => {
   const cached = cachePromise.then(async cache => {
     const response = await cache.match(cacheKey(request));
     if (response) return response;
-    if (request.mode === 'navigate') return cache.match(assetUrl('index.html'));
+    if (request.mode === 'navigate') {
+      const base = new URL(SCOPE);
+      const relativePath = url.pathname.slice(base.pathname.length);
+      if (url.origin === base.origin && url.pathname.startsWith(base.pathname)) {
+        // Pages redirects tool HTML files to extensionless URLs
+        if (/^tools\/(?:defineAction|fire|addAttacker)$/.test(relativePath)) {
+          return cache.match(assetUrl(relativePath + '.html'));
+        }
+        if (relativePath === '' || relativePath === 'index.html') return cache.match(assetUrl('index.html'));
+      }
+    }
   });
   const network = fetch(request, { cache: 'no-store' });
   // Keep the cache update alive even if the page closes immediately after navigation
@@ -73,5 +83,14 @@ self.addEventListener('fetch', event => {
 
   // Return stored resources without waiting for a slow or disconnected network
   const fallback = network.catch(() => Response.error());
-  event.respondWith(cached.then(response => response || fallback));
+  event.respondWith(cached.then(async response => {
+    response = response || await fallback;
+    // A cached followed redirect cannot satisfy a navigation with redirect mode manual
+    if (request.mode === 'navigate' && response.redirected) {
+      return new Response(response.body, {
+        status: response.status, statusText: response.statusText, headers: response.headers
+      });
+    }
+    return response;
+  }));
 });

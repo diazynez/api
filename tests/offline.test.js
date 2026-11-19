@@ -127,3 +127,37 @@ test("cached startup and tool resources do not wait for a network request that n
         await Promise.all(jobs.map(job => job.finished()));
     }
 });
+
+test("navigation can reuse cached HTML obtained through a hosting redirect", async () => {
+    const http = require("node:http");
+    const server = http.createServer((request, response) => {
+        if (request.url === "/tool.html") {
+            response.writeHead(308, { Location: "/tool" });
+            response.end();
+        } else {
+            response.writeHead(200, { "Content-Type": "text/html", "Content-Security-Policy": "frame-ancestors 'self'" });
+            response.end("<h1>tool</h1>");
+        }
+    });
+    await new Promise(resolve => server.listen(0, "127.0.0.1", resolve));
+    try {
+        const redirected = await fetch("http://127.0.0.1:" + server.address().port + "/tool.html");
+        assert.equal(redirected.redirected, true);
+        const w = worker(); await w.run("install"); w.offline();
+        for (const name of ["defineAction", "fire", "addAttacker"]) {
+            w.stored.set(scope + "tools/" + name + ".html", redirected.clone());
+            for (const suffix of [".html", ""]) {
+                const result = await w.run("fetch", { url: scope + "tools/" + name + suffix, method: "GET", mode: "navigate", redirect: "manual" });
+                assert.equal(result.redirected, false);
+                assert.equal(result.status, 200);
+                assert.equal(result.headers.get("Content-Type"), "text/html");
+                assert.equal(result.headers.get("Content-Security-Policy"), "frame-ancestors 'self'");
+                assert.equal(await result.text(), "<h1>tool</h1>");
+            }
+        }
+        const missing = await w.run("fetch", { url: scope + "tools/missing", method: "GET", mode: "navigate" });
+        assert.equal(missing.type, "error");
+    } finally {
+        await new Promise(resolve => server.close(resolve));
+    }
+});
