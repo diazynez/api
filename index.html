@@ -19,6 +19,12 @@
       if (app) app.textContent = "加载失败，服务未能初始化。";
     }, 10000);
   </script>
+  <style>
+    html:not([data-ui-ready]) .app-nav,
+    html:not([data-docs-ready]) .app-nav { display: none !important; }
+    html:not([data-ui-ready]) .github-corner { visibility: hidden; }
+    .github-corner svg { width: 70px; height: 70px; }
+  </style>
   <link rel="stylesheet" href="css/theme-simple.css" id="theme_css" />
   <link rel="stylesheet" href="css/home.css" />
   <style>
@@ -109,6 +115,9 @@
       name: 'BVN API',
       repo: 'https://github.com/diazynez',
       plugins: [function (hook) {
+        hook.ready(function () {
+          document.documentElement.dataset.docsReady = "true";
+        });
         hook.afterEach(function (html) {
           var template = document.createElement('template');
           template.innerHTML = html;
@@ -144,6 +153,12 @@
 	  	coverpage:  ['/', '/zh-cn/', '/en-us/', '/vi-vn/', '/it-it/'],
 	  	loadNavbar: false,
 	  	loadSidebar: true,
+      alias: {
+        '/en-us/(?:.*/)?_sidebar\\.md': '/en-us/_sidebar.md',
+        '/vi-vn/(?:.*/)?_sidebar\\.md': '/vi-vn/_sidebar.md',
+        '/it-it/(?:.*/)?_sidebar\\.md': '/it-it/_sidebar.md',
+        '/.*/_sidebar\\.md': '/_sidebar.md'
+      },
 		  notFoundPage: {
 				'/': '_404.md',
 				'/zh-cn/': '_404.md',
@@ -174,7 +189,7 @@
 				},
 				depth: Infinity,
 				hideOtherSidebarContent: false, // 是否隐藏其他侧边栏内容
-				pathNamespaces: ['/', '/zh-cn/', '/en-us/', '/vi-vn/', '/it-it/']
+				pathNamespaces: ['/', '/en-us/', '/vi-vn/', '/it-it/']
 			  }
     }
   </script>

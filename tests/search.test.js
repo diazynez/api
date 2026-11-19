@@ -53,3 +53,35 @@ test("the search plugin still works if the alias helper is unavailable", () => {
     assert.equal(search("当身")[0].title, "setHurtAction");
     assert.equal(search("反制").length, 0);
 });
+
+test("search indexes the correct language homepage without creating a protocol-relative URL", () => {
+    const source = fs.readFileSync(require.resolve("../js/search.min.js"), "utf8");
+    const html = fs.readFileSync(require.resolve("../index.html"), "utf8");
+    const namespaces = vm.runInNewContext(html.match(/pathNamespaces:\s*(\[[^\]]+\])/)[1]);
+    for (const prefix of ["", "/zh-cn", "/en-us", "/vi-vn", "/it-it"]) {
+        const requested = [];
+        const page = prefix + "/main-fighter-ctrlers/FighterCtrler";
+        const context = {
+            window: {}, $docsify: { plugins: [] },
+            localStorage: { getItem() { return null; } },
+            Docsify: {
+                dom: { findAll() { return [{ href: "#" + page, getAttribute() { return page; } }]; } },
+                util: { isAbsolutePath() { return false; } },
+                get() { return { then() {} }; }
+            }
+        };
+        vm.runInNewContext(source.replace("function init(config,vm)", "window.initIndex=init;function init(config,vm)"), context);
+        context.window.initIndex({ paths: "auto", pathNamespaces: namespaces }, {
+            config: {},
+            router: {
+                parse(href) { return { path: href.slice(1) }; },
+                getFile(path) { requested.push(path); return path; }
+            }
+        });
+        const homepage = (prefix === "/zh-cn" ? "" : prefix) + "/";
+        assert.equal(requested[0], homepage);
+        assert.ok(fs.existsSync(require("node:path").resolve(__dirname, "..", "." + homepage, "README.md")));
+        assert.ok(requested.includes(page));
+        assert.ok(requested.every(path => !path.startsWith("//")));
+    }
+});

@@ -11,6 +11,8 @@ const scope = "https://example.test/api/";
 function worker() {
     const handlers = {}, stored = new Map();
     let online = true, claimed = false;
+    let stalled = false;
+    const pending = [];
     function response(url) {
         if (url.startsWith(scope)) {
             const file = path.resolve(__dirname, "..", url.slice(scope.length) || "index.html");
@@ -27,7 +29,12 @@ function worker() {
     const context = {
         URL, Response,
         caches: { open: async () => cache },
-        fetch: async request => { if (!online) throw new Error("offline"); return response(typeof request === "string" ? request : request.url); },
+        fetch: async request => {
+            if (!online) throw new Error("offline");
+            const url = typeof request === "string" ? request : request.url;
+            if (stalled) return new Promise(resolve => pending.push(() => resolve(response(url))));
+            return response(url);
+        },
         self: {
             registration: { scope }, location: { origin: "https://example.test" },
             addEventListener: (name, handler) => { handlers[name] = handler; },
@@ -35,14 +42,22 @@ function worker() {
         }
     };
     vm.runInNewContext(source, context);
-    async function run(name, request) {
+    function dispatch(name, request) {
         const work = []; let result;
         handlers[name]({ request, waitUntil: p => work.push(p), respondWith: p => { result = p; } });
-        const value = await result;
-        await Promise.all(work);
+        return { response: Promise.resolve(result), finished: () => Promise.all(work) };
+    }
+    async function run(name, request) {
+        const job = dispatch(name, request);
+        const value = await job.response;
+        await job.finished();
         return value;
     }
-    return { run, stored, offline() { online = false; }, claimed: () => claimed };
+    return {
+        run, dispatch, stored, offline() { online = false; }, claimed: () => claimed,
+        stall() { stalled = true; },
+        resume() { stalled = false; pending.splice(0).forEach(resolve => resolve()); }
+    };
 }
 
 test("install includes boot resources and existing pages in each language under a subpath", async () => {
@@ -74,16 +89,41 @@ test("offline document, external boot script and tool requests use the installed
     assert.equal(await navigation.text(), "resource:" + scope + "index.html");
 });
 
-test("online requests refresh cached content and unrelated requests are left alone", async () => {
+test("cached content returns immediately while online refresh updates the next request", async () => {
     const w = worker(); await w.run("install");
     const url = scope + "README.md";
     w.stored.set(url, new Response("old"));
     const result = await w.run("fetch", { url, method: "GET", mode: "cors" });
-    assert.equal(await result.text(), "resource:" + url);
-    assert.equal(await w.stored.get(url).text(), "resource:" + url);
+    assert.equal(await result.text(), "old");
+    assert.equal(await w.stored.get(url).clone().text(), "resource:" + url);
+    const refreshed = await w.run("fetch", { url, method: "GET", mode: "cors" });
+    assert.equal(await refreshed.text(), "resource:" + url);
     assert.equal(await w.run("fetch", { url: scope, method: "POST" }), undefined);
     assert.equal(await w.run("fetch", { url: "https://unrelated.test/track", method: "GET" }), undefined);
     w.offline();
     const missing = await w.run("fetch", { url: scope + "missing.md", method: "GET", mode: "cors" });
     assert.equal(missing.type, "error");
+});
+
+test("cached startup and tool resources do not wait for a network request that never settles", async () => {
+    const w = worker(); await w.run("install"); w.stall();
+    const requests = [
+        { url: scope + "?preview=1", method: "GET", mode: "navigate" },
+        ...["README.md?cache-bust=456", "_coverpage.md", "_sidebar.md", "css/theme-simple-dark.css", "js/theme.js", "tools/generators.js"].map(file => ({ url: scope + file, method: "GET", mode: "cors" })),
+        { url: "https://cdnjs.cloudflare.com/ajax/libs/docsify/4.13.1/docsify.min.js", method: "GET", mode: "cors" }
+    ];
+    const jobs = requests.map(request => w.dispatch("fetch", request));
+    let timer;
+    try {
+        const responses = await Promise.race([
+            Promise.all(jobs.map(job => job.response)),
+            new Promise((resolve, reject) => { timer = setTimeout(() => reject(new Error("cached responses waited for the network")), 500); })
+        ]);
+        for (const response of responses) assert.equal(response.status, 200);
+        assert.equal(await responses[0].text(), "resource:" + scope + "index.html");
+    } finally {
+        clearTimeout(timer);
+        w.resume();
+        await Promise.all(jobs.map(job => job.finished()));
+    }
 });

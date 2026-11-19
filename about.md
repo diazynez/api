@@ -4,11 +4,11 @@
 
 此文档是同人格斗游戏《死神vs火影》制作游戏角色时需要使用的参考目录，整理收纳了目前已知的大多数用于控制游戏角色的功能代码，可以随时查阅。
 
-此文档的制作者为[diazynez](https://space.bilibili.com/86159801)，使用了[Node.js](https://nodejs.org/en/)、[Vue.js](https://vuejs.org/index.html)、[Docsify](https://docsify.js.org/#/)、[Bootstrap](https://getbootstrap.com/)、[jQuery](https://jquery.com/)等技术构建了这个文档，并使用了[Github](https://github.com/)、[Gitee](https://gitee.com/)的在线静态网页服务（[Github Pages](https://pages.github.com/)、[Gitee Pages](https://gitee.com/help/articles/4136)）进行网站页面部署挂载，在此统一表示感谢。
+此文档的制作者为[diazynez](https://space.bilibili.com/86159801)，使用了[Node.js](https://nodejs.org/en/)、[Vue.js](https://vuejs.org/index.html)、[Docsify](https://docsify.js.org/#/)、[Bootstrap](https://getbootstrap.com/)、[jQuery](https://jquery.com/)等技术构建了这个文档，并使用了[GitHub Pages](https://pages.github.com/)、[Cloudflare Pages](https://pages.cloudflare.com/)提供的静态网站托管服务，在此统一表示感谢。
 
 本项目使用[WTFPL协议](http://www.wtfpl.net/)开源，请在遵守协议的情况下使用。
 
-<details>
+<details open>
 <summary>文档内容贡献者列表</summary>
 
 
@@ -29,18 +29,24 @@
 
 </details>
 
-<details>
+<details open>
 <summary>文档最后更新时间</summary>
 
 
-| **条目名称** | **最后更新时间** |
-| ------------ | ---------------- |
-| 人物控制器   | 2026.11.19       |
-| 其他控制器   | 2026.11.19       |
-| 核心对象类   | 2026.11.19       |
-| 数据模型类   | 2026.11.19       |
-| 抽象接口类   | 2026.11.19       |
-| 底层工具类   | 2026.11.19       |
+<div class="about-updates">
+
+| **条目名称** | **最后更新时间** | **最近更新内容** |
+| ------------ | ---------------- | ---------------- |
+| 人物控制器 | 2026.11.19 | 补充常用接口与使用示例，校正参数及各版本的行为差异 |
+| 其他控制器 | 2026.11.19 | 补充攻击对象与辅助人物的碰撞、退场及特效调用说明 |
+| 核心对象类 | 2026.11.19 | 校正飞行道具的可攻击次数，补充人物状态、幽步及逐帧回调说明 |
+| 数据模型类 | 2026.11.19 | 整理 HitVO 字段的默认值与可用版本，补充通过攻击模型修改配置的示例 |
+| 抽象接口类 | 2026.11.19 | 补充基元对象的继承用法，为游戏对象接口关联具体实现 |
+| 底层工具类 | 2026.11.19 | 补充镜头、事件与战斗效果接口，以及黑白闪冲击效果的完整参数示例 |
+| 自动化编写器 | 2026.11.19 | 同步攻击定义、飞行道具和攻击对象参数，支持实时生成、格式化及版本选择 |
+| 站点功能 | 2026.11.19 | 更新首页与版本徽章，加入同义词搜索，完善昼夜主题和离线缓存 |
+
+</div>
 
 </details>
 

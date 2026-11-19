@@ -18,7 +18,14 @@
         var link = document.getElementById("theme_css");
         if (link) {
             var href = root + "/css/theme-simple" + (theme === "dark" ? "-dark" : "") + ".css";
-            if (link.getAttribute("href") !== href) link.setAttribute("href", href);
+            function stylesReady() { document.documentElement.dataset.uiReady = "true"; }
+            link.onload = stylesReady;
+            if (link.href !== new URL(href, document.baseURI).href) {
+                delete document.documentElement.dataset.uiReady;
+                link.setAttribute("href", href);
+            } else if (link.sheet) {
+                stylesReady();
+            }
         }
         document.documentElement.dataset.theme = theme;
         document.documentElement.style.colorScheme = theme;

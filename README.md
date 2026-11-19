@@ -8,12 +8,12 @@
 <section class="home-main">
 <h2>常用功能</h2>
 <div class="home-tasks">
-<a class="home-task" href="#/zh-cn/main-fighter-ctrlers/FighterCtrler?id=hp"><strong>调整血量与耐力</strong><span>FighterCtrler · hp、energy、addHp</span></a>
+<a class="home-task" href="#/zh-cn/core-object-classes/FighterMain"><strong>调整当前血量与耐力</strong><span>FighterMain · hp、energy、energyMax</span></a>
 <a class="home-task" href="#/zh-cn/main-fighter-ctrlers/FighterMcCtrler?id=setattack"><strong>设置攻击与技能动作</strong><span>FighterMcCtrler · setAttack、setSkill1、setBisha</span></a>
-<a class="home-task" href="#/zh-cn/main-fighter-ctrlers/FighterMcCtrler?id=sethurtaction"><strong>设置当身动作</strong><span>FighterMcCtrler · setHurtAction</span></a>
-<a class="home-task" href="#/zh-cn/data-model-classes/HitVO?id=define-action-params"><strong>查攻击配置</strong><span>HitVO · 攻击力、受力、硬直与破防</span></a>
+<a class="home-task" href="#/zh-cn/data-model-classes/FighterHitModel?id=gethitvo"><strong>读取与修改攻击配置</strong><span>FighterHitModel · getHitVO、getHitVOLike</span></a>
 <a class="home-task" href="#/zh-cn/main-fighter-ctrlers/FighterEffectCtrl"><strong>播放特效</strong><span>FighterEffectCtrl · 变身、残影与受击特效</span></a>
-<a class="home-task" href="#/zh-cn/main-fighter-ctrlers/FighterVoiceCtrler"><strong>播放声音</strong><span>FighterVoiceCtrler · 语音与音效</span></a>
+<a class="home-task" href="#/zh-cn/other-ctrlers/FighterAttackerCtrler"><strong>控制攻击对象</strong><span>FighterAttackerCtrler · 移动、碰撞与退场</span></a>
+<a class="home-task" href="#/zh-cn/other-ctrlers/AssisiterCtrler"><strong>控制辅助人物</strong><span>AssisiterCtrler · 攻击定义、碰撞与退场</span></a>
 </div>
 </section>
 
@@ -22,8 +22,8 @@
 <p>文档以 3.0 为基础。后续版本增加的接口会在标题中标注，参数和行为变化写在接口说明末尾。</p>
 <h3>用熟悉的叫法搜索</h3>
 <p>“当身”“防反”“反制”可以搜到同一组相关接口；“生命值”也能找到使用“血量”表述的内容。</p>
-<h3>从控制器开始</h3>
-<p>人物行为先查 Fighter、Mc 控制器；需要读取主体属性或配置字段时，再查看人物主体、人物动作和攻击值对象。</p>
+<h3>按用途查找</h3>
+<p>当前血量与耐力查看人物主体；动作登记查看 Mc 控制器；修改已有攻击的属性可通过攻击模型取得 HitVO，再查对应字段。</p>
 </aside>
 </div>
 

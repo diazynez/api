@@ -58,6 +58,11 @@ self.addEventListener('fetch', event => {
   if (url.origin !== self.location.origin && url.hostname !== 'cdnjs.cloudflare.com') return;
 
   const cachePromise = caches.open(RUNTIME);
+  const cached = cachePromise.then(async cache => {
+    const response = await cache.match(cacheKey(request));
+    if (response) return response;
+    if (request.mode === 'navigate') return cache.match(assetUrl('index.html'));
+  });
   const network = fetch(request, { cache: 'no-store' });
   // Keep the cache update alive even if the page closes immediately after navigation
   event.waitUntil(network.then(async response => {
@@ -66,14 +71,7 @@ self.addEventListener('fetch', event => {
     }
   }).catch(() => {}));
 
-  event.respondWith(network.catch(async () => {
-    const cache = await cachePromise;
-    const cached = await cache.match(cacheKey(request));
-    if (cached) return cached;
-    if (request.mode === 'navigate') {
-      const shell = await cache.match(assetUrl('index.html'));
-      if (shell) return shell;
-    }
-    return Response.error();
-  }));
+  // Return stored resources without waiting for a slow or disconnected network
+  const fallback = network.catch(() => Response.error());
+  event.respondWith(cached.then(response => response || fallback));
 });
