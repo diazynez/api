@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>接口拼装器 · BVN API</title>
+    <link id="theme_css" rel="stylesheet" href="../css/theme-simple.css">
+    <link rel="stylesheet" href="../css/tools.css">
+    <link rel="stylesheet" href="composer.css?v=0.2.1">
+    <script src="../js/theme.js" data-theme-root=".."></script>
+    <script src="../js/search-aliases.js" defer></script>
+    <script src="composer-core.js?v=0.2.1" defer></script>
+    <script src="composer.js?v=0.2.1" defer></script>
+</head>
+<body class="tool-page composer-page">
+<main class="composer-shell">
+    <header class="composer-header">
+        <div class="title-row"><h1>接口拼装器</h1><span class="demo-tag">DEMO v0.2.1</span></div>
+        <div class="header-actions"><span id="save-state" role="status"></span><a href="../index.html#/" target="_blank" rel="noopener">API 文档 ↗</a></div>
+    </header>
+    <section class="prompt-panel" aria-label="自然语言输入">
+        <label for="prompt">想实现什么？</label>
+        <div class="prompt-row"><textarea id="prompt" rows="2" placeholder="例如：耐力不少于20时，跳到“招2”并播放"></textarea><button id="extract" class="primary">生成卡片 <span aria-hidden="true">↗</span></button></div>
+        <div class="example-row"><span>试一试</span><button data-example="耐力不少于20时，跳到“招2”并播放">耐力条件与跳帧</button><button data-example="血量低于500时，恢复100点血量并闪白光">血量条件与恢复</button><button data-example="将攻击“k1”的攻击力改为80">修改攻击配置</button></div>
+        <div id="matches" class="match-list" aria-live="polite"></div>
+    </section>
+    <div class="composer-layout">
+        <aside id="library" class="library panel" aria-label="接口库">
+            <div class="panel-heading"><h2>接口库</h2><span id="library-count"></span></div>
+            <label class="sr-only" for="library-search">搜索接口</label><input id="library-search" type="search" placeholder="接口名或用途，如耐力">
+            <label class="compact-field">逻辑归属<select id="actor"><option value="character">人物</option><option value="assister">辅助</option><option value="attacker">攻击对象</option></select></label>
+            <label class="compact-field">版本<select id="version"></select></label>
+            <label class="auto-path"><input id="auto-path" type="checkbox" checked> 自动补齐对象路径</label>
+            <div id="library-list"></div>
+        </aside>
+        <section class="basket panel" aria-label="接口拼装工作台">
+            <div class="basket-toolbar"><div class="panel-heading"><h2>工作台</h2><span id="node-count"></span></div><div><button id="toggle-library" aria-expanded="true" aria-controls="library">收起接口库</button><button id="add-bubble">＋ 条件泡泡</button><button id="arrange">整理</button><button id="undo" title="撤销上一次修改">撤销</button><button id="clear">清空</button></div></div>
+            <div class="basket-help">拖动标题移动卡片，拖动空白处平移画布；从右侧圆点连到另一张卡片的左侧圆点。将读取值和操作分别放进条件泡泡。</div>
+            <div class="canvas-frame" id="canvas-frame">
+              <div id="board" class="board" tabindex="0" aria-label="可滚动的卡片画布">
+                <div id="world" class="world" data-drop="board"><svg id="wires" class="wires" aria-hidden="true"></svg><div id="bubble-layer"></div><div id="node-layer"></div><div id="empty-board">从接口库加入卡片<br><small>也可以在上方输入一句需求</small></div></div>
+              </div>
+        <aside id="inspector" class="inspector panel" aria-label="卡片参数与说明" hidden>
+            <div id="inspector-heading" class="panel-heading inspector-heading"><h2>卡片参数</h2><span id="selection-type"></span><button id="close-inspector" aria-label="关闭参数面板" title="关闭">×</button></div>
+            <div id="inspector-fields" class="inspector-fields"><p class="muted">选中一张卡片，查看参数与说明。</p></div>
+            <div class="doc-panel" id="doc-panel" hidden><a id="doc-link" target="_blank" rel="noopener">查看接口文档 ↗</a><p id="doc-excerpt"></p></div>
+        </aside>
+            </div>
+            <div class="basket-footer"><span><i class="legend object"></i>对象连接</span><span><i class="legend value"></i>返回值</span><span><i class="legend action"></i>执行操作</span><span>独立操作按卡片从上到下的顺序生成</span></div>
+        </section>
+    </div>
+    <section class="code-section panel"><div class="panel-heading"><h2>ActionScript</h2><button id="copy" disabled>复制代码</button></div><div id="errors" role="status"></div><pre id="code" tabindex="0"></pre></section>
+    <div id="notice" class="notice" role="status" aria-live="polite"></div>
+</main>
+<noscript>请启用 JavaScript 以使用接口拼装器。</noscript>
+</body>
+</html>
