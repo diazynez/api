@@ -1,93 +1,16 @@
 <!doctype html>
-<html>
+<html lang="zh-CN">
 <head>
-	<meta charset="utf-8" />
-	<title>defineAction自动化编写器</title>
-	<script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.4.1/jquery.js"></script>
-	<script src="https://cdn.bootcss.com/clipboard.js/2.0.4/clipboard.min.js"></script>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>defineAction自动化编写器</title>
+    <link id="theme_css" rel="stylesheet" href="../css/theme-simple.css" />
+    <link rel="stylesheet" href="../css/tools.css" />
+    <script src="generators.js" defer></script>
+    <script src="app.js" defer></script>
 </head>
-<body onMouseOver="hitTypefunc()" style="background:#ffffff">
-	<h1>defineAction自动化编写器</h1>
-	<form>
-		<h3>选择控制器：<select id="select_ctrl"><option value="$fighter_ctrler">Fighter控制器</option><option value="$assisterCtrler">辅助人物控制器</option></select><br /></h3>
-		<p>id: <input type="text" id="id"></p>
-		power: <input type="text" id="power" value=0 onkeyup="clearNoNum(this)"><br />
-		hitType: <input type="range" id="hitType" value=1 min=1 max=11 onchange="hitTypefunc()">&nbsp;<a id="hitTypeshow">1:砍</a><br />
-		hitx: <input type="text" id="hitx" value=0 onkeyup="clearNoNum(this)"><br />
-		hity: <input type="text" id="hity" value=0 onkeyup="clearNoNum(this)"><br />
-		hurtTime: <input type="text" id="hurtTime" value=300 onkeyup="clearNoNum(this)"><br />
-		hurtType: <select id="hurtType"><option value="0">0：击退</option><option value="1">1：击倒</option></select><br />
-		isBreakDef: <select id="isBreakDef"><option value="false">false</option><option value="true">true</option></select><br />
-		powerRate: <input type="text" id="powerRate" value=1 onkeyup="clearNoNum(this)"><br />
-		checkDirect: <select id="checkDirect"><option value="true">true</option><option value="false">false</option></select><br />
-		slowDown: <input type="text" id="slowDown" value=0 onkeyup="clearNoNum(this)"> ※3.5增加<br />
-		focusTarget: <select id="focusTarget"><option value="false">false</option><option value="true">true</option></select> ※3.5增加<br />
-		doubleHurtType: <select id="doubleHurtType"><option value="0">0：击退</option><option value="1">1：击倒</option></select> ※FVO专用<br />
-	</form>
-	<br />
-	<button onClick="doOutput()">生成</button><button id="btn" data-clipboard-target="#test">复制</button><br /><br />
-	<span id="test"></span>
-	<script>
-		//获值
-		function doOutput(){
-			var output = $('#select_ctrl').val()+'.defineAction("'+$('#id').val()+'" ,{power:'+$('#power').val()+' , hitType:'+$('#hitType').val()+' , hitx:'+$('#hitx').val()+' , hity:'+$('#hity').val()+' , hurtTime:'+$('#hurtTime').val()+' , hurtType:'+$('#hurtType').val()+' , isBreakDef:'+$('#isBreakDef').val();
-			if ($('#powerRate').val() != "1") output+=' , powerRate:'+$('#powerRate').val();
-			if ($('#checkDirect').val() != "true") output+=' , checkDirect:'+$('#checkDirect').val();
-			if ($('#slowDown').val() != "0") output+=' , slowDown:'+$('#slowDown').val();
-			if ($('#focusTarget').val() != "false") output+=' , focusTarget:'+$('#focusTarget').val();
-			if ($('#doubleHurtType').val() != 0) output+=' , doubleHurtType:'+$('#doubleHurtType').val();
-			output+='});'
-			document.getElementById("test").innerText=output;
-		}
-		//复制
-		var btn = document.getElementById('btn');
-		var clipboard = new ClipboardJS(btn);
-		clipboard.on('success', function (e) {alert("复制完成");});
-		//显示
-		function hitTypefunc() {
-			var str;
-			switch(document.getElementById("hitType").value) {
-				case "1":
-					str=":砍";
-					break;
-				case "2":
-					str=":打";
-					break;
-				case "3":
-					str=":打（重击）";
-					break;
-				case "4":
-					str=":魔法";
-					break;
-				case "5":
-					str=":魔法（重击）";
-					break;
-				case "6":
-					str=":砍（重击）";
-					break;
-				case "7":
-					str=":火";
-					break;
-				case "8":
-					str=":冰";
-					break;
-				case "9":
-					str=":电";
-					break;
-				case "10":
-					str=":石化";
-					break;
-				case "11":
-					str=":抓";
-			} 
-			document.getElementById("hitTypeshow").innerHTML = document.getElementById("hitType").value+str;
-		}
-		//删除非数字
-		function clearNoNum(obj){   obj.value = obj.value.replace(/[^\d.]/g,"");  //清除“数字”和“.”以外的字符  
-			obj.value = obj.value.replace(/^\./g,"");  //验证第一个字符是数字而不是. 
-			obj.value = obj.value.replace(/\.{2,}/g,"."); //只保留第一个. 清除多余的.   
-			obj.value = obj.value.replace(".","$#$").replace(/\./g,"").replace("$#$",".");
-		}	
-	</script>
+<body class="tool-page" data-tool="defineAction">
+    <main id="tool-app" class="tool-shell"></main>
+    <noscript>请启用JavaScript以使用此编写器。</noscript>
 </body>
 </html>

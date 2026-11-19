@@ -4,9 +4,9 @@
 
 > ###### setVoice
 
-传入参数：id:int, sounds:Array
+传入参数：`id:int, sounds:Array`
 
-返回类型：void
+返回类型：`void`
 
 说明：设置声音（参数1：声音ID，参数2：包含一或多个声音的数组，声音需要在库中设置链接）
 
@@ -26,9 +26,9 @@ parent.$fighter_ctrler.getVoiceCtrl().setVoice(0, [snd1, snd2]);      //设定�
 
 > ###### playVoice
 
-传入参数：id:int, rate:Number = 1
+传入参数：`id:int, rate:Number = 1`
 
-返回类型：void
+返回类型：`void`
 
 说明：播放声音（参数1：声音ID，ID需要设置，参数2：播放声音概率）
 

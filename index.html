@@ -6,21 +6,69 @@
   <!-- 实现适应窗口大小 -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0" />
   <!-- 关键词 -->
-  <meta name="keywords" content="API文档,死神VS火影,妖尾VS海贼,BVN,FVO,绊,AS3,Flash,剑jian,小皮,氺" />
+  <meta name="keywords" content="API文档,死神VS火影,妖尾VS海贼,BVN,FVO,绊,AS3,Flash,剑jian,小皮,diazynez,OpenAI GPT-6" />
   <!-- 站点描述 -->
-  <meta name="description" content="人物辅助API接口帮助文档，为改版创作倾注动力！" />
-  <title>人物辅助API接口帮助文档</title>
+  <meta name="description" content="BVN 角色制作 API 文档，提供人物、攻击与道具接口的说明、示例和编写器。" />
+  <title>BVN 角色制作 API 文档</title>
   <!-- 框架导入 -->
   <link href="favicon.png" rel="shortcut icon" />
   <link href="favicon.png" type="image/x-icon" rel="bookmark" />
-  <script>setTimeout('document.getElementById("app").innerHTML = "加载失败，服务未能初始化。"', 10000)</script>
-  <script language="JavaScript">
-	var d = new Date();
-	if (d.getHours() > 4 && d.getHours() < 18)
-		document.write('<link rel="stylesheet" href="css/theme-simple.css" id="theme_css" />');
-	else
-		document.write('<link rel="stylesheet" href="css/theme-simple-dark.css" id="theme_css" />');
+  <script>
+    setTimeout(function () {
+      var app = document.getElementById("app");
+      if (app) app.textContent = "加载失败，服务未能初始化。";
+    }, 10000);
   </script>
+  <link rel="stylesheet" href="css/theme-simple.css" id="theme_css" />
+  <link rel="stylesheet" href="css/home.css" />
+  <style>
+    .markdown-section blockquote h5,
+    .markdown-section blockquote h6 {
+      font-size: 1.125rem;
+      line-height: 1.5;
+    }
+    .markdown-section code:not([class*="lang-"]):not([class*="language-"]) {
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+    .markdown-section .api-config-table th:first-child,
+    .markdown-section .api-config-table td:first-child {
+      white-space: nowrap;
+    }
+    .markdown-section .version-note {
+      font-size: 0.85em;
+      color: #767676;
+    }
+    [data-theme="dark"] .markdown-section .version-note {
+      color: #a6afb4;
+    }
+    .markdown-section .version-note code:not([class*="lang-"]):not([class*="language-"]) {
+      font-size: inherit;
+      color: inherit;
+    }
+    .markdown-section .version-badge,
+    .markdown-section .scope-badge {
+      display: inline-block;
+      margin-left: 0.4em;
+      padding: 1px 6px;
+      border: 1px solid #9acbe6;
+      border-radius: 3px;
+      background: #daf0ff;
+      color: #17628d;
+      font-size: 11px;
+      font-weight: 500;
+      line-height: 1.5;
+      vertical-align: middle;
+      white-space: nowrap;
+    }
+    [data-theme="dark"] .markdown-section .version-badge,
+    [data-theme="dark"] .markdown-section .scope-badge {
+      border-color: #46738c;
+      background: #254b63;
+      color: #b9ddf0;
+    }
+  </style>
+  <script src="js/theme.js" data-theme-root="."></script>
 </head>
 <body>
   <!-- 导航栏 -->
@@ -60,7 +108,39 @@
     window.$docsify = {
       name: 'BVN API',
       repo: 'https://github.com/diazynez',
-	  	logo: 'favicon.png',
+      plugins: [function (hook) {
+        hook.afterEach(function (html) {
+          var template = document.createElement('template');
+          template.innerHTML = html;
+          var content = template.content;
+          content.querySelectorAll('h1, h2, h3, h4, h5, h6').forEach(function (heading) {
+            if (heading.querySelector('.version-badge, .scope-badge')) return;
+            var text = document.createTreeWalker(heading, NodeFilter.SHOW_TEXT).nextNode();
+            var match = text && text.textContent.match(/^\s*(3\.\d+(?:开发)?\s*增加|正常模式专用|FVO专用)\s+/);
+            if (!match) return;
+            var badge = document.createElement('span');
+            badge.className = /专用$/.test(match[1]) ? 'scope-badge' : 'version-badge';
+            badge.textContent = match[1].replace(/\s/g, '');
+            // Decorate compiled HTML before insertion, preserving existing heading IDs
+            text.textContent = text.textContent.slice(match[0].length);
+            text.parentNode.appendChild(badge);
+          });
+          content.querySelectorAll('p').forEach(function (paragraph) {
+            Array.from(paragraph.childNodes).forEach(function (text) {
+              if (text.nodeType !== Node.TEXT_NODE) return;
+              var match = text.textContent.match(/^(\s*(?:传入参数|返回类型|类型))[（(](3\.\d+(?:开发)?)[）)](?=\s*[：:])/);
+              if (!match) return;
+              var badge = document.createElement('span');
+              badge.className = 'version-badge';
+              badge.textContent = match[2];
+              text.replaceWith(document.createTextNode(match[1]), badge,
+                document.createTextNode(text.textContent.slice(match[0].length)));
+            });
+          });
+          return template.innerHTML;
+        });
+      }],
+      logo: 'assets/bvn-icon-base.png',
 	  	coverpage:  ['/', '/zh-cn/', '/en-us/', '/vi-vn/', '/it-it/'],
 	  	loadNavbar: false,
 	  	loadSidebar: true,
@@ -106,23 +186,16 @@
 	</script>
   <!-- Docsify框架导入 -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/docsify/4.13.1/docsify.min.js"></script>
+  <script src="js/search-aliases.js"></script>
   <script src="js/search.min.js"></script>
   <script src="js/docsify-copy-code.min.js"></script>
   <script src="js/docsify-pagination.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/9000.0.1/components/prism-actionscript.min.js"></script>
   <!-- 主题切换效果 -->
-  <script type="text/javascript">
-		function openDark()
-		{
-			if (document.getElementById('theme_css').href.indexOf('dark') != -1)
-			{
-				document.getElementById('theme_css').href = 'css/theme-simple.css';
-			}
-			else
-			{
-				document.getElementById('theme_css').href = 'css/theme-simple-dark.css';
-			}
-		}
+  <script>
+    function openDark() {
+      window.BvnTheme.toggle();
+    }
   </script>
 </body>
 </html>

@@ -16,13 +16,15 @@ var buffCtrl = $assisterCtrler.getTarget().getBuffCtrl();        //对方的控�
 
 ### 方法
 
-> ###### speedUp
+<span id="speedup"></span>
 
-传入参数：upVal:Number = 0, hold:Number = 5
+> ###### 3.3增加 speedUp
 
-返回类型：void
+传入参数：`upVal:Number = 0, hold:Number = 5`
 
-说明：设置速度增加（参数1：增加倍数，参数2：持续时长）
+返回类型：`void`
+
+说明：增加移动速度，upVal 为增加的速度值，hold 为持续秒数
 
 使用示例：
 
@@ -30,13 +32,15 @@ var buffCtrl = $assisterCtrler.getTarget().getBuffCtrl();        //对方的控�
 buffCtrl.speedUp(0.3, 15);
 ```
 
-> ###### attackUp
+<span id="attackup"></span>
 
-传入参数：rateVal:Number = 0, hold:Number = 5
+> ###### 3.3增加 attackUp
 
-返回类型：void
+传入参数：`rateVal:Number = 0, hold:Number = 5`
 
-说明：设置攻击力增加（参数1：增加倍数，参数2：持续时长）
+返回类型：`void`
+
+说明：增加攻击倍率，rateVal 为倍率增量，hold 为持续秒数
 
 使用示例：
 
@@ -44,13 +48,15 @@ buffCtrl.speedUp(0.3, 15);
 buffCtrl.attackUp(0.3, 15);
 ```
 
-> ###### defenseUp
+<span id="defenseup"></span>
 
-传入参数：upVal:Number = 0, hold:Number = 5
+> ###### 3.3增加 defenseUp
 
-返回类型：void
+传入参数：`upVal:Number = 0, hold:Number = 5`
 
-说明：设置防御力增加（参数1：增加倍数，参数2：持续时长）
+返回类型：`void`
+
+说明：增加防御倍率，upVal 为倍率增量，hold 为持续秒数
 
 使用示例：
 
@@ -58,13 +64,22 @@ buffCtrl.attackUp(0.3, 15);
 buffCtrl.defenseUp(0.3, 15);
 ```
 
-> ###### speedDown
+<span id="speeddown"></span>
 
-传入参数：downVal:Number = 0, hold:Number = 5
+> ###### 3.3增加 speedDown
 
-返回类型：void
+传入参数：`downVal:Number = 0, hold:Number = 5`<br>
+传入参数（3.8开发）：`downVal:Number = 0, hold:Number = 5, showEffect:Boolean = true`
 
-说明：设置速度减少（参数1：减少倍数，参数2：持续时长）
+返回类型：`void`
+
+说明：降低移动速度，downVal 为减少的速度值，hold 为持续秒数
+
+<div class="version-note">
+
+3.8开发改动：增加 showEffect 参数，默认 true；设为 false 时应用减益但不播放对应效果
+
+</div>
 
 使用示例：
 
@@ -72,13 +87,22 @@ buffCtrl.defenseUp(0.3, 15);
 buffCtrl.speedDown(0.3, 15);
 ```
 
-> ###### attackDown
+<span id="attackdown"></span>
 
-传入参数：rateVal:Number = 0, hold:Number = 5
+> ###### 3.3增加 attackDown
 
-返回类型：void
+传入参数：`rateVal:Number = 0, hold:Number = 5`<br>
+传入参数（3.8开发）：`rateVal:Number = 0, hold:Number = 5, showEffect:Boolean = true`
 
-说明：设置攻击力减少（参数1：减少倍数，参数2：持续时长）
+返回类型：`void`
+
+说明：降低攻击倍率，rateVal 为倍率减少量，hold 为持续秒数
+
+<div class="version-note">
+
+3.8开发改动：增加 showEffect 参数，默认 true；设为 false 时应用减益但不播放对应效果
+
+</div>
 
 使用示例：
 
@@ -86,13 +110,22 @@ buffCtrl.speedDown(0.3, 15);
 buffCtrl.attackDown(0.3, 15);
 ```
 
-> ###### defenseDown
+<span id="defensedown"></span>
 
-传入参数：downVal:Number = 0, hold:Number = 5
+> ###### 3.3增加 defenseDown
 
-返回类型：void
+传入参数：`downVal:Number = 0, hold:Number = 5`<br>
+传入参数（3.8开发）：`downVal:Number = 0, hold:Number = 5, showEffect:Boolean = true`
 
-说明：设置防御力减少（参数1：减少倍数，参数2：持续时长）s
+返回类型：`void`
+
+说明：降低防御值，downVal 为减少的防御值，hold 为持续秒数
+
+<div class="version-note">
+
+3.8开发改动：增加 showEffect 参数，默认 true；设为 false 时应用减益但不播放对应效果
+
+</div>
 
 使用示例：
 

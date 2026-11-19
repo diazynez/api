@@ -45,13 +45,29 @@ function getFighterAttacker(name: String): *
 //下文所有$self_main均等效于getFighterAttacker("攻击对象元件名称")，视实际情况选择使用的接口
 ```
 
+<span id="add-attacker-params"></span>
+
+### addAttacker的参数
+
+Mc及辅助人物控制器的 `addAttacker(mcName, params)` 通过params配置攻击对象的位置与运动方式：
+
+| 配置 | 类型及默认值 | 作用 |
+| --- | --- | --- |
+| `x`、`y` | `Number` 或位置对象 | 数值表示相对元件原位置的偏移；位置对象用于目标定位、跟随或范围限制 |
+| `applyG` | `Boolean = true` | 是否受重力影响 |
+| `allowCrossFloor` | `Boolean = false` | 是否允许穿过地图平台，3.8开发增加 |
+
+位置对象的字段为 `moveToTarget`（创建时定位到目标）、`followTarget`（持续跟随目标）、`offset`（位置偏移）、`range`（范围数组）。水平方向使用 `[left,right]`，竖直方向使用 `[top,bottom]`。未传入的位置配置沿用元件原位置。
+
+3.8开发中，addAttacker增加的第三个参数again是控制器的延迟重试标记，角色帧脚本通常只需填写mcName和params。
+
 ### 属性
 
 说明：设置或调整人物的默认属性
 
 > ###### onRemove
 
-类型：Function
+类型：`Function`
 
 说明：攻击对象用于移除自身的函数
 
@@ -63,7 +79,7 @@ $self_main.onRemove(this);
 
 > ###### isAttacking
 
-类型：Boolean
+类型：`Boolean`
 
 说明：攻击对象是否处于攻击状态（用于对方AI检测）
 
@@ -75,7 +91,7 @@ $self_main.isAttacking = false;
 
 > ###### moveToTargetX
 
-类型：Boolean
+类型：`Boolean`
 
 说明：攻击对象是否横向移动到目标
 
@@ -87,7 +103,7 @@ $self_main.moveToTargetX = false;
 
 > ###### moveToTargetY
 
-类型：Boolean
+类型：`Boolean`
 
 说明：攻击对象是否纵向移动到目标
 
@@ -99,7 +115,7 @@ $self_main.moveToTargetY = false;
 
 > ###### followTargetX
 
-类型：Boolean
+类型：`Boolean`
 
 说明：攻击对象是否横向跟随目标
 
@@ -111,7 +127,7 @@ $self_main.followTargetX = false;
 
 > ###### followTargetY
 
-类型：Boolean
+类型：`Boolean`
 
 说明：攻击对象是否纵向跟随目标
 
@@ -123,7 +139,7 @@ $self_main.followTargetY = false;
 
 > ###### rangeX
 
-类型：Point
+类型：`Point`
 
 说明：攻击对象横向捕捉移动范围
 
@@ -135,7 +151,7 @@ $self_main.rangeX = new Point(0, 100);
 
 > ###### rangeY
 
-类型：Point
+类型：`Point`
 
 说明：攻击对象纵向捕捉移动范围
 
@@ -147,7 +163,7 @@ $self_main.rangeY = new Point(-50, 50);
 
 > ###### name
 
-类型：String
+类型：`String`
 
 说明：攻击对象元件名称（只读）
 
@@ -163,13 +179,11 @@ var name1: String = $self_main.name;
 
 传入参数：无
 
-返回类型：IGameSprite
+返回类型：[`IGameSprite`](zh-cn/abstract-interface-classes/IGameSprite)
 
 说明：获取主人的游戏对象
 
 使用示例：
-
-- [详细介绍](zh-cn/core-object-classes/FighterMain)
 
 ```actionscript
 var owner = $self_main.getOwner();
@@ -179,27 +193,39 @@ var owner = $self_main.getOwner();
 
 传入参数：无
 
-返回类型：FighterAttackerCtrler
+返回类型：[`FighterAttackerCtrler`](zh-cn/other-ctrlers/FighterAttackerCtrler)
 
 说明：获取攻击对象的控制器
 
 使用示例：
 
-- [详细介绍](zh-cn/other-ctrlers/FighterAttackerCtrler)
-
 ```actionscript
 var ctrler = $self_main.getCtrler();
 ```
 
-> ###### setOwner
+<span id="getdoingaction"></span>
 
-传入参数：v:IGameSprite
+> ###### 3.8开发增加 getDoingAction
 
-返回类型：void
+传入参数：无
 
-说明：设置攻击对象的主人
+返回类型：`Object`
+
+说明：取得创建攻击对象时记录的主人动作信息，用于关联攻击来源；可能为 null
 
 使用示例：
+
+```actionscript
+var doingAction1:Object = $self_main.getDoingAction();
+```
+
+> ###### setOwner
+
+传入参数：`v:IGameSprite`
+
+返回类型：`void`
+
+说明：设置攻击对象的主人
 
 - [详细介绍](zh-cn/core-object-classes/FighterMain)
 
@@ -207,7 +233,7 @@ var ctrler = $self_main.getCtrler();
 
 传入参数：无
 
-返回类型：void
+返回类型：`void`
 
 说明：初始化攻击对象
 
@@ -215,7 +241,7 @@ var ctrler = $self_main.getCtrler();
 
 传入参数：无
 
-返回类型：void
+返回类型：`void`
 
 说明：渲染一次攻击对象动画
 
@@ -229,7 +255,7 @@ $self_main.renderAnimate();
 
 传入参数：无
 
-返回类型：void
+返回类型：`void`
 
 说明：渲染一次攻击对象属性和控制器
 
@@ -243,7 +269,7 @@ $self_main.render();
 
 传入参数：无
 
-返回类型：void
+返回类型：`void`
 
 说明：停止跟随对方
 
@@ -255,9 +281,9 @@ $self_main.stopFollowTarget();
 
 > ###### moveToTarget
 
-传入参数：offsetX:Number = NaN, offsetY:Number = NaN
+传入参数：`offsetX:Number = NaN, offsetY:Number = NaN`
 
-返回类型：void
+返回类型：`void`
 
 说明：移动到对方的位置（offsetX/offsetY填NaN则横/纵向不进行移动）
 
@@ -271,7 +297,7 @@ $self_main.moveToTarget(0, 0);
 
 传入参数：无
 
-返回类型：void
+返回类型：`void`
 
 说明：停止播放攻击对象动画
 
@@ -283,9 +309,9 @@ $self_main.stop();
 
 > ###### gotoAndPlay
 
-传入参数：frame:String
+传入参数：`frame:String`
 
-返回类型：void
+返回类型：`void`
 
 说明：跳转到对应帧标签并播放
 
@@ -297,9 +323,9 @@ $self_main.gotoAndPlay("帧标签");
 
 > ###### gotoAndStop
 
-传入参数：frame:String
+传入参数：`frame:String`
 
-返回类型：void
+返回类型：`void`
 
 说明：跳转到对应帧标签并停止
 
@@ -313,13 +339,11 @@ $self_main.gotoAndStop("帧标签");
 
 传入参数：无
 
-返回类型：Vector.\<IGameSprite\>
+返回类型：[`Vector.<IGameSprite>`](zh-cn/abstract-interface-classes/IGameSprite)
 
-说明：获取对方队伍的所有存活的游戏对象
+说明：获取对方小队的所有存活的游戏对象
 
 使用示例：
-
-- [详细介绍](zh-cn/abstract-interface-classes/IGameSprite)
 
 ```actionscript
 var targets = $self_main.getTargets();
@@ -329,7 +353,7 @@ var targets = $self_main.getTargets();
 
 传入参数：无
 
-返回类型：void
+返回类型：`void`
 
 说明：删除自身
 
@@ -341,9 +365,9 @@ $self_main.removeSelf();
 
 > ###### getHitCheckRect
 
-传入参数：name:String
+传入参数：`name:String`
 
-返回类型：Rectangle
+返回类型：`Rectangle`
 
 说明：根据元件名称获取元件当前在场景中的判定范围矩形（参数：判定面的名称）
 
@@ -355,9 +379,9 @@ var hitArea: Rectangle = $self_main.getHitCheckRect("zh1atm");
 
 > ###### getCheckHitRect
 
-传入参数：name:String
+传入参数：`name:String`
 
-返回类型：Rectangle
+返回类型：`Rectangle`
 
 说明：根据元件名称获取MC内元件的判定范围矩形（参数：判定面的名称）
 
@@ -369,9 +393,9 @@ var checkHitRect: Rectangle = $self_main.getCheckHitRect("zh1atm");
 
 > ###### hit
 
-传入参数：hitvo:HitVO, target:IGameSprite
+传入参数：`hitvo:HitVO, target:IGameSprite`
 
-返回类型：void
+返回类型：`void`
 
 说明：产生攻击效果（参数1：指定攻击值对象，参数2：指定的目标游戏对象）
 
