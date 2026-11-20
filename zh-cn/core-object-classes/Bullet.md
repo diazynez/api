@@ -651,9 +651,11 @@ isPermanent 仅在 isFollowFps 为 true 时有效；持久回调仍会在对象�
 // 在飞行道具中登记渐隐效果，随其动画更新逐渐降低透明度
 // 回调随道具销毁清理；主动移除的实现限制见下方 removeRenderFunc
 var bullet1 = $self_main;
-function fadeBullet1():void {
+function fadeBullet1():void
+{
     var display1 = bullet1.getDisplay();
-    if (display1.alpha > 0.3) {
+    if (display1.alpha > 0.3)
+    {
         display1.alpha = Math.max(0.3, display1.alpha - 0.02);
     }
 }

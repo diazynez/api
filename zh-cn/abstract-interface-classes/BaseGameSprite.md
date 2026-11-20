@@ -1011,7 +1011,8 @@ isPermanent 仅在 isFollowFps 为 true 时有效；持久回调仍会在对象�
 
 ```actionscript
 // 3.8开发：初始化时注册一次，不再需要时移除
-function updateCustomState():void {
+function updateCustomState():void
+{
     // 自定义逐帧逻辑
 }
 parent.$fighter_ctrler.getSelf().addRenderFunc(updateCustomState, {isFollowFps:true});
@@ -1032,7 +1033,8 @@ parent.$fighter_ctrler.getSelf().removeRenderFunc(updateCustomState);
 使用示例：
 
 ```actionscript
-function updateCustomState1():void {
+function updateCustomState1():void
+{
     // 自定义逐帧逻辑
 }
 $self_main.addRenderFunc(updateCustomState1, {isFollowFps:true});
@@ -1061,9 +1063,11 @@ var fighter1 = parent.$fighter_ctrler.getSelf();
 var group1 = fighter1.team.name == "P1"
     ? GameCtrl.I.gameRunData.p1FighterGroup
     : GameCtrl.I.gameRunData.p2FighterGroup;
-function recoverSquadEnergy1():void {
+function recoverSquadEnergy1():void
+{
     var currentFighter1 = group1.currentFighter;
-    if (currentFighter1 != null && currentFighter1.isAlive) {
+    if (currentFighter1 != null && currentFighter1.isAlive)
+    {
         currentFighter1.addEnergy(0.1);
     }
 }

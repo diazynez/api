@@ -41,7 +41,7 @@
         clearTimeout(saveTimer);
         saveTimer = setTimeout(function () {
             try { localStorage.setItem(storageKey, JSON.stringify(graph)); $("save-state").textContent = "已保存在此浏览器"; }
-            catch (error) { $("save-state").textContent = "可导出组合保存"; }
+            catch (error) { $("save-state").textContent = "未能保存到此浏览器"; }
         }, 180);
     }
     function update(fn) {
@@ -52,7 +52,7 @@
     function summary(node) {
         var spec = api.catalog[node.key];
         if (spec.kind === "root") return spec.code;
-        if (spec.assignment) return spec.member + " = " + String(node.params.value);
+        if (spec.assignment) return spec.member + " " + (spec.operator || "=") + " " + String(node.params.value);
         return (spec.member || spec.key) + (spec.property ? "" : "(" + spec.fields.map(function (f) {
             var value = node.params[f.key]; return value === "" ? "…" : f.type === "String" ? JSON.stringify(value) : String(value);
         }).join(", ") + ")");
@@ -78,7 +78,7 @@
             input.appendChild(inPort); input.appendChild(el("span", "", spec.owner)); ports.appendChild(input);
         }
         if (spec.output !== "void") {
-            var output = el("div", "port-group"); output.appendChild(el("span", "", spec.output));
+            var output = el("div", "port-group port-output"); output.appendChild(el("span", "", spec.output));
             var outPort = el("button", "port"); outPort.type = "button"; outPort.dataset.port = "out"; outPort.dataset.node = node.id;
             outPort.title = "输出 · " + spec.output; outPort.setAttribute("aria-label", "从 " + spec.key + " 输出 " + spec.output);
             if (graph.edges.some(function (e) { return e.from === node.id; })) outPort.classList.add("connected");
@@ -133,7 +133,8 @@
         resizeWorld(); requestAnimationFrame(drawWires);
     }
     function resizeWorld() {
-        var width = 900, height = 760;
+        // Cover the viewport even when there are few cards or the view is zoomed out
+        var width = Math.max(900, board.clientWidth / zoom), height = Math.max(760, board.clientHeight / zoom);
         graph.nodes.filter(function (n) { return !n.container; }).forEach(function (n) { width = Math.max(width, n.x + 260); height = Math.max(height, n.y + 160); });
         graph.bubbles.forEach(function (b) {
             var node = world.querySelector('.bubble[data-bubble="' + b.id + '"]');
@@ -149,20 +150,43 @@
     }
     function drawWires() {
         var svg = $("wires"); svg.replaceChildren();
-        function path(a, b, temporary) {
-            var line = document.createElementNS("http://www.w3.org/2000/svg", "path");
-            var bend = Math.max(50, Math.abs(b.x - a.x) * .45);
-            line.setAttribute("d", "M" + a.x + "," + a.y + " C" + (a.x + bend) + "," + a.y + " " + (b.x - bend) + "," + b.y + " " + b.x + "," + b.y);
-            line.setAttribute("class", "wire" + (temporary ? " pending" : "")); svg.appendChild(line);
+        var ns = "http://www.w3.org/2000/svg", base = world.getBoundingClientRect();
+        function element(tag, attributes, parent) {
+            var item = document.createElementNS(ns, tag);
+            Object.keys(attributes).forEach(function (key) { item.setAttribute(key, attributes[key]); });
+            parent.appendChild(item); return item;
+        }
+        var defs = element("defs", {}, svg), mask = element("mask", { id: "wire-card-mask", maskUnits: "userSpaceOnUse", x: 0, y: 0, width: world.offsetWidth, height: world.offsetHeight }, defs);
+        element("rect", { x: 0, y: 0, width: world.offsetWidth, height: world.offsetHeight, fill: "white" }, mask);
+        var back = element("g", { mask: "url(#wire-card-mask)" }, svg);
+        function socket(port, side) {
+            var center = point(port), radius = port.getBoundingClientRect().width / zoom / 2;
+            return { x: center.x + side * radius, y: center.y };
+        }
+        function line(a, b, temporary, bubble) {
+            // A single stroke keeps the socket and the rest of the wire the same color
+            var d = window.BvnComposerWires.path(a, b, bubble), cls = "wire" + (temporary ? " pending" : "");
+            element("path", { d: d, class: cls }, back);
         }
         graph.edges.forEach(function (edge) {
             var a = world.querySelector('button[data-port="out"][data-node="' + edge.from + '"]'), b = world.querySelector('button[data-port="in"][data-node="' + edge.to + '"]');
-            if (a && b) path(point(a), point(b));
+            if (a && b) {
+                var bubble = b.closest(".bubble"), bounds = bubble && bubble.getBoundingClientRect();
+                line(socket(a, 1), socket(b, -1), false, bounds && { left: (bounds.left - base.left) / zoom, top: (bounds.top - base.top) / zoom });
+            }
         });
         if (pending && drag && drag.kind === "wire") {
             var port = world.querySelector('button[data-port="out"][data-node="' + pending + '"]');
-            if (port) path(point(port), drag.point, true);
+            if (port) line(socket(port, 1), drag.point, true);
         }
+        function hideContent(selector, target) {
+            world.querySelectorAll(selector).forEach(function (node) {
+                var r = node.getBoundingClientRect();
+                element("rect", { x: (r.left - base.left) / zoom - 1, y: (r.top - base.top) / zoom - 1, width: r.width / zoom + 2, height: r.height / zoom + 2, rx: node.classList.contains("node") ? 7 : 0, fill: "black" }, target);
+            });
+        }
+        // Bubble backgrounds admit wires; cards and important text still cover them
+        hideContent(".node, .bubble-header, .bubble-comparison, .drop-region > h3", mask);
     }
     function select(id) { selected = id; renderCanvas(); renderInspector(); }
     function clearSelection() { selected = null; pending = null; renderCanvas(); renderInspector(); }
@@ -213,14 +237,15 @@
         var node = api.nodeById(graph, selected), bubble = graph.bubbles.find(function (b) { return b.id === selected; });
         $("inspector").hidden = !node && !bubble;
         if (bubble) {
-            host.appendChild(el("h3", "", "条件泡泡"));
+            host.appendChild(el("h3", "", "条件块"));
             host.appendChild(el("p", "muted", "把读取值放进条件区，把操作放进执行区。拖动执行区内的卡片可以调整顺序。"));
-            host.appendChild(button("删除泡泡，保留卡片", function () { update(function () { api.remove(graph, bubble.id); selected = null; }); }, "danger"));
+            host.appendChild(button("删除条件块，保留卡片", function () { update(function () { api.remove(graph, bubble.id); selected = null; }); }, "danger"));
             return;
         }
         if (!node) { host.appendChild(el("p", "muted", "选中一张卡片，查看参数与说明。")); return; }
         var spec = api.catalog[node.key]; $("selection-type").textContent = spec.output;
         host.appendChild(el("h3", "", spec.label)); host.appendChild(el("div", "signature", (spec.owner ? spec.owner + "." : "") + (spec.member || spec.key) + (spec.property || spec.assignment || spec.kind === "root" ? "" : "(…)") + " → " + spec.output));
+        if (spec.hint) host.appendChild(el("p", "muted", spec.hint));
         if (!spec.fields.length) host.appendChild(el("p", "muted", spec.kind === "root" ? "作为其他卡片的调用起点。" : "此接口无需参数。"));
         spec.fields.forEach(function (field) {
             var label = el("label", "", field.label); label.appendChild(el("span", "field-type", field.type));
@@ -239,8 +264,6 @@
             buttons.appendChild(button("断开对象连接", function () { update(function () { graph.edges = graph.edges.filter(function (e) { return e.to !== node.id; }); }); }));
         }
         if (node.container) buttons.appendChild(button("移回工作台", function () { update(function () { api.detach(graph, node.id); node.x = 35; node.y = 420; }); }));
-        var bubbles = graph.bubbles;
-        if (!node.container && bubbles.length && ["value", "action"].includes(spec.kind)) buttons.appendChild(button("放入条件泡泡", function () { update(function () { api.place(graph, node.id, bubbles[0].id, spec.kind === "value" ? "condition" : "actions"); }); }));
         buttons.appendChild(button("删除卡片", function () { update(function () { api.remove(graph, node.id); selected = null; }); }, "danger")); host.appendChild(buttons);
         showDoc(spec);
     }
@@ -265,9 +288,9 @@
     function render() {
         $("actor").value = graph.actor; $("version").value = graph.version;
         var examples = graph.actor === "character" ? [
-            ["耐力条件与跳帧", "耐力不少于20时，跳到“招2”并播放"],
-            ["血量条件与恢复", "血量低于500时，恢复100点血量并闪白光"],
-            ["修改攻击配置", "将攻击“k1”的攻击力改为80"]
+            ["当身／防反", "求个防反代码，当身触发后跳到“招2”"],
+            ["命中后跳帧", "攻击“k1”命中后，跳到“招2”"],
+            ["耐力与气量", "耐力不少于二十时，扣20点耐力，然后增加100点气量"]
         ] : [
             ["跳转动作", "跳到“招2”并播放"],
             ["闪光与震屏", "闪白光并震屏"],
@@ -307,9 +330,24 @@
         var result = api.fromText($("prompt").value, graph.version, graph.actor);
         update(function () { graph = result.graph; arrange(); selected = null; });
         $("matches").replaceChildren();
-        result.matches.forEach(function (match) { $("matches").appendChild(el("span", "", match)); });
-        result.notes.forEach(function (note) { $("matches").appendChild(el("span", "match-note", note)); });
-        if (result.matches.length) $("matches").appendChild(el("span", "match-note", "已替换工作台内容，可撤销恢复上一个组合"));
+        if (result.matches.length) {
+            var phrases = el("div", "match-phrases");
+            result.matches.forEach(function (match) { phrases.appendChild(el("span", "", match)); });
+            $("matches").appendChild(phrases);
+        }
+        if (result.notes.length) {
+            var notes = el("ul", "match-notes");
+            result.notes.forEach(function (note) { notes.appendChild(el("li", "", note)); });
+            $("matches").appendChild(notes);
+        }
+        if (result.suggestions.length) {
+            var related = el("div", "match-related"); related.appendChild(el("span", "", "相关接口"));
+            result.suggestions.forEach(function (key) {
+                var spec = api.catalog[key], item = button(spec.label + " · " + (spec.member || spec.key), function () { addInterface(key); }, "related-interface");
+                item.disabled = !api.available(spec, graph.version); related.appendChild(item);
+            });
+            $("matches").appendChild(related);
+        }
         requestAnimationFrame(function () {
             fit();
             document.querySelector(".basket").scrollIntoView({
@@ -417,7 +455,10 @@
         requestAnimationFrame(fit);
     });
     $("extract").addEventListener("click", extract);
-    $("prompt").addEventListener("keydown", function (event) { if ((event.ctrlKey || event.metaKey) && event.key === "Enter") extract(); });
+    $("prompt").addEventListener("keydown", function (event) {
+        if (event.key !== "Enter" || event.isComposing || event.keyCode === 229) return;
+        event.preventDefault(); extract();
+    });
     document.querySelectorAll("[data-example]").forEach(function (node) { node.addEventListener("click", function () { $("prompt").value = node.dataset.example; extract(); }); });
     $("library-search").addEventListener("input", renderLibrary);
     $("version").replaceChildren(); api.versions.forEach(function (version) { var option = el("option", "", version); option.value = version; $("version").appendChild(option); });
@@ -442,7 +483,7 @@
             var range = document.createRange(); range.selectNodeContents($("code")); var selection = window.getSelection(); selection.removeAllRanges(); selection.addRange(range); notify("自动复制不可用，已选中代码，可按 Ctrl+C 复制");
         }
     });
-    new ResizeObserver(function () { requestAnimationFrame(drawWires); }).observe(board);
+    new ResizeObserver(function () { resizeWorld(); requestAnimationFrame(drawWires); }).observe(board);
     new ResizeObserver(constrainInspector).observe($("inspector"));
     var restored = false;
     try { var saved = localStorage.getItem(storageKey); if (saved) { graph = api.validateGraph(JSON.parse(saved)); restored = true; } }

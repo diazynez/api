@@ -17,15 +17,20 @@
 .prompt-panel { padding: 20px; border: 1px solid var(--mono-tint2); border-radius: 10px; margin-bottom: 20px; background: var(--mono-tint3); }
 .prompt-panel > label { display: block; font-size: 14px; font-weight: 600; margin-bottom: 10px; }
 .prompt-row { display: flex; align-items: stretch; gap: 12px; }
-.prompt-row textarea { resize: vertical; min-height: 65px; font-size: 14px; line-height: 1.6; }
+.prompt-row input { flex: 1; min-width: 0; min-height: 46px; font-size: 14px; line-height: 1.6; }
 .prompt-row button { flex: 0 0 auto; }
 .example-row { flex-wrap: wrap; margin-top: 12px; gap: 7px; font-size: 11px; }
 .example-row > span { opacity: .6; margin-right: 4px; }
 .example-row button { background: transparent; border-color: transparent; padding: 3px 7px; font-size: 11px; }
-.match-list { display: flex; flex-wrap: wrap; gap: 6px; font-size: 11px; margin-top: 10px; }
+.match-list { display: grid; gap: 10px; font-size: 11px; margin-top: 12px; }
 .match-list:empty { display: none; }
-.match-list span { padding: 3px 7px; background: var(--base-background-color); border: 1px solid var(--mono-tint2); border-radius: 4px; }
-.match-list .match-note { border: 0; background: transparent; opacity: .75; line-height: 1.7; }
+.match-phrases, .match-related { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+.match-phrases > span { padding: 3px 7px; background: var(--base-background-color); border: 1px solid var(--mono-tint2); border-radius: 4px; }
+.match-notes { margin: 0; padding-left: 19px; opacity: .8; line-height: 1.8; }
+.match-notes li + li { margin-top: 3px; }
+.match-related > span { margin-right: 4px; opacity: .65; }
+.composer-page .related-interface { padding: 3px 7px; font-size: 11px; border-color: var(--mono-tint2); background: var(--base-background-color); color: var(--composer-accent); text-align: left; overflow-wrap: anywhere; }
+.composer-page .related-interface:hover { border-color: var(--composer-accent); }
 .composer-layout { display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 12px; align-items: stretch; scroll-margin-top: 12px; }
 .composer-layout.library-collapsed { grid-template-columns: minmax(0, 1fr); }
 .composer-layout.library-collapsed .library { display: none; }
@@ -55,10 +60,10 @@
 .canvas-frame { position: relative; isolation: isolate; }
 .board { height: max(580px, calc(100dvh - 145px)); overflow: auto; border-top: 1px solid var(--mono-tint2); border-bottom: 1px solid var(--mono-tint2); position: relative; background: var(--mono-tint3); overscroll-behavior: contain; }
 .world { width: 1450px; height: 1000px; position: relative; background-image: radial-gradient(var(--mono-tint1) .75px, transparent .75px); background-size: 20px 20px; }
-.wires { position: absolute; top: 0; left: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; z-index: 1; }
-.wire { fill: none; stroke: var(--composer-accent); stroke-width: 1.6; opacity: .7; }
+.wires { position: absolute; top: 0; left: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; z-index: 4; }
+.wire { fill: none; stroke: var(--composer-accent); stroke-width: 1.6; opacity: 1; }
 .wire.pending { stroke-dasharray: 5 4; }
-.node { position: absolute; width: 200px; border: 1px solid var(--mono-tint2); border-top: 3px solid var(--composer-accent); border-radius: 7px; background: var(--base-background-color); z-index: 3; box-shadow: 0 2px 5px #0000000b; cursor: default; }
+.node { user-select: none; position: absolute; width: 200px; border: 1px solid var(--mono-tint2); border-top: 3px solid var(--composer-accent); border-radius: 7px; background: var(--base-background-color); z-index: 3; box-shadow: 0 2px 5px #0000000b; cursor: default; }
 .node[data-kind="value"] { border-top-color: var(--composer-value); }
 .node[data-kind="action"] { border-top-color: var(--composer-action); }
 .node.selected { outline: 2px solid var(--composer-accent); outline-offset: 3px; }
@@ -69,14 +74,17 @@
 .node-body { padding: 0 11px 9px; }
 .node-body code { display: block; font: 11px/1.6 Consolas, monospace; color: var(--base-color); overflow-wrap: anywhere; }
 .node-body p { margin: 3px 0 0; font-size: 10px; line-height: 1.6; opacity: .65; overflow-wrap: anywhere; }
-.node-ports { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 7px 10px; border-top: 1px solid var(--mono-tint2); min-height: 31px; }
+.node-ports { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 7px 12px; border-top: 1px solid var(--mono-tint2); min-height: 31px; }
 .node-ports span { font: 8px/1.4 Consolas, monospace; opacity: .6; }
 .port-group { display: flex; align-items: center; gap: 5px; min-width: 0; }
-.port-group:last-child { margin-left: auto; }
-.composer-page .port { width: 13px; height: 13px; min-width: 13px; padding: 0; border: 2px solid var(--composer-accent); border-radius: 50%; background: var(--base-background-color); touch-action: none; }
-.port.connected { background: var(--composer-accent); }
-.node[data-kind="value"] .port[data-port="out"] { border-color: var(--composer-value); }
-.bubble { width: 370px; position: absolute; border: 1px solid var(--composer-value); border-radius: 16px; background: var(--base-background-color); z-index: 2; padding-bottom: 12px; }
+.port-output { margin-left: auto; }
+.composer-page .port { --port-color: var(--composer-accent); position: absolute; top: 50%; transform: translateY(-50%); width: 13px; height: 13px; min-width: 13px; padding: 0; border: 2px solid var(--port-color); border-radius: 50%; background: var(--base-background-color); box-shadow: 0 1px 2px #0003; touch-action: none; z-index: 1; }
+.composer-page .port[data-port="in"] { left: -7px; }
+.composer-page .port[data-port="out"] { right: -7px; }
+.composer-page .port:active { transform: translateY(-50%) scale(.94); }
+.port.connected::after { content: ""; position: absolute; inset: 3px; border-radius: 50%; background: var(--port-color); }
+.node[data-kind="value"] .port[data-port="out"] { --port-color: var(--composer-value); }
+.bubble { user-select: none; width: 370px; position: absolute; border: 1px solid var(--composer-value); border-radius: 16px; background: var(--base-background-color); z-index: 2; padding-bottom: 12px; }
 .bubble.selected { outline: 2px solid var(--composer-value); outline-offset: 3px; }
 .bubble-header { border-bottom: 1px solid var(--mono-tint2); padding: 12px 14px; color: var(--composer-value); }
 .bubble-header strong { font-size: 13px; }

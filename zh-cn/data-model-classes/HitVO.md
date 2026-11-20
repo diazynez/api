@@ -203,7 +203,8 @@ var limitRate1:Number = parent.$fighter_ctrler.hitModel.getHitVO("kj1").limitRat
 // 3.8开发：在角色初始化时定义
 $fighter_ctrler.defineAction("k1", {
     power: 50,
-    onHit: function(target:*, hit:*):void {
+    onHit: function(target:*, hit:*):void
+    {
         // target 为受击人物，hit 为本次攻击值对象
     }
 });

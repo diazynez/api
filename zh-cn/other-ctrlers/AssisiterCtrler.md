@@ -515,7 +515,8 @@ $assisterCtrler.addAttacker("bsmc",{applyG:false});
 /*
 如果比较复杂，需要在攻击对象元件内部加入代码，实现接口
 var $attacker_ctrler:*;
-function setAttackerCtrler(attackerCtrler:*):void{
+function setAttackerCtrler(attackerCtrler:*):void
+{
     $attacker_ctrler = attackerCtrler;
 }
 */
@@ -555,7 +556,8 @@ if ($attacker_ctrler.checkHitOwner("mc1"))
 使用示例：
 
 ```actionscript
-if ($assisterCtrler.getTarget() != null && $assisterCtrler.targetInRange([0, 100], [-50, 50])) {
+if ($assisterCtrler.getTarget() != null && $assisterCtrler.targetInRange([0, 100], [-50, 50]))
+{
     $assisterCtrler.gotoAndPlay("招1");
 }
 ```
@@ -601,9 +603,11 @@ isPermanent 仅在 isFollowFps 为 true 时有效；持久回调仍会在对象�
 
 ```actionscript
 // 登记后持续朝向当前目标；停止时移除同一个回调
-function faceTarget1():void {
+function faceTarget1():void
+{
     var target1 = $assisterCtrler.getTarget();
-    if (target1 != null) {
+    if (target1 != null)
+    {
         $assisterCtrler.getSelf().direct = target1.x >= $assisterCtrler.getSelf().x ? 1 : -1;
     }
 }
@@ -626,9 +630,11 @@ $assisterCtrler.removeRenderFunc(faceTarget1);
 使用示例：
 
 ```actionscript
-function faceTarget1():void {
+function faceTarget1():void
+{
     var target1 = $assisterCtrler.getTarget();
-    if (target1 != null) {
+    if (target1 != null)
+    {
         $assisterCtrler.getSelf().direct = target1.x >= $assisterCtrler.getSelf().x ? 1 : -1;
     }
 }

@@ -503,9 +503,11 @@ isPermanent 仅在 isFollowFps 为 true 时有效；持久回调仍会在对象�
 
 ```actionscript
 // 登记后持续朝向当前目标；停止时移除同一个回调
-function faceTarget1():void {
+function faceTarget1():void
+{
     var target1 = $attacker_ctrler.getTargetFighter();
-    if (target1 != null) {
+    if (target1 != null)
+    {
         $attacker_ctrler.getSelf().direct = target1.x >= $attacker_ctrler.getSelf().x ? 1 : -1;
     }
 }
@@ -528,9 +530,11 @@ $attacker_ctrler.removeRenderFunc(faceTarget1);
 使用示例：
 
 ```actionscript
-function faceTarget1():void {
+function faceTarget1():void
+{
     var target1 = $attacker_ctrler.getTargetFighter();
-    if (target1 != null) {
+    if (target1 != null)
+    {
         $attacker_ctrler.getSelf().direct = target1.x >= $attacker_ctrler.getSelf().x ? 1 : -1;
     }
 }

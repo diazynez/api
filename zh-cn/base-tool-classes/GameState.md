@@ -10,7 +10,8 @@
 import net.play5d.game.bvn.ctrl.game_ctrls.GameCtrl;
 
 var target1 = parent.$fighter_ctrler.getTargetSP();
-if (target1 != null) {
+if (target1 != null)
+{
     var position1 = GameCtrl.I.gameState.getGameSpriteGlobalPosition(target1);
 }
 ```
@@ -114,7 +115,8 @@ import net.play5d.game.bvn.ctrl.game_ctrls.GameCtrl;
 // 3.5起：使用本局保存的同一个 FighterVO 对象查找场内人物
 var data1 = GameCtrl.I.gameRunData.p1FighterGroup.currentFighterVO;
 var fighter1 = GameCtrl.I.gameState.getFighterByData(data1);
-if (fighter1 != null) {
+if (fighter1 != null)
+{
     var hp1:int = fighter1.hp;
 }
 ```
@@ -149,7 +151,8 @@ import flash.geom.Point;
 import net.play5d.game.bvn.ctrl.game_ctrls.GameCtrl;
 
 var target1 = parent.$fighter_ctrler.getTargetSP();
-if (target1 != null) {
+if (target1 != null)
+{
     var position1:Point = GameCtrl.I.gameState.getGameSpriteGlobalPosition(target1, 0, -60);
 }
 ```
@@ -176,9 +179,11 @@ if (target1 != null) {
 // 恢复场内游戏对象的显示；遍历写法同时适用于 Array 与 Vector 返回值
 import net.play5d.game.bvn.ctrl.game_ctrls.GameCtrl;
 
-for each (var sprite1 in GameCtrl.I.gameState.getGameSprites()) {
+for each (var sprite1 in GameCtrl.I.gameState.getGameSprites())
+{
     var display1 = sprite1.getDisplay();
-    if (display1 != null) {
+    if (display1 != null)
+    {
         display1.visible = true;
     }
 }
@@ -270,9 +275,11 @@ import flash.geom.Rectangle;
 import net.play5d.game.bvn.ctrl.game_ctrls.GameCtrl;
 
 var target1 = parent.$fighter_ctrler.getTargetSP();
-if (target1 != null) {
+if (target1 != null)
+{
     var rect1:Rectangle = target1.getArea();
-    if (rect1 != null) {
+    if (rect1 != null)
+    {
         GameCtrl.I.gameState.drawGameRect(rect1, 0xFF0000, 0.5, true);
     }
 }

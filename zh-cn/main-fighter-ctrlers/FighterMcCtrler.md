@@ -404,7 +404,8 @@ parent.$mc_ctrler.setCatch2();
 
 ```actionscript
 // 先登记特殊辅助动作，再将其设为特殊技能
-if (parent.$mc_ctrler.setSpecialAssist({enabled:false, action:"招2"})) {
+if (parent.$mc_ctrler.setSpecialAssist({enabled:false, action:"招2"}))
+{
     parent.$mc_ctrler.setSpecialSkill();
 }
 ```
@@ -725,7 +726,8 @@ parent.$mc_ctrler.addAttacker("bsmc",{applyG:false});
 /*
 如果比较复杂，需要在攻击对象元件内部加入代码，实现接口
 var $attacker_ctrler:*;
-function setAttackerCtrler(attackerCtrler:*):void{
+function setAttackerCtrler(attackerCtrler:*):void
+{
     $attacker_ctrler = attackerCtrler;
 }
 */
@@ -766,7 +768,8 @@ if (parent.$mc_ctrler.getAttacker("bsmc"))
 
 ```actionscript
 var assistCtrl1 = parent.$mc_ctrler.getAssister();
-if (assistCtrl1 != null) {
+if (assistCtrl1 != null)
+{
     assistCtrl1.stopMove();
 }
 ```
@@ -785,7 +788,8 @@ if (assistCtrl1 != null) {
 
 ```actionscript
 var assister1 = parent.$mc_ctrler.getAssisterGlobal();
-if (assister1 != null) {
+if (assister1 != null)
+{
     assister1.enable = false; // 禁止通常的辅助调用
 }
 ```
@@ -806,11 +810,13 @@ if (assister1 != null) {
 // 在登记动作的帧中配置：耐力不少于 20 时，用人物的“招2”替代通常辅助调用，并将该动作登记为特殊技能
 // “招2”需替换为已有动作标签
 // back 在调用本方法时检查；条件会变化时，应在原有的动作登记流程中重新调用本方法
-function checkAssist1():Boolean {
+function checkAssist1():Boolean
+{
     return parent.$fighter_ctrler.getEnergy() >= 20;
 }
 var assistReady1:Boolean = parent.$mc_ctrler.setSpecialAssist({enabled:false, useFzqi:true, back:checkAssist1, action:"招2"});
-if (assistReady1) {
+if (assistReady1)
+{
     parent.$mc_ctrler.setSpecialSkill();
 }
 ```

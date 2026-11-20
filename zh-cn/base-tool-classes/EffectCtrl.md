@@ -145,7 +145,8 @@ var effectCtrl1 = EffectCtrl.I;
 import net.play5d.game.bvn.ctrl.EffectCtrl;
 
 var fighter1 = parent.$fighter_ctrler.getTargetSP();
-if (fighter1 != null) {
+if (fighter1 != null)
+{
     EffectCtrl.I.doEffectById("jump", fighter1.x, fighter1.y, fighter1.direct);
 }
 ```
@@ -186,7 +187,8 @@ import net.play5d.game.bvn.data.EffectVO;
 
 var effect1:EffectVO = EffectModel.I.getEffect("jump");
 var fighter1 = parent.$fighter_ctrler.getTargetSP();
-if (fighter1 != null) {
+if (fighter1 != null)
+{
     EffectCtrl.I.doEffectVO(effect1, fighter1.x, fighter1.y, fighter1.direct);
 }
 ```
@@ -209,7 +211,8 @@ import net.play5d.game.bvn.ctrl.EffectCtrl;
 import net.play5d.game.bvn.ctrl.game_ctrls.GameCtrl;
 
 var fighter1 = GameCtrl.I.gameRunData.p1FighterGroup.currentFighter;
-if (fighter1 != null) {
+if (fighter1 != null)
+{
     EffectCtrl.I.doSpecialEffect("fire_ing", fighter1);
 }
 ```
@@ -640,7 +643,8 @@ EffectCtrl.I.BGEffect("kobg", 2); // 显示原版 KO 背景效果，时长限制
 // 先登记回调，再开始冻结；本次冻结结束时闪白
 import net.play5d.game.bvn.ctrl.EffectCtrl;
 
-function onFreezeOver1():void {
+function onFreezeOver1():void
+{
     EffectCtrl.I.shine(0xFFFFFF, 0.2);
 }
 EffectCtrl.I.setOnFreezeOver(onFreezeOver1);

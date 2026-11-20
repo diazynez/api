@@ -9,7 +9,8 @@
 ```actionscript
 import net.play5d.game.bvn.ctrl.GameRender;
 
-function updateCustomEffect():void {
+function updateCustomEffect():void
+{
     // 每次全局更新时执行
 }
 GameRender.add(updateCustomEffect);
@@ -42,7 +43,8 @@ GameRender.remove(updateCustomEffect);
 ```actionscript
 import net.play5d.game.bvn.ctrl.GameRender;
 
-function updateCustomEffect1():void {
+function updateCustomEffect1():void
+{
     // 自定义逐帧逻辑
 }
 GameRender.addBefore(updateCustomEffect1);
@@ -70,7 +72,8 @@ GameRender.addBefore(updateCustomEffect1);
 ```actionscript
 import net.play5d.game.bvn.ctrl.GameRender;
 
-function updateCustomEffect1():void {
+function updateCustomEffect1():void
+{
     // 自定义逐帧逻辑
 }
 GameRender.add(updateCustomEffect1);
@@ -93,7 +96,8 @@ GameRender.add(updateCustomEffect1);
 ```actionscript
 import net.play5d.game.bvn.ctrl.GameRender;
 
-function updateCustomEffect1():void {
+function updateCustomEffect1():void
+{
     // 自定义逐帧逻辑
 }
 GameRender.addAfter(updateCustomEffect1);
@@ -116,7 +120,8 @@ GameRender.addAfter(updateCustomEffect1);
 ```actionscript
 import net.play5d.game.bvn.ctrl.GameRender;
 
-function updateCustomEffect1():void {
+function updateCustomEffect1():void
+{
     // 自定义逐帧逻辑
 }
 GameRender.addBefore(updateCustomEffect1);
@@ -147,7 +152,8 @@ GameRender.removeBefore(updateCustomEffect1);
 ```actionscript
 import net.play5d.game.bvn.ctrl.GameRender;
 
-function updateCustomEffect1():void {
+function updateCustomEffect1():void
+{
     // 自定义逐帧逻辑
 }
 GameRender.add(updateCustomEffect1);
@@ -173,7 +179,8 @@ GameRender.remove(updateCustomEffect1);
 ```actionscript
 import net.play5d.game.bvn.ctrl.GameRender;
 
-function updateCustomEffect1():void {
+function updateCustomEffect1():void
+{
     // 自定义逐帧逻辑
 }
 GameRender.addAfter(updateCustomEffect1);

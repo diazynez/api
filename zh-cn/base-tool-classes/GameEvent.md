@@ -11,7 +11,8 @@
 ```actionscript
 import net.play5d.game.bvn.events.GameEvent;
 
-function onScoreUpdate(event:GameEvent):void {
+function onScoreUpdate(event:GameEvent):void
+{
     // 3.0 可监听此事件，不读取 event.param
 }
 GameEvent.addEventListener(GameEvent.SCORE_UPDATE, onScoreUpdate);
@@ -152,7 +153,8 @@ GameEvent.removeEventListener(GameEvent.SCORE_UPDATE, onScoreUpdate);
 import net.play5d.game.bvn.events.GameEvent;
 
 // 3.3起：自定义事件类型，发送的数据通过 event.param 读取
-function onCustomEffect1(event:GameEvent):void {
+function onCustomEffect1(event:GameEvent):void
+{
     var power1:Number = event.param.power;
 }
 GameEvent.addEventListener("customEffect1", onCustomEffect1);
@@ -175,7 +177,8 @@ GameEvent.removeEventListener("customEffect1", onCustomEffect1);
 ```actionscript
 import net.play5d.game.bvn.events.GameEvent;
 
-function onScoreUpdate1(event:GameEvent):void {
+function onScoreUpdate1(event:GameEvent):void
+{
     // 在此处理分数变化
 }
 GameEvent.addEventListener(GameEvent.SCORE_UPDATE, onScoreUpdate1);
@@ -196,7 +199,8 @@ GameEvent.addEventListener(GameEvent.SCORE_UPDATE, onScoreUpdate1);
 ```actionscript
 import net.play5d.game.bvn.events.GameEvent;
 
-function onScoreUpdate1(event:GameEvent):void {
+function onScoreUpdate1(event:GameEvent):void
+{
     // 在此处理分数变化
 }
 GameEvent.addEventListener(GameEvent.SCORE_UPDATE, onScoreUpdate1);

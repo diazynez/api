@@ -125,7 +125,8 @@ var isMenuPause1:Boolean = gameCtrl1.isMenuPause;
 
 ```actionscript
 var attacker1 = gameCtrl1.getAttacker("bsmc", 1);
-if (attacker1 != null) {
+if (attacker1 != null)
+{
     attacker1.setVelocity(4, 0);
 }
 ```
@@ -142,7 +143,8 @@ if (attacker1 != null) {
 
 ```actionscript
 var fighter1 = gameCtrl1.gameRunData.p1FighterGroup.currentFighter;
-if (fighter1 != null) {
+if (fighter1 != null)
+{
     var enemyTeam1 = gameCtrl1.getEnemyTeam(fighter1);
 }
 ```
@@ -359,7 +361,8 @@ var p1Team1 = teamMap1.getTeam(1);
 
 ```actionscript
 var current1 = gameCtrl1.gameRunData.p1FighterGroup.currentFighter;
-if (current1 != null) {
+if (current1 != null)
+{
     var fighter1 = gameCtrl1.getFighterByData(current1.data);
 }
 ```
@@ -380,7 +383,8 @@ if (current1 != null) {
 
 ```actionscript
 var assister1 = gameCtrl1.getAssister(1);
-if (assister1 != null) {
+if (assister1 != null)
+{
     var assisterCtrl1 = assister1.getCtrler();
 }
 ```
