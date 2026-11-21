@@ -223,6 +223,15 @@
             result.notes.push("这是素材或编辑器操作需求，请描述要由脚本实现的效果"); return result;
         }
 
+        matches("(耐力|体力|血量|生命值|气量|气)\\s*(?:(?:范围|数值)\\s*)?(?:介于|处于|位于|落在|范围在|范围为|在|为|是)?\\s*"+number+"\\s*(%|格|点)?\\s*(?:到|至|和|与|~|～|—|-)\\s*"+number+"\\s*(%|格|点)?(?:之间|范围内|区间内|范围|区间)?(?:[（(]([^）)]+)[）)])?",function (m) {
+            var key=/耐力|体力/.test(m[1]) ? "getEnergy" : /气/.test(m[1]) ? "qi" : "hp", unit=m[5] || m[3] || "", bounds=m[6] || "";
+            if (m[3] && m[5] && m[3] !== m[5] || unit === "%" && key !== "hp" || unit === "格" && key !== "qi") {blocked("区间两端需要使用同一种有效单位");consume(m);return;}
+            if (bounds && !/^(?:(?:含|包含|不含|不包含)(?:下限|上限|两端|两侧)[，,、\s]*)+$/.test(bounds)) {blocked("请用包含下限、包含上限或不含两端说明区间边界");consume(m);return;}
+            var lo=true,hi=true;
+            bounds.replace(/(不包含|不含|包含|含)(下限|上限|两端|两侧)/g,function (_,verb,side) {var included=!verb.startsWith("不");if (side !== "上限") lo=included;if (side !== "下限") hi=included;return _;});
+            var rate=unit === "%" ? .01 : unit === "格" ? 100 : 1;
+            condition(unit === "%" ? "hpRate" : key,"between",JSON.stringify({lower:String(numeric(m[2])*rate),upper:String(numeric(m[4])*rate),includeLower:lo,includeUpper:hi}),m);
+        });
         var operators = { "不足": "<", "少于": "<", "不多于": "<=", "达到": ">=", "不少于": ">=", "不低于": ">=", "至少": ">=", "大于等于": ">=", "小于等于": "<=", "不超过": "<=", "不高于": "<=", "至多": "<=", "高于": ">", "超过": ">", "大于": ">", "低于": "<", "小于": "<", "等于": "==", "不等于": "!=" };
         matches("(耐力|体力|血量|生命值|气量|气)\\s*(" + Object.keys(operators).sort(function (a, b) { return b.length - a.length; }).join("|") + "|>=|<=|==|!=|>|<)\\s*" + number + "(?![零〇一二两三四五六七八九十百千半\\d.])\\s*(%|格|点)?", function (m) {
             var key = /耐力|体力/.test(m[1]) ? "getEnergy" : /气/.test(m[1]) ? "qi" : "hp";

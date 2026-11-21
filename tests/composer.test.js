@@ -1177,3 +1177,43 @@ test("showcase examples describe executable capabilities for their logical owner
     }
     assert.ok(c.demoExamples("character").length >= 6);
 });
+
+
+test("numeric intervals support all open and closed bounds and read the value once", () => {
+    for(const includeLower of [true,false]) for(const includeUpper of [true,false]) {
+        const graph=c.fromText("血量低于500时，闪白光").graph,block=graph.bubbles[0],range={lower:"100",upper:"200",includeLower,includeUpper};
+        c.updateCondition(graph,block.id,block.condition,{operator:"between",value:JSON.stringify(range)});
+        const output=c.generate(graph);assert.deepEqual(output.errors,[]);
+        for(const hp of [99,100,150,200,201]) {
+            let reads=0,hits=0;const main={get hp(){reads++;return hp;}};
+            vm.runInNewContext(output.code.replace(/var (\w+):Number/g,"var $1"),{parent:{$fighter_ctrler:{getSelf:()=>main},$effect_ctrler:{shine:()=>hits++}}});
+            assert.equal(reads,1);assert.equal(hits,Number((includeLower ? hp>=100 : hp>100) && (includeUpper ? hp<=200 : hp<200)));
+        }
+        assert.equal(c.generate(c.validateGraph(JSON.parse(JSON.stringify(graph)))).code,output.code);
+        range.lower="300";c.updateCondition(graph,block.id,block.condition,{value:JSON.stringify(range)});assert.equal(c.generate(graph).code,"");
+        range.lower="";c.updateCondition(graph,block.id,block.condition,{value:JSON.stringify(range)});assert.equal(c.generate(graph).code,"");
+    }
+});
+
+test("interval phrases express boundary inclusion, percentages and native disable lifetimes", () => {
+    for(const [ends,lower,upper] of [["",">=","<="],["（含下限，不含上限）",">=","<"],["（不含下限，含上限）",">","<="],["（不含两端）",">","<"]]) {
+        const result=c.fromText("血量介于100到200之间"+ends+"时，闪白光"),output=c.generate(result.graph);
+        assert.deepEqual(result.notes,[]);assert.deepEqual(output.errors,[]);assert.ok(output.code.includes("rangeValue1 "+lower+" 100 && rangeValue1 "+upper+" 200"));
+    }
+    const graph=c.fromText("血量介于10%到30%之间（不含两端）时禁用su").graph,output=c.generate(graph);
+    assert.deepEqual(output.errors,[]);assert.match(output.code,/setDisabled/);assert.match(output.code,/hpRate/);assert.match(output.code,/> 0.1.*< 0.3/);
+    assert.equal(c.generate(c.validateGraph(JSON.parse(JSON.stringify(graph)))).code,output.code);
+    for(const text of ["耐力介于10%到20%时，闪白光","血量介于10点到20%时，闪白光","血量介于100到200之间（含中间）时，闪白光"]) assert.equal(c.generate(c.fromText(text).graph).code,"");
+});
+
+
+test("interval recognition composes optional introductions, range synonyms and explicit endpoints", () => {
+    for(const intro of ["","在","处于","位于","落在","范围为","数值在"]) for(const [separator,suffix] of [["到","之间"],["至","范围内"],["～","区间"],["-",""]]) {
+        const text="血量"+intro+"20"+separator+"50"+suffix+"（含下限，不含上限）时，闪白光",result=c.fromText(text),output=c.generate(result.graph);
+        assert.deepEqual(output.errors,[],text);assert.deepEqual(result.notes,[],text);assert.match(output.code,/>= 20 && rangeValue1 < 50/);
+    }
+    const chinese=c.generate(c.fromText("耐力在二十至五十之间时，跳到“招2”").graph);assert.match(chinese.code,/getEnergy/);assert.match(chinese.code,/>= 20 && rangeValue1 <= 50/);
+    const percent=c.generate(c.fromText("血量10%到20%之间时禁用su").graph);assert.match(percent.code,/hpRate/);assert.match(percent.code,/>= 0.1 && rangeValue1 <= 0.2/);
+    for(const text of ["20到50之间时闪白光","血量在20到之间时闪白光","血量增加20到50时闪白光"]) assert.equal(c.generate(c.fromText(text).graph).code,"");
+    for(const label of ["血量20到50之间","耐力在二十至五十之间"]) assert.equal(c.generate(c.fromText('跳到“'+label+'”').graph).code,'parent.$mc_ctrler.gotoAndPlay('+JSON.stringify(label)+');');
+});

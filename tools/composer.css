@@ -1,4 +1,4 @@
-.composer-page { --composer-accent: var(--theme-color, #008bd2); --composer-value: #8970c5; --composer-action: #af7524; font-size: 14px; }
+.composer-page { --composer-intro-duration: 260ms; --composer-accent: var(--theme-color, #008bd2); --composer-value: #8970c5; --composer-action: #af7524; font-size: 14px; }
 .composer-page *, .composer-page *::before, .composer-page *::after { box-sizing: border-box; }
 .composer-shell { margin: 0 auto; padding: 18px 16px; }
 .composer-header, .title-row, .header-actions, .panel-heading, .basket-toolbar, .basket-footer, .example-row { display: flex; align-items: center; gap: 12px; }
@@ -184,9 +184,9 @@ button.condition-join { display: block; width: auto; min-width: 58px; min-height
 @media (max-width: 640px) { .global-version { margin-left: 0; } }
 
 body.composer-page { overflow-anchor: none; }
-.prompt-stage { display: grid; align-items: center; justify-items: center; min-height: calc(100svh - 96px); margin-bottom: 20px; transition: min-height 380ms ease; }
-.prompt-stage .prompt-panel { width: min(960px, 100%); margin-bottom: 0; border-color: transparent; background: transparent; transition: width 380ms ease, background-color 380ms ease, border-color 380ms ease; }
-.prompt-stage .prompt-panel > label { font-size: 24px; text-align: center; margin-bottom: 20px; transition: font-size 380ms ease, margin 380ms ease; }
+.prompt-stage { display: grid; align-items: center; justify-items: center; min-height: calc(100svh - 96px); margin-bottom: 20px; transition: min-height var(--composer-intro-duration) ease; }
+.prompt-stage .prompt-panel { width: min(960px, 100%); margin-bottom: 0; border-color: transparent; background: transparent; transition: width var(--composer-intro-duration) ease, background-color var(--composer-intro-duration) ease, border-color var(--composer-intro-duration) ease; }
+.prompt-stage .prompt-panel > label { font-size: 24px; text-align: center; margin-bottom: 20px; transition: font-size var(--composer-intro-duration) ease, margin var(--composer-intro-duration) ease; }
 .prompt-stage .example-row { justify-content: center; }
 .workspace-mode .prompt-stage { min-height: 0; }
 .workspace-mode .prompt-stage .prompt-panel { width: 100%; border-color: var(--mono-tint2); background: var(--mono-tint3); }
@@ -195,3 +195,29 @@ body.composer-page { overflow-anchor: none; }
 @media (prefers-reduced-motion: reduce) { .prompt-stage, .prompt-stage .prompt-panel, .prompt-stage .prompt-panel > label { transition: none; } }
 
 .library-source { display: block; margin-top: 3px; font: 9px/1.5 Consolas, monospace; opacity: .6; overflow-wrap: anywhere; }
+
+button.condition-join { margin-left: auto; margin-right: auto; }
+.composer-page .toast-undo { margin-left: 12px; padding: 2px 8px; color: var(--composer-accent); border-color: var(--composer-accent); }
+.range-comparison { display: grid; gap: 8px; }
+.range-comparison > select { width: 100%; }
+.range-bounds { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 8px; }
+.range-bounds label { min-width: 0; font-size: 11px; }
+.range-bounds input { width: 100%; min-width: 0; }
+.range-ends { display: flex; flex-wrap: wrap; gap: 8px 12px; }
+.range-ends .checkbox-field { display: flex; gap: 5px; align-items: center; font-size: 11px; margin: 0; }
+
+.library-paths { margin-top: 6px; padding-top: 6px; }
+.library-paths > summary { cursor: pointer; font-size: 11px; padding: 8px 0; opacity: .6; }
+.library-paths > summary > span { float: right; font-size: 10px; }
+.library-paths .library-group { margin-left: 8px; }
+
+.intro-initializing .prompt-stage, .intro-initializing .prompt-stage * { transition: none !important; }
+.composer-page .palette-preview { opacity: .85; }
+
+/* Hide the page scrollbar while preserving wheel, touch and keyboard scrolling */
+html { scrollbar-width: none; scrollbar-gutter: auto; }
+html::-webkit-scrollbar { display: none; width: 0; height: 0; }
+html.intro-scroll-locked { overflow-y: hidden; }
+
+.intro-measure { position: absolute !important; top: 0; left: 0; visibility: hidden; pointer-events: none; min-height: 0 !important; }
+.intro-measure, .intro-measure * { transition: none !important; animation: none !important; }

@@ -7,7 +7,7 @@
     "use strict";
 
     // Update the composer.html asset versions with each demo release
-    var demoVersion = "0.11.0";
+    var demoVersion = "0.13.3";
     var versions = ["3.0", "3.3", "3.5", "3.6", "3.8开发"];
     var fighterDoc = "zh-cn/main-fighter-ctrlers/FighterCtrler";
     var mcDoc = "zh-cn/main-fighter-ctrlers/FighterMcCtrler";
@@ -546,9 +546,15 @@
         if (field.type === "uint" && (!Number.isInteger(number) || number < 0 || number > 4294967295)) throw new Error(field.label + "必须为 uint 整数");
         return /^0x/i.test(String(value)) ? "0x" + number.toString(16) : String(number);
     }
+    function readRange(value) {
+        var range;
+        try {range=JSON.parse(value);} catch (error) {throw new Error("请填写区间下限和上限");}
+        if (!range || typeof range !== "object" || Array.isArray(range) || !["string","number"].includes(typeof range.lower) || !["string","number"].includes(typeof range.upper) || typeof range.includeLower !== "boolean" || typeof range.includeUpper !== "boolean") throw new Error("区间配置无效");
+        return range;
+    }
     function generate(graph) {
         graph = JSON.parse(JSON.stringify(graph)); simplifyDisabledBlocks(graph);
-        var errors = [], lines = [], usedMain = false, scope, targetCount = 0, frameCount = 0, inFrame = false;
+        var errors = [], lines = [], usedMain = false, scope, targetCount = 0, rangeCount = 0, frameCount = 0, inFrame = false;
         function startScope() { scope = { bindings: new Map(), declarations: [], guards: [] }; }
         function expression(id, visited) {
             var node = nodeById(graph, id);
@@ -630,6 +636,12 @@
             if (spec.output === "Boolean") {
                 if (!["truthy", "falsy"].includes(row.operator)) throw new Error("布尔条件需要选择是或否");
                 test = row.operator === "falsy" ? "!(" + value + ")" : value;
+            } else if (row.operator === "between" && ["int","uint","Number"].includes(spec.output)) {
+                var range=readRange(row.value), lower=literal(range.lower,{type:"Number",label:"区间下限"}), upper=literal(range.upper,{type:"Number",label:"区间上限"});
+                if (Number(lower) > Number(upper)) throw new Error("区间下限不能大于上限");
+                var name="rangeValue"+(++rangeCount);
+                scope.declarations.push("var "+name+":Number = "+(scope.guards.length ? "("+scope.guards.join(" && ")+") ? "+value+" : NaN" : value)+";");
+                test=name+(range.includeLower ? " >= " : " > ")+lower+" && "+name+(range.includeUpper ? " <= " : " < ")+upper;
             } else {
                 var allowed = spec.output === "String" ? ["==", "!="] : [">=", ">", "<=", "<", "==", "!="];
                 if (!allowed.includes(row.operator)) throw new Error("比较方式与返回类型不匹配");
@@ -854,5 +866,5 @@
         simplifyDisabledBlocks(graph);
         return graph;
     }
-    return { demoVersion: demoVersion, demoExamples: demoExamples, searchSpecs: searchSpecs, aliasTerms: language.aliasTerms, actors: actors, specs: specs, catalog: catalog, versions: versions, available: available, usable: usable, changeActor: changeActor, conditionsOf: conditionsOf, updateCondition: updateCondition, blockById: blockById, hasFrameAncestor: hasFrameAncestor, promoteFrame: promoteFrame, simplifyDisabledBlocks: simplifyDisabledBlocks, createGraph: createGraph, nodeById: nodeById, addNode: addNode, addBubble: addBubble, connect: connect, attachPath: attachPath, findPath: findPath, place: place, detach: detach, remove: remove, generate: generate, parse: parse, fromText: fromText, validateGraph: validateGraph };
+    return { demoVersion: demoVersion, readRange: readRange, demoExamples: demoExamples, searchSpecs: searchSpecs, aliasTerms: language.aliasTerms, actors: actors, specs: specs, catalog: catalog, versions: versions, available: available, usable: usable, changeActor: changeActor, conditionsOf: conditionsOf, updateCondition: updateCondition, blockById: blockById, hasFrameAncestor: hasFrameAncestor, promoteFrame: promoteFrame, simplifyDisabledBlocks: simplifyDisabledBlocks, createGraph: createGraph, nodeById: nodeById, addNode: addNode, addBubble: addBubble, connect: connect, attachPath: attachPath, findPath: findPath, place: place, detach: detach, remove: remove, generate: generate, parse: parse, fromText: fromText, validateGraph: validateGraph };
 }));

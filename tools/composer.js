@@ -3,6 +3,7 @@
     var api = window.BvnComposer;
     var $ = function (id) { return document.getElementById(id); };
     var graph = api.createGraph(), selected = null, pending = null, drag = null, zoom = 1;
+    var toastUndoState=null;
     var history = [], saveTimer, noticeTimer, docRequest = 0, docCache = new Map(), libraryOpen = new Map(), suppressLibraryClick = null;
     var storageKey = "bvn-api-composer-demo-v1";
     var board = $("board"), world = $("world");
@@ -30,16 +31,28 @@
         return node;
     }
     function button(text, handler, cls) {
-        var node = el("button", cls, text); node.type = "button"; node.addEventListener("click", handler); return node;
+        var node = el("button", cls, text); node.type = "button"; node.addEventListener("click", cls === "danger" ? function () {withUndo(handler);} : handler); return node;
     }
-    function notify(message, kind) {
+    function notify(message, kind, action) {
+        toastUndoState=null;
         var notice = $("notice"); notice.replaceChildren(); notice.dataset.kind = kind || "warning";
         if (kind !== "info") {var icon=el("span","notice-icon","⚠");icon.setAttribute("aria-hidden","true");notice.appendChild(icon);}
-        notice.appendChild(document.createTextNode(message)); clearTimeout(noticeTimer);
+        notice.appendChild(document.createTextNode(message));
+        if (action) notice.appendChild(button("撤销",function () {action();notice.replaceChildren();toastUndoState=null;clearTimeout(noticeTimer);},"toast-undo"));
+        clearTimeout(noticeTimer);
         noticeTimer = setTimeout(function () { $("notice").textContent = ""; }, 6000);
+    }
+    function withUndo(handler, message) {
+        var before=JSON.stringify(graph), previousHistory=history.slice(), view={zoom:zoom,left:board.scrollLeft,top:board.scrollTop};
+        handler();
+        var after=JSON.stringify(graph);
+        if (after === before) return;
+        notify(message || "已删除", "info",function () {graph=JSON.parse(before);history=previousHistory;zoom=view.zoom;selected=null;pending=null;render();board.scrollLeft=view.left;board.scrollTop=view.top;});
+        toastUndoState=after;
     }
     function remember() { history.push(JSON.stringify(graph)); if (history.length > 40) history.shift(); }
     function save() {
+        if (toastUndoState && JSON.stringify(graph) !== toastUndoState) {$("notice").replaceChildren();toastUndoState=null;}
         clearTimeout(saveTimer);
         saveTimer = setTimeout(function () {
             try { localStorage.setItem(storageKey, JSON.stringify(graph)); $("save-state").textContent = "已保存在此浏览器"; }
@@ -98,7 +111,7 @@
         if (!spec) return [[">=", "不少于 ≥"], ["==", "等于 ="]];
         if (spec.output === "Boolean") return [["truthy", "是"], ["falsy", "否"]];
         if (spec.output === "String") return [["==", "等于"], ["!=", "不等于"]];
-        return [[">=", "不少于 ≥"], [">", "大于 >"], ["<=", "不超过 ≤"], ["<", "小于 <"], ["==", "等于 ="], ["!=", "不等于 ≠"]];
+        return [[">=", "不少于 ≥"], [">", "大于 >"], ["<=", "不超过 ≤"], ["<", "小于 <"], ["==", "等于 ="], ["!=", "不等于 ≠"], ["between", "介于"]];
     }
     function choice(choices, value) {
         var select = el("select"); choices.forEach(function (c) { var option = el("option", "", c[1]); option.value = c[0]; select.appendChild(option); }); select.value = value; return select;
@@ -111,6 +124,31 @@
         var host = el("label","checkbox-field"), input = el("input"); input.type = "checkbox"; input.checked = checked;
         input.addEventListener("change",function () {handler(input.checked);}); host.append(input,document.createTextNode(label)); return host;
     }
+    function comparisonControls(node,row,change) {
+        var host=el("div","bubble-comparison");
+        if (api.catalog[node.key].output === "Boolean") {
+            host.appendChild(checkbox("条件为真",row.operator === "truthy",function (checked) {change({operator:checked ? "truthy" : "falsy"},true);}));return host;
+        }
+        var operator=choice(operators(node),row.operator);operator.setAttribute("aria-label","比较方式");
+        operator.addEventListener("change",function () {
+            var changes={operator:operator.value};
+            if (operator.value === "between") changes.value=JSON.stringify({lower:row.value,upper:"",includeLower:true,includeUpper:true});
+            else if (row.operator === "between") changes.value=api.readRange(row.value).lower;
+            change(changes,true);
+        });host.appendChild(operator);
+        if (row.operator === "between") {
+            host.classList.add("range-comparison");var range=api.readRange(row.value), fields=el("div","range-bounds");
+            [["lower","下限"],["upper","上限"]].forEach(function (item) {
+                var label=el("label","",item[1]), input=el("input");input.type="number";input.value=range[item[0]];input.setAttribute("aria-label",item[1]);input.addEventListener("focus",remember);
+                input.addEventListener("input",function () {range[item[0]]=input.value;change({value:JSON.stringify(range)},false);});label.appendChild(input);fields.appendChild(label);
+            });host.appendChild(fields);
+            var ends=el("div","range-ends");
+            [["includeLower","包含下限"],["includeUpper","包含上限"]].forEach(function (item) {ends.appendChild(checkbox(item[1],range[item[0]],function (checked) {range[item[0]]=checked;change({value:JSON.stringify(range)},true);}));});host.appendChild(ends);
+        } else {
+            var input=el("input");input.value=row.value;input.setAttribute("aria-label","比较值");input.addEventListener("focus",remember);input.addEventListener("input",function () {change({value:input.value},false);});host.appendChild(input);
+        }
+        return host;
+    }
     function bubbleElement(bubble) {
         var card = el("section", "bubble"); card.dataset.bubble = bubble.id;
         if (!bubble.container) {card.style.left = bubble.x + "px"; card.style.top = bubble.y + "px";}
@@ -120,7 +158,7 @@
         header.appendChild(el("span", "", bubble.kind === "frame" ? "每帧 · " + frequency : "if (…) { … }")); card.appendChild(header);
         card.tabIndex=0; card.setAttribute("aria-label",bubble.kind === "frame" ? "逐帧执行块" : "条件块");
         card.addEventListener("click",function (event) {
-            if (event.target.closest(".node, input, select, button, a") || event.target.closest(".bubble") !== card) return;
+            if (event.target.closest(".node, input, select, button, a, label") || event.target.closest(".bubble") !== card) return;
             event.stopPropagation(); select(bubble.id);
         });
         card.addEventListener("keydown",function (event) {if (event.target === card && ["Enter"," "].includes(event.key)) {event.preventDefault();event.stopPropagation();select(bubble.id);}});
@@ -135,16 +173,10 @@
                 wrapper.appendChild(joinButton(row.join || "and",function (value) {update(function () {api.updateCondition(graph,bubble.id,row.id,{join:value});});}));
             }
             wrapper.appendChild(nodeElement(node));
-            var comparison=el("div","bubble-comparison");
-            if (api.catalog[node.key].output === "Boolean") comparison.appendChild(checkbox("条件为真",row.operator === "truthy",function (checked) {update(function () {api.updateCondition(graph,bubble.id,row.id,{operator:checked ? "truthy" : "falsy"});});}));
-            else {
-                var operator=choice(operators(node),row.operator); operator.setAttribute("aria-label","比较方式");
-                operator.addEventListener("change",function () {update(function () {api.updateCondition(graph,bubble.id,row.id,{operator:operator.value});});}); comparison.appendChild(operator);
-            }
-            if (api.catalog[node.key].output !== "Boolean") {
-                var value=el("input"); value.value=row.value; value.setAttribute("aria-label","比较值"); value.addEventListener("focus",remember);
-                value.addEventListener("input",function () {api.updateCondition(graph,bubble.id,row.id,{value:value.value}); preview(); save();}); comparison.appendChild(value);
-            }
+            var comparison=comparisonControls(node,row,function (changes,redraw) {
+                if (redraw) update(function () {api.updateCondition(graph,bubble.id,row.id,changes);});
+                else {api.updateCondition(graph,bubble.id,row.id,changes);preview();save();}
+            });
             wrapper.appendChild(comparison); condition.appendChild(wrapper);
         });
         if (rows.length > 1) condition.appendChild(el("p","condition-order","按从上到下的顺序组合条件"));
@@ -234,6 +266,10 @@
         var items=api.searchSpecs(terms,graph.actor,graph.version);
         var groups=new Map();
         items.forEach(function (spec) {var group=grouping === "function" ? ({root:"可用对象",object:"取得对象",value:"读取值 / 判断条件",action:"执行操作"}[spec.kind]) : spec.kind === "root" ? "可用对象" : spec.owner; if (!groups.has(group)) groups.set(group,[]); groups.get(group).push(spec);});
+        var pathGroups=el("details","library-paths"), pathTitle=el("summary","","对象路径"), pathCount=0;
+        pathGroups.appendChild(pathTitle);
+        pathGroups.open=!$("auto-path").checked || !!query && items.every(function (spec) {return ["root","object"].includes(spec.kind);}) || libraryOpen.get("paths") === true;
+        pathGroups.addEventListener("toggle",function () {if (!query && pathGroups.isConnected) libraryOpen.set("paths",pathGroups.open);});
         groups.forEach(function (entries,name) {
             var group=el("details","library-group"), title=el("summary","",name); title.appendChild(el("span","",entries.length));group.appendChild(title);
             group.open=!!query || libraryOpen.get(grouping+":"+name) === true;
@@ -244,8 +280,11 @@
                 item.appendChild(el("strong","",spec.label)); item.appendChild(el("code","",member+(spec.since ? " · "+spec.since+"起" : "")));
                 if (grouping === "function" && duplicate && spec.owner) item.appendChild(el("span","library-source",spec.owner));
                 item.disabled=!api.available(spec,graph.version); group.appendChild(item);
-            }); list.appendChild(group);
+            });
+            if (grouping === "function" && ["root","object"].includes(entries[0].kind)) {pathGroups.appendChild(group);pathCount+=entries.length;}
+            else list.appendChild(group);
         });
+        if (grouping === "function" && pathCount) {pathTitle.appendChild(el("span","",pathCount));list.appendChild(pathGroups);}
         $("library-count").textContent=items.length+" 项";
     }
     function addInterface(key, drop) {
@@ -313,11 +352,9 @@
             var field=el("label","","返回值"), picker=choice(values.map(function (n) {return [n.id,api.catalog[n.key].label+" · "+summary(n)];}),row.id);
             picker.addEventListener("change",function () {update(function () {row.id=picker.value;var spec=api.catalog[api.nodeById(graph,row.id).key];row.operator=spec.output === "Boolean" ? "truthy" : "==";row.value=spec.output === "String" ? "" : "20";});});field.appendChild(picker);box.appendChild(field);
             var source=api.nodeById(graph,row.id);
-            if (source && api.catalog[source.key].output === "Boolean") box.appendChild(checkbox("条件为真",row.operator === "truthy",function (checked) {update(function () {row.operator=checked ? "truthy" : "falsy";});}));
-            else if (source) {
-                var comparison=el("div","bubble-comparison"), operator=choice(operators(source),row.operator), input=el("input");operator.setAttribute("aria-label","解除条件比较方式");input.setAttribute("aria-label","解除条件比较值");input.value=row.value;
-                operator.addEventListener("change",function () {update(function () {row.operator=operator.value;});});input.addEventListener("focus",remember);input.addEventListener("input",function () {row.value=input.value;preview();save();});comparison.append(operator,input);box.appendChild(comparison);
-            }
+            if (source) box.appendChild(comparisonControls(source,row,function (changes,redraw) {
+                if (redraw) update(function () {Object.assign(row,changes);});else {Object.assign(row,changes);preview();save();}
+            }));
             box.appendChild(button("移除此条件",function () {update(function () {node.release.conditions.splice(index,1);});},"danger"));host.appendChild(box);
         });
         var add=button("＋ 解除条件",function () {update(function () {
@@ -432,7 +469,6 @@
     }
     function extract() {
         if (!$("prompt").value.trim()) { notify("先写一句想实现的效果"); return; }
-        var layoutReady=setIntroMode(true);
         var result = api.fromText($("prompt").value, graph.version, graph.actor);
         update(function () { graph = result.graph; arrange(); selected = null; });
         $("matches").replaceChildren();
@@ -454,12 +490,8 @@
             });
             $("matches").appendChild(related);
         }
-        function revealWorkspace() {
-            fit();
-            var top=document.querySelector(".basket").getBoundingClientRect().top+window.scrollY-12;
-            window.scrollTo({top:Math.max(1,top),behavior:window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth"});
-        }
-        layoutReady.then(function () {requestAnimationFrame(revealWorkspace);});
+        setIntroMode(true);
+        moveToWorkspace();
     }
     function position(event) { var rect = world.getBoundingClientRect(); return { x: (event.clientX - rect.left) / zoom, y: (event.clientY - rect.top) / zoom }; }
     function startWire(id) { pending = id; renderCanvas(); notify("连接到另一张卡片左侧的圆点；返回值卡片可直接拖入条件区", "info"); }
@@ -498,6 +530,19 @@
         var panel = $("inspector");
         drag = { kind: "inspector", startX: event.clientX, startY: event.clientY, left: panel.offsetLeft, top: panel.offsetTop };
     });
+    function highlightDrop(action,event) {
+        world.querySelectorAll(".drop-hover").forEach(function (node) {node.classList.remove("drop-hover");});
+        var target=document.elementFromPoint(event.clientX,event.clientY), region=target && target.closest(".drop-region");
+        if (!region || !board.contains(region)) return;
+        var key=region.dataset.bubble+":"+region.dataset.region;
+        if (!action.dropChecks) action.dropChecks=new Map();
+        if (!action.dropChecks.has(key)) {
+            var draft=JSON.parse(JSON.stringify(action.previewGraph || graph)), valid=true;
+            try {api.place(draft,action.previewId || action.id,region.dataset.bubble,region.dataset.region);} catch (error) {valid=false;}
+            action.dropChecks.set(key,valid);
+        }
+        if (action.dropChecks.get(key)) region.classList.add("drop-hover");
+    }
     window.addEventListener("pointermove", function (event) {
         if (!drag) return;
         if (drag.kind === "inspector") {
@@ -516,8 +561,18 @@
         if (drag.kind === "wire") { drag.point = position(event); drawWires(); return; }
         if (!drag.moved) return;
         if (drag.kind === "library" || drag.kind === "block-template") {
-            if (!drag.ghost) {drag.ghost=drag.card.cloneNode(true);drag.ghost.className="library-drag-ghost";drag.ghost.removeAttribute("id");drag.ghost.setAttribute("aria-hidden","true");drag.ghost.tabIndex=-1;drag.ghost.style.width="200px";document.body.appendChild(drag.ghost);}
+            if (!drag.ghost) {
+                drag.previewGraph=JSON.parse(JSON.stringify(graph));
+                var preview;
+                try {preview=drag.kind === "library" ? api.addNode(drag.previewGraph,drag.key) : api.addBubble(drag.previewGraph,{kind:drag.blockKind});}
+                catch (error) {drag=null;notify(error.message);return;}
+                drag.previewId=preview.id;
+                drag.ghost=drag.kind === "library" ? nodeElement(preview) : bubbleElement(preview);
+                drag.ghost.classList.add("drag-ghost","palette-preview");drag.ghost.setAttribute("aria-hidden","true");drag.ghost.setAttribute("inert","");drag.ghost.tabIndex=-1;
+                drag.ghost.style.width=drag.kind === "library" ? "200px" : "370px";drag.ghost.style.transform="scale("+zoom+")";document.body.appendChild(drag.ghost);
+            }
             drag.ghost.style.left=event.clientX+12+"px";drag.ghost.style.top=event.clientY+12+"px";
+            highlightDrop(drag,event);
             return;
         }
         if (!drag.ghost) {
@@ -528,9 +583,7 @@
         drag.ghost.style.left = event.clientX - drag.offsetX * zoom + "px"; drag.ghost.style.top = event.clientY - drag.offsetY * zoom + "px";
         var bounds = board.getBoundingClientRect();
         drag.ghost.classList.toggle("discarding",event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom);
-        world.querySelectorAll(".drop-hover").forEach(function (n) { n.classList.remove("drop-hover"); });
-        var target = document.elementFromPoint(event.clientX, event.clientY), region = target && target.closest(".drop-region");
-        if (region && (api.nodeById(graph, drag.id) || api.blockById(graph,drag.id))) region.classList.add("drop-hover");
+        highlightDrop(drag,event);
     });
     function dropIndex(region,y,id) {
         if (!region) return undefined;
@@ -540,6 +593,7 @@
     window.addEventListener("pointerup", function (event) {
         if (!drag) return;
         var action = drag; drag = null;
+        world.querySelectorAll(".drop-hover").forEach(function (node) {node.classList.remove("drop-hover");});
         if (action.kind === "inspector") return;
         if (action.kind === "library" || action.kind === "block-template") {
             if (action.ghost) action.ghost.remove();
@@ -584,10 +638,9 @@
     });
     function deleteItem(id) {
         if (!api.nodeById(graph,id) && !api.blockById(graph,id)) return;
-        update(function () {api.remove(graph,id);selected=null;});
-        notify("已删除，可按 Ctrl+Z 撤销", "info");
+        withUndo(function () {update(function () {api.remove(graph,id);selected=null;});});
     }
-    function undo() { if (!history.length) return; graph = JSON.parse(history.pop()); selected = null; pending = null; render(); }
+    function undo() { $("notice").replaceChildren();toastUndoState=null; if (!history.length) return; graph = JSON.parse(history.pop()); selected = null; pending = null; render(); }
     $("undo").addEventListener("click", undo);
     $("close-inspector").addEventListener("click", clearSelection);
     $("toggle-library").addEventListener("click", function () {
@@ -601,6 +654,7 @@
         event.preventDefault(); extract();
     });
     $("library-search").addEventListener("input", renderLibrary);
+    $("auto-path").addEventListener("change", function () {libraryOpen.delete("paths");renderLibrary();});
     try {if (localStorage.getItem("bvn-api-composer-grouping") === "type") $("library-grouping").value="type";} catch (error) {}
     $("library-grouping").addEventListener("change",function () {renderLibrary();try {localStorage.setItem("bvn-api-composer-grouping",this.value);} catch (error) {}});
     $("version").replaceChildren(); api.versions.forEach(function (version) { var option = el("option", "", version); option.value = version; $("version").appendChild(option); });
@@ -618,7 +672,7 @@
     $("arrange").addEventListener("click", function () { update(arrange); requestAnimationFrame(fit); });
     var fitButton = button("适应", fit); $("toolbar-view").appendChild(fitButton);
     fitButton.after(button("1:1", function () { zoom = 1; resizeWorld(); requestAnimationFrame(drawWires); }));
-    $("clear").addEventListener("click", function () { update(function () { var next = api.createGraph(); next.version = graph.version; next.actor = graph.actor; graph = next; selected = null; }); $("matches").replaceChildren(); zoom = 1; resizeWorld(); });
+    $("clear").addEventListener("click", function () { withUndo(function () {update(function () { var next = api.createGraph(); next.version = graph.version; next.actor = graph.actor; graph = next; selected = null; }); $("matches").replaceChildren(); zoom = 1; resizeWorld(); },"已清空工作台"); });
     $("copy").addEventListener("click", async function () {
         var result = api.generate(graph); if (!result.code) return;
         try { await navigator.clipboard.writeText(result.code); notify("代码已复制", "info"); }
@@ -638,22 +692,58 @@
         initial.matches.forEach(function (match) { $("matches").appendChild(el("span", "", match)); });
     }
     document.querySelector(".demo-tag").textContent = "DEMO v" + api.demoVersion;
-    var introLocked=false, introAnchor=0, introReady=Promise.resolve(), topArmed=false, topTimer, touchY=null;
+    var introInitializing=true;
+    var introLocked=false, introLayoutPending=false, introScrollActive=false, introTransitionId=0, introScrollFrame, introAnchor=0, introReady=Promise.resolve(), topArmed=false, topTimer, touchY=null;
     function armTop() {clearTimeout(topTimer);topTimer=setTimeout(function () {topArmed=window.scrollY <= 0 && document.body.classList.contains("workspace-mode");},180);}
+    function releaseIntroLock() {
+        if (introLayoutPending || introScrollActive) return;
+        document.documentElement.classList.remove("intro-scroll-locked");
+        window.scrollTo({top:introAnchor,behavior:"instant"});introLocked=false;
+    }
     function setIntroMode(compact) {
-        if (introLocked) return introReady.then(function () {return setIntroMode(compact);});
-        if (document.body.classList.contains("workspace-mode") === compact) return Promise.resolve();
-        introLocked=true;topArmed=false;clearTimeout(topTimer);introAnchor=compact ? 1 : 0;
-        document.body.classList.toggle("workspace-mode",compact);window.scrollTo({top:introAnchor,behavior:"instant"});
+        if (introInitializing) {document.body.classList.toggle("workspace-mode",compact);return Promise.resolve();}
+        if (document.body.classList.contains("workspace-mode") === compact) return introLayoutPending ? introReady : Promise.resolve();
+        var transitionId=++introTransitionId;
+        introLocked=true;introLayoutPending=true;topArmed=false;clearTimeout(topTimer);
+        if (!introScrollActive) introAnchor=compact ? 1 : 0;
+        document.documentElement.classList.add("intro-scroll-locked");
+        window.scrollTo({top:introAnchor,behavior:"instant"});
+        document.body.classList.toggle("workspace-mode",compact);
         introReady=new Promise(function (resolve) {
             requestAnimationFrame(function () {
                 var stage=document.querySelector(".prompt-stage"), animations=stage.getAnimations ? stage.getAnimations({subtree:true}) : [];
                 Promise.all(animations.map(function (animation) {return animation.finished.catch(function () {});})).then(function () {
-                    window.scrollTo({top:introAnchor,behavior:"instant"});introLocked=false;resolve();
+                    if (transitionId === introTransitionId) {introLayoutPending=false;releaseIntroLock();}
+                    resolve();
                 });
             });
         });
         return introReady;
+    }
+    function moveToWorkspace() {
+        cancelAnimationFrame(introScrollFrame);
+        introScrollActive=true;introLocked=true;topArmed=false;clearTimeout(topTimer);
+        document.documentElement.classList.add("intro-scroll-locked");
+        fit();
+        var stage=document.querySelector(".prompt-stage"), measure=stage.cloneNode(true);
+        measure.classList.add("intro-measure");measure.setAttribute("aria-hidden","true");measure.setAttribute("inert","");
+        measure.querySelectorAll("[id]").forEach(function (node) {node.removeAttribute("id");});
+        measure.style.width=stage.getBoundingClientRect().width+"px";
+        stage.parentElement.appendChild(measure);
+        // Measure the compact layout without finishing or restarting the visible transitions
+        var finalHeight=measure.getBoundingClientRect().height;
+        measure.remove();
+        var startY=window.scrollY, startTime=null;
+        var targetY=Math.max(1,document.querySelector(".basket").getBoundingClientRect().top+window.scrollY-stage.getBoundingClientRect().height+finalHeight-12);
+        var duration=window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : parseFloat(getComputedStyle(document.body).getPropertyValue("--composer-intro-duration")) || 260;
+        function advance(time) {
+            if (startTime === null) startTime=time;
+            var progress=duration ? Math.min(1,(time-startTime)/duration) : 1, eased=1-Math.pow(1-progress,3);
+            window.scrollTo({top:startY+(targetY-startY)*eased,behavior:"instant"});introAnchor=window.scrollY;
+            if (progress < 1) introScrollFrame=requestAnimationFrame(advance);
+            else {introScrollActive=false;releaseIntroLock();}
+        }
+        introScrollFrame=requestAnimationFrame(advance);
     }
     function scrollIntent(event,delta) {
         if (!delta) return;
@@ -675,10 +765,20 @@
         scrollIntent(event,delta);
     });
     window.addEventListener("scroll",function () {
-        if (introLocked) {if (window.scrollY !== introAnchor) window.scrollTo({top:introAnchor,behavior:"instant"});return;}
+        if (introInitializing) {document.body.classList.toggle("workspace-mode",window.scrollY > 0);return;}
+        if (introLocked) return;
         if (!document.body.classList.contains("workspace-mode") && window.scrollY > 0) {setIntroMode(true);return;}
         if (window.scrollY <= 0) armTop(); else {topArmed=false;clearTimeout(topTimer);}
     },{passive:true});
+    function finishInitialLayout() {
+        requestAnimationFrame(function () {requestAnimationFrame(function () {
+            document.body.classList.toggle("workspace-mode",window.scrollY > 0);
+            void document.querySelector(".prompt-stage").offsetHeight;
+            document.body.classList.remove("intro-initializing");introInitializing=false;
+        });});
+    }
+    window.addEventListener("pageshow",finishInitialLayout);
+    if (document.readyState === "complete") finishInitialLayout();
     document.body.classList.toggle("workspace-mode",window.scrollY > 0);
     render(); requestAnimationFrame(fit);
 }());
