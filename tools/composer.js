@@ -231,7 +231,7 @@
         var list=$("library-list"); list.replaceChildren();
         var grouping=$("library-grouping").value, query=$("library-search").value.trim().toLowerCase(), terms=window.BvnSearchAliases ? window.BvnSearchAliases.expand([query]) : [query];
         terms=terms.concat(api.aliasTerms ? api.aliasTerms(query) : []).map(function (term) {return term.toLowerCase();});
-        var items=api.specs.filter(function (spec) {return api.usable(spec,graph.actor,graph.version) && (!query || terms.some(function (q) {return (spec.key+" "+spec.label+" "+spec.owner+" "+(spec.words || "")).toLowerCase().includes(q);}));});
+        var items=api.searchSpecs(terms,graph.actor,graph.version);
         var groups=new Map();
         items.forEach(function (spec) {var group=grouping === "function" ? ({root:"可用对象",object:"取得对象",value:"读取值 / 判断条件",action:"执行操作"}[spec.kind]) : spec.kind === "root" ? "可用对象" : spec.owner; if (!groups.has(group)) groups.set(group,[]); groups.get(group).push(spec);});
         groups.forEach(function (entries,name) {
@@ -240,7 +240,9 @@
             group.addEventListener("toggle",function () {if (!query && group.isConnected) libraryOpen.set(grouping+":"+name,group.open);});
             entries.forEach(function (spec) {
                 var item=button("",function () {if (suppressLibraryClick !== spec.key) addInterface(spec.key);},"library-item");item.dataset.kind=spec.kind; item.dataset.key=spec.key;
-                item.appendChild(el("strong","",spec.label)); item.appendChild(el("code","",(spec.member || spec.key)+(spec.since ? " · "+spec.since+"起" : "")));
+                var member=spec.member || spec.key, duplicate=api.specs.some(function (other) {return other.key !== spec.key && other.owner !== spec.owner && (other.label === spec.label || (other.member || other.key) === member) && api.usable(other,graph.actor,graph.version);});
+                item.appendChild(el("strong","",spec.label)); item.appendChild(el("code","",member+(spec.since ? " · "+spec.since+"起" : "")));
+                if (grouping === "function" && duplicate && spec.owner) item.appendChild(el("span","library-source",spec.owner));
                 item.disabled=!api.available(spec,graph.version); group.appendChild(item);
             }); list.appendChild(group);
         });
@@ -396,16 +398,10 @@
     }
     function render() {
         $("actor").value = graph.actor; $("version").value = graph.version;
-        var examples = graph.actor === "character" ? [
-            ["当身／防反", "求个防反代码，当身触发后跳到“招2”"],
-            ["命中后跳帧", "攻击“k1”命中后，跳到“招2”"],
-            ["耐力与气量", "耐力不少于二十时，扣20点耐力，然后增加100点气量"]
-        ] : [
-            ["跳转动作", "跳到“招2”并播放"],
-            ["闪光与震屏", "闪白光并震屏"],
-            graph.actor === "assister" ? ["修改攻击配置", "将攻击“k1”的攻击力改为80"] : ["血量条件与跳帧", "血量低于500时，跳到“招2”并播放"]
-        ];
-        document.querySelectorAll("[data-example]").forEach(function (button, index) { button.textContent = examples[index][0]; button.dataset.example = examples[index][1]; });
+        var exampleRow=document.querySelector(".example-row");exampleRow.replaceChildren(el("span","","试一试"));
+        api.demoExamples(graph.actor,graph.version).forEach(function (example) {
+            var item=button(example[0],function () {$("prompt").value=example[1];extract();});item.dataset.example=example[1];exampleRow.appendChild(item);
+        });
         renderLibrary(); renderCanvas(); renderInspector(); preview(); save();
     }
     function arrange() {
@@ -436,6 +432,7 @@
     }
     function extract() {
         if (!$("prompt").value.trim()) { notify("先写一句想实现的效果"); return; }
+        var layoutReady=setIntroMode(true);
         var result = api.fromText($("prompt").value, graph.version, graph.actor);
         update(function () { graph = result.graph; arrange(); selected = null; });
         $("matches").replaceChildren();
@@ -457,12 +454,12 @@
             });
             $("matches").appendChild(related);
         }
-        requestAnimationFrame(function () {
+        function revealWorkspace() {
             fit();
-            document.querySelector(".basket").scrollIntoView({
-                behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start"
-            });
-        });
+            var top=document.querySelector(".basket").getBoundingClientRect().top+window.scrollY-12;
+            window.scrollTo({top:Math.max(1,top),behavior:window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth"});
+        }
+        layoutReady.then(function () {requestAnimationFrame(revealWorkspace);});
     }
     function position(event) { var rect = world.getBoundingClientRect(); return { x: (event.clientX - rect.left) / zoom, y: (event.clientY - rect.top) / zoom }; }
     function startWire(id) { pending = id; renderCanvas(); notify("连接到另一张卡片左侧的圆点；返回值卡片可直接拖入条件区", "info"); }
@@ -603,7 +600,6 @@
         if (event.key !== "Enter" || event.isComposing || event.keyCode === 229) return;
         event.preventDefault(); extract();
     });
-    document.querySelectorAll("[data-example]").forEach(function (node) { node.addEventListener("click", function () { $("prompt").value = node.dataset.example; extract(); }); });
     $("library-search").addEventListener("input", renderLibrary);
     try {if (localStorage.getItem("bvn-api-composer-grouping") === "type") $("library-grouping").value="type";} catch (error) {}
     $("library-grouping").addEventListener("change",function () {renderLibrary();try {localStorage.setItem("bvn-api-composer-grouping",this.value);} catch (error) {}});
@@ -642,5 +638,47 @@
         initial.matches.forEach(function (match) { $("matches").appendChild(el("span", "", match)); });
     }
     document.querySelector(".demo-tag").textContent = "DEMO v" + api.demoVersion;
+    var introLocked=false, introAnchor=0, introReady=Promise.resolve(), topArmed=false, topTimer, touchY=null;
+    function armTop() {clearTimeout(topTimer);topTimer=setTimeout(function () {topArmed=window.scrollY <= 0 && document.body.classList.contains("workspace-mode");},180);}
+    function setIntroMode(compact) {
+        if (introLocked) return introReady.then(function () {return setIntroMode(compact);});
+        if (document.body.classList.contains("workspace-mode") === compact) return Promise.resolve();
+        introLocked=true;topArmed=false;clearTimeout(topTimer);introAnchor=compact ? 1 : 0;
+        document.body.classList.toggle("workspace-mode",compact);window.scrollTo({top:introAnchor,behavior:"instant"});
+        introReady=new Promise(function (resolve) {
+            requestAnimationFrame(function () {
+                var stage=document.querySelector(".prompt-stage"), animations=stage.getAnimations ? stage.getAnimations({subtree:true}) : [];
+                Promise.all(animations.map(function (animation) {return animation.finished.catch(function () {});})).then(function () {
+                    window.scrollTo({top:introAnchor,behavior:"instant"});introLocked=false;resolve();
+                });
+            });
+        });
+        return introReady;
+    }
+    function scrollIntent(event,delta) {
+        if (!delta) return;
+        if (introLocked) {event.preventDefault();return;}
+        if (event.target.closest && event.target.closest("#board, #library-list, #inspector")) return;
+        var compact=document.body.classList.contains("workspace-mode");
+        if (!compact && delta > 0) {event.preventDefault();setIntroMode(true);}
+        else if (compact && delta < 0 && window.scrollY <= 0) {
+            event.preventDefault();
+            if (topArmed) setIntroMode(false); else armTop();
+        } else {topArmed=false;clearTimeout(topTimer);}
+    }
+    window.addEventListener("wheel",function (event) {if (!event.ctrlKey) scrollIntent(event,event.deltaY);},{passive:false});
+    window.addEventListener("touchstart",function (event) {touchY=event.touches.length === 1 ? event.touches[0].clientY : null;},{passive:true});
+    window.addEventListener("touchmove",function (event) {if (touchY === null || event.touches.length !== 1) return;var y=event.touches[0].clientY;scrollIntent(event,touchY-y);touchY=y;},{passive:false});
+    window.addEventListener("keydown",function (event) {
+        if (event.target.closest("input, textarea, select, [contenteditable='true']") || event.ctrlKey || event.metaKey || event.altKey) return;
+        var delta=["ArrowDown","PageDown"," ","End"].includes(event.key) ? 1 : ["ArrowUp","PageUp"].includes(event.key) ? -1 : 0;
+        scrollIntent(event,delta);
+    });
+    window.addEventListener("scroll",function () {
+        if (introLocked) {if (window.scrollY !== introAnchor) window.scrollTo({top:introAnchor,behavior:"instant"});return;}
+        if (!document.body.classList.contains("workspace-mode") && window.scrollY > 0) {setIntroMode(true);return;}
+        if (window.scrollY <= 0) armTop(); else {topArmed=false;clearTimeout(topTimer);}
+    },{passive:true});
+    document.body.classList.toggle("workspace-mode",window.scrollY > 0);
     render(); requestAnimationFrame(fit);
 }());

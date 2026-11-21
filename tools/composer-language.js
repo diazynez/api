@@ -27,7 +27,7 @@
     var attributes = { 血: "Hp", 血量: "Hp", 生命值: "Hp", 耐力: "Energy", 体力: "Energy", 气量: "Qi", 气: "Qi", 伤害: "Power", 攻击力: "Power", 威力: "Power", 硬直时间: "HurtTime", 硬直: "HurtTime", 僵直: "HurtTime", 横向受力: "Hitx", 水平受力: "Hitx", 竖直受力: "Hity", 纵向受力: "Hity" };
     var operations = { 回: "add", 掉: "subtract", 设到: "set", 调到: "set", 要: "set", 设成: "set", 置为: "set", 改到: "set", 设: "set", 给: "give", 恢复: "add", 回复: "add", 消耗: "subtract", 扣: "subtract", 增加: "add", 提高: "add", 提升: "add", 加上: "add", 加: "add", 减少: "subtract", 降低: "subtract", 减去: "subtract", 扣除: "subtract", 减: "subtract", 设置为: "set", 设为: "set", 修改为: "set", 调整为: "set", 设置: "set", 改成: "set", 改为: "set", 调成: "set", 为: "set" };
     var bindings = { SJ: ["setSkill1", "砍技1"], WJ: ["setSkill2", "砍技2"], U: ["setZhao1", "招1"], SU: ["setZhao2", "招2"], WU: ["setZhao3", "招3"], ADJ: ["setCatch1", "摔1"], ADU: ["setCatch2", "摔2"], J:["setAttack","砍1"], K:["setJump","跳"], L:["setDash","瞬步"], I:["setBisha","必杀"], WI:["setBishaUP","上必杀"], SI:["setBishaSUPER","超必杀"], KJ:["setAttackAIR","跳砍"], KU:["setSkillAIR","跳招"], KI:["setBishaAIR","空中必杀"] };
-    var bindingAliases = {ZH1:"U",ZH2:"SU",ZH3:"WU",ZHAO1:"U",ZHAO2:"SU",ZHAO3:"WU",SKILL1:"SJ",SKILL2:"WJ","↓J":"SJ","↑J":"WJ","↓U":"SU","↑U":"WU","↓I":"SI","↑I":"WI"};
+    var bindingAliases = {"招1":"U","招2":"SU","招3":"WU","砍技1":"SJ","砍技2":"WJ",ZH1:"U",ZH2:"SU",ZH3:"WU",ZHAO1:"U",ZHAO2:"SU",ZHAO3:"WU",SKILL1:"SJ",SKILL2:"WJ","↓J":"SJ","↑J":"WJ","↓U":"SU","↑U":"WU","↓I":"SI","↑I":"WI"};
     function binding(value) {
         var key = value.toUpperCase().replace(/[+\s]/g, "");
         return bindings[bindingAliases[key] || key];
@@ -42,7 +42,7 @@
             else {
                 var word = words.find(function (v) { return tail.startsWith(v); });
                 if (word) token = { kind: attributes[word] ? "attribute" : "operation", value: attributes[word] || operations[word], raw: word };
-                else if ((m = tail.match(/^(?:[↑↓][+\s]*[A-Za-z]+|[A-Za-z_$][\w$]*)/))) token = { kind: binding(m[0]) ? "binding" : "identifier", value: m[0], raw: m[0] };
+                else if ((m = tail.match(/^(?:招[123]|砍技[12]|[↑↓][+\s]*[A-Za-z]+|[A-Za-z_$][\w$]*)/))) token = { kind: binding(m[0]) ? "binding" : "identifier", value: m[0], raw: m[0] };
                 else if ((m = tail.match(new RegExp("^" + number)))) token = { kind: "number", value: numeric(m[0]), raw: m[0] };
             }
             if (token) { token.start = index; token.end = index + token.raw.length; result.push(token); index = token.end; }
@@ -100,7 +100,7 @@
                 }
                 edits.push({ field: t.value, operation: op.value === "give" ? (hitField ? "set" : op.start < t.start ? "add" : "ambiguous") : op.value, amount: amount.value, entity: id, target: target, recipient: recipientName, position: position, start: start, end: end, unit: unit });
             }
-            if (t.kind === "binding") {
+            if (t.kind === "binding" || t.kind === "label" && binding(t.value) && /^\s*(?:纽带|按键|技能)/.test(text.slice(t.end))) {
                 var before = text.slice(Math.max(0, t.start - 12), t.start);
                 var prefix = before.match(new RegExp("(?:" + bindingVerbs + ")\\s*$"));
                 if (!prefix) return;

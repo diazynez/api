@@ -182,3 +182,16 @@ button.condition-join { display: block; width: auto; min-width: 58px; min-height
 .release-condition { margin: 10px 0; padding: 0 10px 10px; border: 1px solid var(--border-color, #8885); border-radius: 8px; }
 .release-condition > button:last-child { margin-top: 8px; font-size: 11px; }
 @media (max-width: 640px) { .global-version { margin-left: 0; } }
+
+body.composer-page { overflow-anchor: none; }
+.prompt-stage { display: grid; align-items: center; justify-items: center; min-height: calc(100svh - 96px); margin-bottom: 20px; transition: min-height 380ms ease; }
+.prompt-stage .prompt-panel { width: min(960px, 100%); margin-bottom: 0; border-color: transparent; background: transparent; transition: width 380ms ease, background-color 380ms ease, border-color 380ms ease; }
+.prompt-stage .prompt-panel > label { font-size: 24px; text-align: center; margin-bottom: 20px; transition: font-size 380ms ease, margin 380ms ease; }
+.prompt-stage .example-row { justify-content: center; }
+.workspace-mode .prompt-stage { min-height: 0; }
+.workspace-mode .prompt-stage .prompt-panel { width: 100%; border-color: var(--mono-tint2); background: var(--mono-tint3); }
+.workspace-mode .prompt-stage .prompt-panel > label { font-size: 14px; text-align: left; margin-bottom: 10px; }
+.workspace-mode .prompt-stage .example-row { justify-content: flex-start; }
+@media (prefers-reduced-motion: reduce) { .prompt-stage, .prompt-stage .prompt-panel, .prompt-stage .prompt-panel > label { transition: none; } }
+
+.library-source { display: block; margin-top: 3px; font: 9px/1.5 Consolas, monospace; opacity: .6; overflow-wrap: anywhere; }

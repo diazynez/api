@@ -7,7 +7,7 @@
     "use strict";
 
     // Update the composer.html asset versions with each demo release
-    var demoVersion = "0.9.2";
+    var demoVersion = "0.11.0";
     var versions = ["3.0", "3.3", "3.5", "3.6", "3.8开发"];
     var fighterDoc = "zh-cn/main-fighter-ctrlers/FighterCtrler";
     var mcDoc = "zh-cn/main-fighter-ctrlers/FighterMcCtrler";
@@ -212,6 +212,44 @@
     ["delayCall", "setAnimateFrameOut"].forEach(function (member) { method(member, member === "delayCall" ? "延迟逻辑帧调用" : "延迟动画帧调用", "FighterMain", baseDoc, [field("func", "回调函数名称", "Function", "", true), field("frame", "延迟帧数", "int", 1, true)]); });
     var catalog = Object.create(null);
     specs.forEach(function (spec) { catalog[spec.key] = spec; spec.fields = spec.fields || []; });
+    var searchConcepts = [
+        {members:["goFrame","gotoAndPlay","gotoAndStop","loop","justHitToPlay"], words:"跳帧 跳转 切换动作 帧标签 goFrame"},
+        {members:["isApplyG","setApplyG"], words:"重力 下落"},
+        {members:["addRenderFunc","removeRenderFunc","delayCall","setAnimateFrameOut"], words:"逐帧 回调 定时 延迟"}
+    ];
+    function demoExamples(actor, version) {
+        version=version || "3.8开发";
+        if (actor === "attacker" && version !== "3.8开发") return [["跳转并播放", "跳到“招2”并播放"],["跳转并停止", "跳到“招3”并停止"],["组合特效", "闪白光并震屏"]];
+        if (actor === "character") return [
+            ["多条件判断", "血量低于500并且自身在地面时，恢复100血量"],
+            ["条件禁用", "血量低于100时禁用su"],
+            ["条件登记纽带", "气量不少于150时，获得“招2”纽带"],
+            ["修改攻击配置", "攻击k1伤害增加30，然后攻击k2硬直改为500"],
+            ["对方状态与瞬移", "如果对方不在空中，瞬移到对方身后"],
+            ["逐帧判断", "每帧如果耐力不少于20，闪白光"],
+            ["命中后跳帧", "攻击k1命中后跳到“招2”"]
+        ];
+        return [
+            actor === "assister" && version === "3.0" ? ["跳转并播放", "跳到“招2”并播放"] : ["条件跳帧", "血量低于500时，跳到“招2”并播放"],
+            actor === "assister" ? ["修改攻击配置", "攻击k1伤害增加30，然后攻击k2硬直改为500"] : ["多条件跳帧", "血量低于500并且自身在空中时，跳到“招2”"],
+            ["跳帧与重力", "跳到“招2”并关闭重力"],
+            ["组合特效", "闪白光并震屏"]
+        ];
+    }
+    function searchSpecs(terms, actor, version) {
+        if (typeof terms === "string") terms = [terms].concat(language.aliasTerms(terms));
+        return specs.filter(function (spec) {
+            if (!usable(spec,actor,version)) return false;
+            var member=spec.member || spec.key, semantic=spec.semantic || member;
+            var peers=specs.filter(function (other) {return (other.semantic || other.member || other.key) === semantic;});
+            var words=[spec.key,member,spec.owner,spec.output,spec.label,spec.words || "",spec.owner+"."+member,semantic];
+            peers.forEach(function (other) {words.push(other.label,other.words || "");});
+            searchConcepts.forEach(function (concept) {if (concept.members.includes(member) || concept.members.includes(semantic)) words.push(concept.words);});
+            spec.fields.forEach(function (f) {words.push(f.label,f.key);});
+            var text=words.join(" ").toLowerCase();
+            return terms.some(function (term) {return text.includes(term.toLowerCase());});
+        });
+    }
     function available(spec, version) { return !spec.since || versions.indexOf(version) >= versions.indexOf(spec.since); }
     function createGraph() { return { format: 1, revision: 3, context: null, version: "3.8开发", actor: "character", root: null, nextId: 1, nodes: [], edges: [], bubbles: [] }; }
     function nodeById(graph, id) { return graph.nodes.find(function (node) { return node.id === id; }); }
@@ -816,5 +854,5 @@
         simplifyDisabledBlocks(graph);
         return graph;
     }
-    return { demoVersion: demoVersion, aliasTerms: language.aliasTerms, actors: actors, specs: specs, catalog: catalog, versions: versions, available: available, usable: usable, changeActor: changeActor, conditionsOf: conditionsOf, updateCondition: updateCondition, blockById: blockById, hasFrameAncestor: hasFrameAncestor, promoteFrame: promoteFrame, simplifyDisabledBlocks: simplifyDisabledBlocks, createGraph: createGraph, nodeById: nodeById, addNode: addNode, addBubble: addBubble, connect: connect, attachPath: attachPath, findPath: findPath, place: place, detach: detach, remove: remove, generate: generate, parse: parse, fromText: fromText, validateGraph: validateGraph };
+    return { demoVersion: demoVersion, demoExamples: demoExamples, searchSpecs: searchSpecs, aliasTerms: language.aliasTerms, actors: actors, specs: specs, catalog: catalog, versions: versions, available: available, usable: usable, changeActor: changeActor, conditionsOf: conditionsOf, updateCondition: updateCondition, blockById: blockById, hasFrameAncestor: hasFrameAncestor, promoteFrame: promoteFrame, simplifyDisabledBlocks: simplifyDisabledBlocks, createGraph: createGraph, nodeById: nodeById, addNode: addNode, addBubble: addBubble, connect: connect, attachPath: attachPath, findPath: findPath, place: place, detach: detach, remove: remove, generate: generate, parse: parse, fromText: fromText, validateGraph: validateGraph };
 }));

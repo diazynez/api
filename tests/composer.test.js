@@ -1146,3 +1146,34 @@ test("native predicate selection preserves explicit polling, event triggers, mix
     const old=c.generate(c.fromText("血量低于100时禁用su","3.5").graph);assert.match(old.code,/delayCall/);assert.match(old.code,/zhao2 = null/);assert.doesNotMatch(old.code,/setDisabled/);
     const plain=c.generate(c.fromText("禁用su").graph);assert.match(plain.code,/setDisabled\("zhao2", true\)/);
 });
+
+
+test("library search includes wrappers, member names and qualified owners", () => {
+    const keys=c.searchSpecs("跳帧","character","3.8开发").map(s=>s.key);
+    for(const key of ["goFrame","gotoAndPlay","gotoAndStop","loop","justHitToPlay","assisterGotoAndPlay","attackerGotoAndStop"]) assert.ok(keys.includes(key),key);
+    assert.ok(c.searchSpecs("FighterMcCtrler.gotoAndPlay","character","3.8开发").some(s=>s.key === "gotoAndPlay"));
+    assert.ok(c.searchSpecs("goFrame","character","3.8开发").some(s=>s.key === "loop"));
+    assert.ok(c.searchSpecs("isApplyG","character","3.8开发").some(s=>s.key === "isApplyG"));
+    assert.ok(c.searchSpecs("逐帧","character","3.8开发").some(s=>s.key === "setAnimateFrameOut"));
+    assert.ok(!c.searchSpecs("fighter","assister","3.8开发").some(s=>s.key === "fighter"));
+});
+
+test("quoted and unquoted Chinese binding names register actions without consuming literal jump labels", () => {
+    for(const slot of ['招2','“招2”','"招2"','su','“su”']) {
+        const graph=c.fromText("气量不少于150时，获得"+slot+"纽带").graph,output=c.generate(graph);
+        assert.deepEqual(output.errors,[]);let qi=149,calls=0;
+        const context={parent:{$fighter_ctrler:{getSelf:()=>({qi})},$mc_ctrler:{setZhao2:label=>{assert.equal(label,"招2");calls++;}}}};
+        vm.runInNewContext(output.code,context);assert.equal(calls,0);qi=150;vm.runInNewContext(output.code,context);assert.equal(calls,1);
+    }
+    for(const [slot,method] of [["招1","setZhao1"],["招3","setZhao3"],["砍技1","setSkill1"]]) assert.ok(c.generate(c.fromText("获得“"+slot+"”纽带").graph).code.includes(method));
+    for(const label of ["招2","获得招2纽带","砍技1"]) assert.equal(c.generate(c.fromText('跳到“'+label+'”').graph).code,'parent.$mc_ctrler.gotoAndPlay('+JSON.stringify(label)+');');
+});
+
+
+test("showcase examples describe executable capabilities for their logical owner", () => {
+    for(const actor of ["character","assister","attacker"]) for(const version of c.versions) for(const [label,text] of c.demoExamples(actor,version)) {
+        assert.doesNotMatch(text,/求|请问|大佬|咋/);const result=c.fromText(text,version,actor),output=c.generate(result.graph);
+        assert.deepEqual(output.errors,[],actor+" "+version+" "+label);assert.ok(output.code,text);assert.equal(result.graph.actor,actor);
+    }
+    assert.ok(c.demoExamples("character").length >= 6);
+});
