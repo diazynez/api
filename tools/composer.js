@@ -3,10 +3,10 @@
     var api = window.BvnComposer;
     var $ = function (id) { return document.getElementById(id); };
     var graph = api.createGraph(), selected = null, pending = null, drag = null, zoom = 1;
-    var history = [], saveTimer, noticeTimer, docRequest = 0, docCache = new Map();
+    var history = [], saveTimer, noticeTimer, docRequest = 0, docCache = new Map(), libraryOpen = new Map(), suppressLibraryClick = null;
     var storageKey = "bvn-api-composer-demo-v1";
     var board = $("board"), world = $("world");
-    var stage = document.createElement("div"); stage.style.position = "relative";
+    var stage = document.createElement("div"); stage.className = "canvas-stage";
     board.insertBefore(stage, world); stage.appendChild(world);
 
     // Embedded demos inherit the API theme and do not expose a separate switch
@@ -32,8 +32,10 @@
     function button(text, handler, cls) {
         var node = el("button", cls, text); node.type = "button"; node.addEventListener("click", handler); return node;
     }
-    function notify(message) {
-        $("notice").textContent = message; clearTimeout(noticeTimer);
+    function notify(message, kind) {
+        var notice = $("notice"); notice.replaceChildren(); notice.dataset.kind = kind || "warning";
+        if (kind !== "info") {var icon=el("span","notice-icon","⚠");icon.setAttribute("aria-hidden","true");notice.appendChild(icon);}
+        notice.appendChild(document.createTextNode(message)); clearTimeout(noticeTimer);
         noticeTimer = setTimeout(function () { $("notice").textContent = ""; }, 6000);
     }
     function remember() { history.push(JSON.stringify(graph)); if (history.length > 40) history.shift(); }
@@ -46,14 +48,16 @@
     }
     function update(fn) {
         var before = JSON.stringify(graph);
-        try { fn(); history.push(before); if (history.length > 40) history.shift(); pending = null; render(); }
+        try { fn(); api.simplifyDisabledBlocks(graph); history.push(before); if (history.length > 40) history.shift(); pending = null; render(); }
         catch (error) { graph = JSON.parse(before); render(); notify(error.message); }
     }
     function summary(node) {
         var spec = api.catalog[node.key];
         if (spec.kind === "root") return spec.code;
+        if (spec.computedMember) return node.params.action + " = " + (spec.nullAssignment ? "null" : JSON.stringify(node.params.frame));
         if (spec.assignment) return spec.member + " " + (spec.operator || "=") + " " + String(node.params.value);
         return (spec.member || spec.key) + (spec.property ? "" : "(" + spec.fields.map(function (f) {
+            if (node.key === "setDisabled" && f.key === "condition" && node.release) return "function():Boolean { … }";
             var value = node.params[f.key]; return value === "" ? "…" : f.type === "String" ? JSON.stringify(value) : String(value);
         }).join(", ") + ")");
     }
@@ -99,50 +103,77 @@
     function choice(choices, value) {
         var select = el("select"); choices.forEach(function (c) { var option = el("option", "", c[1]); option.value = c[0]; select.appendChild(option); }); select.value = value; return select;
     }
+    function joinButton(value, handler) {
+        var join = button(value === "or" ? "或 ||" : "且 &&", function () {handler(value === "or" ? "and" : "or");}, "condition-join");
+        join.setAttribute("aria-label", "条件连接方式：" + (value === "or" ? "或，点击切换为且" : "且，点击切换为或")); return join;
+    }
+    function checkbox(label, checked, handler) {
+        var host = el("label","checkbox-field"), input = el("input"); input.type = "checkbox"; input.checked = checked;
+        input.addEventListener("change",function () {handler(input.checked);}); host.append(input,document.createTextNode(label)); return host;
+    }
     function bubbleElement(bubble) {
-        var card = el("section", "bubble"); card.dataset.bubble = bubble.id; card.style.left = bubble.x + "px"; card.style.top = bubble.y + "px";
+        var card = el("section", "bubble"); card.dataset.bubble = bubble.id;
+        if (!bubble.container) {card.style.left = bubble.x + "px"; card.style.top = bubble.y + "px";}
         if (selected === bubble.id) card.classList.add("selected");
-        var header = el("div", "bubble-header"); header.appendChild(el("strong", "", "如果")); header.appendChild(el("span", "", "if (…) { … }")); card.appendChild(header);
-        header.addEventListener("click", function () { select(bubble.id); });
+        var header = el("div", "bubble-header"); header.appendChild(el("strong", "", bubble.kind === "frame" ? "逐帧执行" : "如果"));
+        var frequency = bubble.scheduler === "render" || bubble.scheduler === "auto" && graph.version === "3.8开发" ? {animation:"动画帧",logic:"逻辑帧",global:"全局常驻"}[bubble.renderMode || "animation"] : {auto:"自动",delay:"逻辑帧",animate:"动画帧"}[bubble.scheduler || "auto"];
+        header.appendChild(el("span", "", bubble.kind === "frame" ? "每帧 · " + frequency : "if (…) { … }")); card.appendChild(header);
+        card.tabIndex=0; card.setAttribute("aria-label",bubble.kind === "frame" ? "逐帧执行块" : "条件块");
+        card.addEventListener("click",function (event) {
+            if (event.target.closest(".node, input, select, button, a") || event.target.closest(".bubble") !== card) return;
+            event.stopPropagation(); select(bubble.id);
+        });
+        card.addEventListener("keydown",function (event) {if (event.target === card && ["Enter"," "].includes(event.key)) {event.preventDefault();event.stopPropagation();select(bubble.id);}});
         var condition = el("div", "drop-region"); condition.dataset.region = "condition"; condition.dataset.bubble = bubble.id;
-        condition.appendChild(el("h3", "", "条件 · 放入一张返回值卡片"));
-        var conditionNode = api.nodeById(graph, bubble.condition);
-        if (conditionNode) condition.appendChild(nodeElement(conditionNode));
-        else condition.appendChild(el("p", "", "将“当前耐力”“是否在空中”等读取值拖到这里"));
-        var comparison = el("div", "bubble-comparison");
-        var operator = choice(operators(conditionNode), bubble.operator); operator.setAttribute("aria-label", "比较方式");
-        operator.addEventListener("change", function () { update(function () { bubble.operator = operator.value; }); }); comparison.appendChild(operator);
-        if (!conditionNode || api.catalog[conditionNode.key].output !== "Boolean") {
-            var value = el("input"); value.value = bubble.value; value.setAttribute("aria-label", "比较值");
-            value.addEventListener("focus", remember);
-            value.addEventListener("input", function () { bubble.value = value.value; preview(); save(); }); comparison.appendChild(value);
-        }
-        condition.appendChild(comparison); card.appendChild(condition);
-        var actions = el("div", "drop-region"); actions.dataset.region = "actions"; actions.dataset.bubble = bubble.id;
-        actions.appendChild(el("h3", "", "成立时执行 · 按下列顺序"));
-        if (!bubble.actions.length) actions.appendChild(el("p", "", "将跳帧、修改属性或特效卡片拖到这里"));
-        bubble.actions.forEach(function (id) { var node = api.nodeById(graph, id); if (node) actions.appendChild(nodeElement(node)); });
+        condition.appendChild(el("h3", "", bubble.kind === "frame" ? "满足时停止 · 可留空" : "条件 · 拖入返回值卡片，可添加多个"));
+        var rows = api.conditionsOf(bubble);
+        if (!rows.length) condition.appendChild(el("p", "", "将读取值拖到这里"));
+        rows.forEach(function (row,index) {
+            var node = api.nodeById(graph,row.id), wrapper=el("div","condition-row"); wrapper.dataset.condition=row.id;
+            if (!node) return;
+            if (index) {
+                wrapper.appendChild(joinButton(row.join || "and",function (value) {update(function () {api.updateCondition(graph,bubble.id,row.id,{join:value});});}));
+            }
+            wrapper.appendChild(nodeElement(node));
+            var comparison=el("div","bubble-comparison");
+            if (api.catalog[node.key].output === "Boolean") comparison.appendChild(checkbox("条件为真",row.operator === "truthy",function (checked) {update(function () {api.updateCondition(graph,bubble.id,row.id,{operator:checked ? "truthy" : "falsy"});});}));
+            else {
+                var operator=choice(operators(node),row.operator); operator.setAttribute("aria-label","比较方式");
+                operator.addEventListener("change",function () {update(function () {api.updateCondition(graph,bubble.id,row.id,{operator:operator.value});});}); comparison.appendChild(operator);
+            }
+            if (api.catalog[node.key].output !== "Boolean") {
+                var value=el("input"); value.value=row.value; value.setAttribute("aria-label","比较值"); value.addEventListener("focus",remember);
+                value.addEventListener("input",function () {api.updateCondition(graph,bubble.id,row.id,{value:value.value}); preview(); save();}); comparison.appendChild(value);
+            }
+            wrapper.appendChild(comparison); condition.appendChild(wrapper);
+        });
+        if (rows.length > 1) condition.appendChild(el("p","condition-order","按从上到下的顺序组合条件"));
+        card.appendChild(condition);
+        var actions=el("div","drop-region"); actions.dataset.region="actions"; actions.dataset.bubble=bubble.id;
+        actions.appendChild(el("h3","",bubble.kind === "frame" ? "每帧执行 · 可嵌套条件块" : "成立时执行 · 可放卡片或执行块"));
+        if (!bubble.actions.length) actions.appendChild(el("p","","将操作卡片或条件块拖到这里"));
+        bubble.actions.forEach(function (id) {var node=api.nodeById(graph,id), child=api.blockById(graph,id); if (node) actions.appendChild(nodeElement(node)); else if (child) actions.appendChild(bubbleElement(child));});
         card.appendChild(actions); return card;
     }
     function renderCanvas() {
         $("node-layer").replaceChildren(); $("bubble-layer").replaceChildren();
         graph.nodes.filter(function (n) { return !n.container; }).forEach(function (n) { $("node-layer").appendChild(nodeElement(n)); });
-        graph.bubbles.forEach(function (b) { $("bubble-layer").appendChild(bubbleElement(b)); });
+        graph.bubbles.filter(function (b) {return !b.container;}).forEach(function (b) { $("bubble-layer").appendChild(bubbleElement(b)); });
         $("node-count").textContent = graph.nodes.length + " 张卡片";
         $("empty-board").hidden = graph.nodes.length + graph.bubbles.length > 0;
         resizeWorld(); requestAnimationFrame(drawWires);
     }
     function resizeWorld() {
         // Cover the viewport even when there are few cards or the view is zoomed out
-        var width = Math.max(900, board.clientWidth / zoom), height = Math.max(760, board.clientHeight / zoom);
+        var width = Math.max(900, Math.ceil(board.clientWidth / zoom)), height = Math.max(760, Math.ceil(board.clientHeight / zoom));
         graph.nodes.filter(function (n) { return !n.container; }).forEach(function (n) { width = Math.max(width, n.x + 260); height = Math.max(height, n.y + 160); });
-        graph.bubbles.forEach(function (b) {
+        graph.bubbles.filter(function (b) {return !b.container;}).forEach(function (b) {
             var node = world.querySelector('.bubble[data-bubble="' + b.id + '"]');
             width = Math.max(width, b.x + 430); height = Math.max(height, b.y + (node ? node.offsetHeight : 400) + 60);
         });
         world.style.width = width + "px"; world.style.height = height + "px";
         world.style.transformOrigin = "top left"; world.style.transform = "scale(" + zoom + ")";
-        world.style.position = "absolute"; stage.style.width = width * zoom + "px"; stage.style.height = height * zoom + "px";
+        world.style.position = "absolute"; stage.style.width = Math.ceil(width * zoom) + "px"; stage.style.height = Math.ceil(height * zoom) + "px";
     }
     function point(port) {
         var rect = port.getBoundingClientRect(), base = world.getBoundingClientRect();
@@ -186,9 +217,9 @@
             });
         }
         // Bubble backgrounds admit wires; cards and important text still cover them
-        hideContent(".node, .bubble-header, .bubble-comparison, .drop-region > h3", mask);
+        hideContent(".node, .bubble-header, .bubble-comparison, .condition-join, .condition-order, .drop-region > h3", mask);
     }
-    function select(id) { selected = id; renderCanvas(); renderInspector(); }
+    function select(id) { selected = id; renderCanvas(); renderInspector(); var card=world.querySelector('[data-node="'+id+'"], [data-bubble="'+id+'"]'); if (card) card.focus({preventScroll:true}); }
     function clearSelection() { selected = null; pending = null; renderCanvas(); renderInspector(); }
     function constrainInspector() {
         var panel = $("inspector"), frame = $("canvas-frame");
@@ -197,34 +228,55 @@
         panel.style.top = Math.max(12, Math.min(frame.clientHeight - panel.offsetHeight - 12, panel.offsetTop)) + "px";
     }
     function renderLibrary() {
-        var list = $("library-list"); list.replaceChildren();
-        var query = $("library-search").value.trim().toLowerCase();
-        var terms = window.BvnSearchAliases ? window.BvnSearchAliases.expand([query]) : [query];
-        var count = 0;
-        [["root", "可用对象"], ["object", "取得对象"], ["value", "读取值 / 判断条件"], ["action", "执行操作"]].forEach(function (group) {
-            var items = api.specs.filter(function (spec) {
-                return spec.kind === group[0] && api.usable(spec, graph.actor, graph.version) && (!query || terms.some(function (q) { return (spec.key + " " + spec.label + " " + spec.owner + " " + (spec.words || "")).toLowerCase().includes(q); }));
-            });
-            if (items.length) list.appendChild(el("h3", "library-group", group[1]));
-            items.forEach(function (spec) {
-                var item = button("", function () { addInterface(spec.key); }, "library-item"); item.dataset.kind = spec.kind;
-                item.appendChild(el("strong", "", spec.label)); item.appendChild(el("code", "", (spec.member || spec.key) + (spec.since ? " · " + spec.since + "起" : "")));
-                item.disabled = !api.available(spec, graph.version); list.appendChild(item); count++;
-            });
+        var list=$("library-list"); list.replaceChildren();
+        var grouping=$("library-grouping").value, query=$("library-search").value.trim().toLowerCase(), terms=window.BvnSearchAliases ? window.BvnSearchAliases.expand([query]) : [query];
+        terms=terms.concat(api.aliasTerms ? api.aliasTerms(query) : []).map(function (term) {return term.toLowerCase();});
+        var items=api.specs.filter(function (spec) {return api.usable(spec,graph.actor,graph.version) && (!query || terms.some(function (q) {return (spec.key+" "+spec.label+" "+spec.owner+" "+(spec.words || "")).toLowerCase().includes(q);}));});
+        var groups=new Map();
+        items.forEach(function (spec) {var group=grouping === "function" ? ({root:"可用对象",object:"取得对象",value:"读取值 / 判断条件",action:"执行操作"}[spec.kind]) : spec.kind === "root" ? "可用对象" : spec.owner; if (!groups.has(group)) groups.set(group,[]); groups.get(group).push(spec);});
+        groups.forEach(function (entries,name) {
+            var group=el("details","library-group"), title=el("summary","",name); title.appendChild(el("span","",entries.length));group.appendChild(title);
+            group.open=!!query || libraryOpen.get(grouping+":"+name) === true;
+            group.addEventListener("toggle",function () {if (!query && group.isConnected) libraryOpen.set(grouping+":"+name,group.open);});
+            entries.forEach(function (spec) {
+                var item=button("",function () {if (suppressLibraryClick !== spec.key) addInterface(spec.key);},"library-item");item.dataset.kind=spec.kind; item.dataset.key=spec.key;
+                item.appendChild(el("strong","",spec.label)); item.appendChild(el("code","",(spec.member || spec.key)+(spec.since ? " · "+spec.since+"起" : "")));
+                item.disabled=!api.available(spec,graph.version); group.appendChild(item);
+            }); list.appendChild(group);
         });
-        $("library-count").textContent = count + " 项";
+        $("library-count").textContent=items.length+" 项";
     }
-    function addInterface(key) {
+    function addInterface(key, drop) {
         update(function () {
-            var spec = api.catalog[key], index = graph.nodes.filter(function (n) { return !n.container && api.catalog[n.key].kind !== "object" && api.catalog[n.key].kind !== "root"; }).length;
-            var node = api.addNode(graph, key, { x: 35 + index % 3 * 230, y: 300 + Math.floor(index / 3) * 140 });
-            if (spec.kind === "root") { node.x = 35; node.y = 45 + graph.nodes.filter(function (n) { return api.catalog[n.key].kind === "root"; }).length * 135; }
-            else if ($("auto-path").checked) {
-                try { api.attachPath(graph, node); } catch (error) { notify(error.message); }
-            }
-            selected = node.id;
+            var spec=api.catalog[key], index=graph.nodes.filter(function (n) {return !n.container && !["object","root"].includes(api.catalog[n.key].kind);}).length;
+            var node=api.addNode(graph,key,{x:drop ? drop.point.x : 35+index%3*230,y:drop ? drop.point.y : 300+Math.floor(index/3)*140});
+            if (spec.kind === "root" && !drop) {node.x=35;node.y=45+graph.nodes.filter(function (n) {return api.catalog[n.key].kind === "root";}).length*135;}
+            else if (spec.kind !== "root" && $("auto-path").checked) {try {api.attachPath(graph,node);} catch (error) {notify(error.message);}}
+            if (drop && drop.region) api.place(graph,node.id,drop.region.dataset.bubble,drop.region.dataset.region,drop.index);
+            else if (spec.repeatRequired) {var block=api.addBubble(graph,{kind:"frame",x:drop ? drop.point.x : 300,y:drop ? drop.point.y : 300});api.place(graph,node.id,block.id,"actions");}
+            selected=node.id;
         });
     }
+    $("library-list").addEventListener("pointerdown",function (event) {
+        var item=event.target.closest(".library-item");
+        if (event.button !== 0 || !item || item.disabled) return;
+        event.preventDefault();
+        drag={kind:"library",key:item.dataset.key,card:item,startX:event.clientX,startY:event.clientY,moved:false};
+    });
+    function addBlock(kind, drop) {
+        update(function () {
+            var block=api.addBubble(graph,{kind:kind,x:drop ? drop.point.x : 265+graph.bubbles.length*60,y:drop ? drop.point.y : 230+graph.bubbles.length*60});
+            if (drop && drop.region) api.place(graph,block.id,drop.region.dataset.bubble,drop.region.dataset.region,drop.index);
+            selected=block.id;
+        });
+    }
+    document.querySelectorAll("button[data-block-kind]").forEach(function (item) {
+        item.addEventListener("pointerdown",function (event) {
+            if (event.button !== 0) return;
+            event.preventDefault();
+            drag={kind:"block-template",key:"block:"+item.dataset.blockKind,blockKind:item.dataset.blockKind,card:item,startX:event.clientX,startY:event.clientY,moved:false};
+        });
+    });
     function preview() {
         var result = api.generate(graph);
         $("code").textContent = result.code || (result.errors.length ? "补齐参数和连接后显示代码" : "从卡片中生成的代码会显示在这里");
@@ -232,14 +284,68 @@
         result.errors.forEach(function (error) { $("errors").appendChild(el("p", "", error)); });
         $("undo").disabled = !history.length;
     }
+    function renderDisableRelease(host,node) {
+        var current = node.release ? "condition" : node.params.condition === "true" ? "forever" : /^\d+$/.test(String(node.params.condition)) ? "frames" : "function";
+        var label=el("label","","解除方式"), mode=choice([["forever","保持禁用"],["frames","经过指定动画帧"],["function","由已有函数判断"],["condition","满足指定条件"]],current);
+        mode.addEventListener("change",function () {update(function () {
+            delete node.release;
+            node.params.condition = mode.value === "frames" ? "30" : mode.value === "function" ? "" : "true";
+            if (mode.value === "condition") {
+                var block=api.blockById(graph,node.container);
+                node.release={conditions:block ? api.conditionsOf(block).map(function (r) {return Object.assign({},r);}) : [],negate:!!block && block.kind === "condition"};
+            }
+        });}); label.appendChild(mode);host.appendChild(label);
+        if (current === "frames" || current === "function") {
+            var valueLabel=el("label","",current === "frames" ? "动画帧数" : "禁用条件函数"), value=el("input");
+            value.type=current === "frames" ? "number" : "text"; if (current === "frames") value.min="1";
+            value.value=node.params.condition;value.addEventListener("focus",remember);
+            value.addEventListener("input",function () {node.params.condition=value.value;var card=world.querySelector('.node[data-node="'+node.id+'"] .node-body code');if (card) card.textContent=summary(node);preview();save();});
+            valueLabel.appendChild(value);host.appendChild(valueLabel);
+            if (current === "function") host.appendChild(el("p","muted","函数返回 true 时保持禁用，返回 false 时解除。"));
+        }
+        if (current !== "condition") return;
+        var values=graph.nodes.filter(function (n) {return api.catalog[n.key].kind === "value";});
+        node.release.conditions.forEach(function (row,index) {
+            var box=el("div","release-condition");
+            if (index) box.appendChild(joinButton(row.join,function (join) {update(function () {row.join=join;});}));
+            var field=el("label","","返回值"), picker=choice(values.map(function (n) {return [n.id,api.catalog[n.key].label+" · "+summary(n)];}),row.id);
+            picker.addEventListener("change",function () {update(function () {row.id=picker.value;var spec=api.catalog[api.nodeById(graph,row.id).key];row.operator=spec.output === "Boolean" ? "truthy" : "==";row.value=spec.output === "String" ? "" : "20";});});field.appendChild(picker);box.appendChild(field);
+            var source=api.nodeById(graph,row.id);
+            if (source && api.catalog[source.key].output === "Boolean") box.appendChild(checkbox("条件为真",row.operator === "truthy",function (checked) {update(function () {row.operator=checked ? "truthy" : "falsy";});}));
+            else if (source) {
+                var comparison=el("div","bubble-comparison"), operator=choice(operators(source),row.operator), input=el("input");operator.setAttribute("aria-label","解除条件比较方式");input.setAttribute("aria-label","解除条件比较值");input.value=row.value;
+                operator.addEventListener("change",function () {update(function () {row.operator=operator.value;});});input.addEventListener("focus",remember);input.addEventListener("input",function () {row.value=input.value;preview();save();});comparison.append(operator,input);box.appendChild(comparison);
+            }
+            box.appendChild(button("移除此条件",function () {update(function () {node.release.conditions.splice(index,1);});},"danger"));host.appendChild(box);
+        });
+        var add=button("＋ 解除条件",function () {update(function () {
+            var source=values[0],spec=api.catalog[source.key];node.release.conditions.push({id:source.id,operator:spec.output === "Boolean" ? "truthy" : "==",value:spec.output === "String" ? "" : "20",join:"and"});
+        });}); add.disabled=!values.length;host.appendChild(add);
+        if (!values.length) host.appendChild(el("p","muted","先从接口库添加返回值卡片，再在这里选择解除条件。"));
+        if (node.release.conditions.length) host.appendChild(checkbox("整体取反：以上条件不成立时解除",node.release.negate,function (checked) {update(function () {node.release.negate=checked;});}));
+    }
     function renderInspector() {
         var host = $("inspector-fields"); host.replaceChildren(); $("doc-panel").hidden = true; $("selection-type").textContent = ""; docRequest++;
         var node = api.nodeById(graph, selected), bubble = graph.bubbles.find(function (b) { return b.id === selected; });
         $("inspector").hidden = !node && !bubble;
         if (bubble) {
-            host.appendChild(el("h3", "", "条件块"));
-            host.appendChild(el("p", "muted", "把读取值放进条件区，把操作放进执行区。拖动执行区内的卡片可以调整顺序。"));
-            host.appendChild(button("删除条件块，保留卡片", function () { update(function () { api.remove(graph, bubble.id); selected = null; }); }, "danger"));
+            host.appendChild(el("h3", "", "执行块"));
+            var kindLabel=el("label", "", "执行方式"), kind=choice([["condition","满足条件时执行"],["frame","逐帧执行"]], bubble.kind || "condition");
+            kind.addEventListener("change", function () { update(function () {if (kind.value === "frame") api.promoteFrame(graph,bubble); else bubble.kind=kind.value; api.validateGraph(graph);}); }); kindLabel.appendChild(kind); host.appendChild(kindLabel);
+            if (bubble.kind === "frame") {
+                var scheduleLabel=el("label", "", "调用方式"), schedule=choice([["auto","按版本自动选择"],["delay","delayCall · 逻辑帧"],["animate","setAnimateFrameOut · 动画帧"],["render","addRenderFunc · 3.8开发"]],bubble.scheduler || "auto");
+                schedule.addEventListener("change", function () { update(function () {bubble.scheduler=schedule.value;}); }); scheduleLabel.appendChild(schedule); host.appendChild(scheduleLabel);
+                if (bubble.scheduler === "render" || (bubble.scheduler || "auto") === "auto" && graph.version === "3.8开发") {
+                    var modeLabel=el("label","","回调分支"), mode=choice([["animation","跟随对象动画帧"],["logic","跟随对象逻辑帧"],["global","全局常驻逻辑帧"]],bubble.renderMode || "animation");
+                    mode.addEventListener("change",function () {update(function () {bubble.renderMode=mode.value;});}); modeLabel.appendChild(mode);host.appendChild(modeLabel);
+                }
+                var framesLabel=el("label", "", "执行帧数（-1 为持续执行）"), frames=el("input"); frames.type="number"; frames.min="-1"; frames.value=bubble.frames === undefined ? -1 : bubble.frames;
+                frames.addEventListener("change",function () {update(function () {bubble.frames=Number(frames.value);});}); framesLabel.appendChild(frames); host.appendChild(framesLabel);
+
+            }
+            if (bubble.container) host.appendChild(button("移回工作台",function () {update(function () {api.detach(graph,bubble.id);bubble.x=35;bubble.y=420;});}));
+            host.appendChild(el("p", "muted", bubble.kind === "frame" ? "停止条件在每次执行前检查；需要按条件执行的操作，可放进内层条件块。" : "条件区可放多个返回值；执行区可放操作或执行块。拖动可调整顺序。"));
+            host.appendChild(button("删除执行块，保留卡片", function () { update(function () { api.remove(graph, bubble.id); selected = null; }); }, "danger"));
             return;
         }
         if (!node) { host.appendChild(el("p", "muted", "选中一张卡片，查看参数与说明。")); return; }
@@ -248,12 +354,15 @@
         if (spec.hint) host.appendChild(el("p", "muted", spec.hint));
         if (!spec.fields.length) host.appendChild(el("p", "muted", spec.kind === "root" ? "作为其他卡片的调用起点。" : "此接口无需参数。"));
         spec.fields.forEach(function (field) {
+            if (node.key === "setDisabled" && field.key === "condition") {renderDisableRelease(host,node);return;}
+            if (field.type === "Boolean") {
+                host.appendChild(checkbox(field.label,node.params[field.key] === true,function (checked) {update(function () {node.params[field.key]=checked;});})); return;
+            }
             var label = el("label", "", field.label); label.appendChild(el("span", "field-type", field.type));
-            var input = field.type === "Boolean" ? choice([["true", "是 · true"], ["false", "否 · false"]], String(node.params[field.key])) : el("input");
-            if (field.type !== "Boolean") { input.value = node.params[field.key]; input.type = "text"; input.autocomplete = "off"; }
+            var input = el("input"); input.value = node.params[field.key]; input.type = "text"; input.autocomplete = "off";
             input.setAttribute("aria-label", field.label); input.addEventListener("focus", remember);
-            input.addEventListener(field.type === "Boolean" ? "change" : "input", function () {
-                node.params[field.key] = field.type === "Boolean" ? input.value === "true" : input.value;
+            input.addEventListener("input", function () {
+                node.params[field.key] = input.value;
                 var card = world.querySelector('.node[data-node="' + node.id + '"] .node-body code'); if (card) card.textContent = summary(node);
                 preview(); resizeWorld(); requestAnimationFrame(drawWires); save();
             }); label.appendChild(input); host.appendChild(label);
@@ -315,13 +424,13 @@
             n.x = 35 + level * 230; n.y = 45 + row * 140; bottom = Math.max(bottom, n.y + 130);
             if (level > 0) objectBottom = Math.max(objectBottom, n.y + 130);
         });
-        graph.bubbles.forEach(function (b, i) { b.x = 265 + i * 420; b.y = objectBottom + 50; });
+        graph.bubbles.filter(function (b) {return !b.container;}).forEach(function (b, i) { b.x = 265 + i * 420; b.y = objectBottom + 50; });
         graph.nodes.filter(function (n) { return !n.container && ["value", "action"].includes(api.catalog[n.key].kind); }).forEach(function (n, i) { n.x = 35; n.y = bottom + 50 + i * 140; });
     }
     function fit() {
         var right = 400, bottom = 400;
         graph.nodes.filter(function (n) { return !n.container; }).forEach(function (n) { right = Math.max(right, n.x + 230); bottom = Math.max(bottom, n.y + 150); });
-        graph.bubbles.forEach(function (b) { var element = world.querySelector('.bubble[data-bubble="' + b.id + '"]'); right = Math.max(right, b.x + 400); bottom = Math.max(bottom, b.y + (element ? element.offsetHeight : 420) + 30); });
+        graph.bubbles.filter(function (b) {return !b.container;}).forEach(function (b) { var element = world.querySelector('.bubble[data-bubble="' + b.id + '"]'); right = Math.max(right, b.x + 400); bottom = Math.max(bottom, b.y + (element ? element.offsetHeight : 420) + 30); });
         zoom = Math.max(.45, Math.min(1, (board.clientWidth - 15) / right, (board.clientHeight - 15) / bottom));
         board.scrollLeft = 0; board.scrollTop = 0; resizeWorld(); requestAnimationFrame(drawWires);
     }
@@ -356,7 +465,7 @@
         });
     }
     function position(event) { var rect = world.getBoundingClientRect(); return { x: (event.clientX - rect.left) / zoom, y: (event.clientY - rect.top) / zoom }; }
-    function startWire(id) { pending = id; renderCanvas(); notify("连接到另一张卡片左侧的圆点；返回值卡片可直接拖入条件区"); }
+    function startWire(id) { pending = id; renderCanvas(); notify("连接到另一张卡片左侧的圆点；返回值卡片可直接拖入条件区", "info"); }
     function finishWire(id) {
         if (!pending) { notify("先选择一张卡片右侧的输出圆点"); return; }
         var from = pending; update(function () { api.connect(graph, from, id); selected = id; });
@@ -409,16 +518,44 @@
         if (Math.hypot(event.clientX - drag.startX, event.clientY - drag.startY) > 5) drag.moved = true;
         if (drag.kind === "wire") { drag.point = position(event); drawWires(); return; }
         if (!drag.moved) return;
-        if (!drag.ghost) { drag.ghost = drag.card.cloneNode(true); drag.ghost.classList.add("drag-ghost"); drag.ghost.style.position = "absolute"; drag.ghost.style.width = drag.card.offsetWidth + "px"; world.appendChild(drag.ghost); drag.card.classList.add("is-dragging"); }
-        var point = position(event); drag.ghost.style.left = Math.max(10, point.x - drag.offsetX) + "px"; drag.ghost.style.top = Math.max(10, point.y - drag.offsetY) + "px";
+        if (drag.kind === "library" || drag.kind === "block-template") {
+            if (!drag.ghost) {drag.ghost=drag.card.cloneNode(true);drag.ghost.className="library-drag-ghost";drag.ghost.removeAttribute("id");drag.ghost.setAttribute("aria-hidden","true");drag.ghost.tabIndex=-1;drag.ghost.style.width="200px";document.body.appendChild(drag.ghost);}
+            drag.ghost.style.left=event.clientX+12+"px";drag.ghost.style.top=event.clientY+12+"px";
+            return;
+        }
+        if (!drag.ghost) {
+            drag.ghost = drag.card.cloneNode(true); drag.ghost.classList.add("drag-ghost"); drag.ghost.setAttribute("aria-hidden","true"); drag.ghost.tabIndex=-1;
+            drag.ghost.style.width = drag.card.offsetWidth + "px"; drag.ghost.style.transform = "scale(" + zoom + ") rotate(1deg)";
+            document.body.appendChild(drag.ghost); drag.card.classList.add("is-dragging");
+        }
+        drag.ghost.style.left = event.clientX - drag.offsetX * zoom + "px"; drag.ghost.style.top = event.clientY - drag.offsetY * zoom + "px";
+        var bounds = board.getBoundingClientRect();
+        drag.ghost.classList.toggle("discarding",event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom);
         world.querySelectorAll(".drop-hover").forEach(function (n) { n.classList.remove("drop-hover"); });
         var target = document.elementFromPoint(event.clientX, event.clientY), region = target && target.closest(".drop-region");
-        if (region && api.nodeById(graph, drag.id)) region.classList.add("drop-hover");
+        if (region && (api.nodeById(graph, drag.id) || api.blockById(graph,drag.id))) region.classList.add("drop-hover");
     });
+    function dropIndex(region,y,id) {
+        if (!region) return undefined;
+        var selector=region.dataset.region === "condition" ? ".condition-row" : ".node, .bubble";
+        return Array.from(region.children).filter(function (item) {return item.matches(selector) && (item.dataset.node || item.dataset.bubble || item.dataset.condition) !== id && y > item.getBoundingClientRect().top+item.getBoundingClientRect().height/2;}).length;
+    }
     window.addEventListener("pointerup", function (event) {
         if (!drag) return;
         var action = drag; drag = null;
         if (action.kind === "inspector") return;
+        if (action.kind === "library" || action.kind === "block-template") {
+            if (action.ghost) action.ghost.remove();
+            if (!action.moved) return;
+            suppressLibraryClick=action.key;setTimeout(function () {suppressLibraryClick=null;},0);
+            var target=document.elementFromPoint(event.clientX,event.clientY);
+            if (target && board.contains(target)) {
+                var region=target.closest(".drop-region");
+                var placement={point:position(event),region:region,index:dropIndex(region,event.clientY)};
+                if (action.kind === "block-template") addBlock(action.blockKind,placement); else addInterface(action.key,placement);
+            }
+            return;
+        }
         if (action.kind === "pan") { world.style.cursor = ""; return; }
         if (action.kind === "wire") {
             var target = document.elementFromPoint(event.clientX, event.clientY), port = target && target.closest('button[data-port="in"]');
@@ -428,14 +565,15 @@
         world.querySelectorAll(".drop-hover").forEach(function (n) { n.classList.remove("drop-hover"); });
         if (!action.moved) { select(action.id); return; }
         var drop = document.elementFromPoint(event.clientX, event.clientY), region = drop && drop.closest(".drop-region"), point = position(event);
+        var bounds = board.getBoundingClientRect();
+        if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) {deleteItem(action.id);return;}
         if (!drop || !board.contains(drop)) { renderCanvas(); return; }
         update(function () {
             var node = api.nodeById(graph, action.id), bubble = graph.bubbles.find(function (b) { return b.id === action.id; });
-            if (node && region) {
-                var index = Array.from(region.querySelectorAll(".node:not(.drag-ghost)")).filter(function (card) { return card.dataset.node !== action.id && event.clientY > card.getBoundingClientRect().top + card.getBoundingClientRect().height / 2; }).length;
-                api.place(graph, node.id, region.dataset.bubble, region.dataset.region, index);
+            if ((node || bubble) && region) {
+                api.place(graph,action.id,region.dataset.bubble,region.dataset.region,dropIndex(region,event.clientY,action.id));
             } else {
-                if (node) api.detach(graph, node.id);
+                if (node || bubble) api.detach(graph, action.id);
                 var item = node || bubble;
                 item.x = Math.max(10, Math.min(4000, point.x - action.offsetX)); item.y = Math.max(10, Math.min(4000, point.y - action.offsetY));
             }
@@ -444,8 +582,14 @@
     window.addEventListener("pointercancel", function () { if (drag && drag.ghost) drag.ghost.remove(); drag = null; world.style.cursor = ""; renderCanvas(); });
     window.addEventListener("keydown", function (event) {
         if (event.key === "Escape") clearSelection();
+        if (event.key === "Delete" && !event.repeat && !event.defaultPrevented && !event.ctrlKey && !event.metaKey && !event.altKey && !event.target.closest("input, textarea, select, [contenteditable]:not([contenteditable='false'])") && selected) {event.preventDefault();deleteItem(selected);}
         if ((event.ctrlKey || event.metaKey) && event.key === "z" && !event.target.closest("input, textarea, select")) { event.preventDefault(); undo(); }
     });
+    function deleteItem(id) {
+        if (!api.nodeById(graph,id) && !api.blockById(graph,id)) return;
+        update(function () {api.remove(graph,id);selected=null;});
+        notify("已删除，可按 Ctrl+Z 撤销", "info");
+    }
     function undo() { if (!history.length) return; graph = JSON.parse(history.pop()); selected = null; pending = null; render(); }
     $("undo").addEventListener("click", undo);
     $("close-inspector").addEventListener("click", clearSelection);
@@ -461,6 +605,8 @@
     });
     document.querySelectorAll("[data-example]").forEach(function (node) { node.addEventListener("click", function () { $("prompt").value = node.dataset.example; extract(); }); });
     $("library-search").addEventListener("input", renderLibrary);
+    try {if (localStorage.getItem("bvn-api-composer-grouping") === "type") $("library-grouping").value="type";} catch (error) {}
+    $("library-grouping").addEventListener("change",function () {renderLibrary();try {localStorage.setItem("bvn-api-composer-grouping",this.value);} catch (error) {}});
     $("version").replaceChildren(); api.versions.forEach(function (version) { var option = el("option", "", version); option.value = version; $("version").appendChild(option); });
     $("version").addEventListener("change", function () { update(function () { graph.version = $("version").value; }); });
     $("actor").addEventListener("change", function () {
@@ -471,19 +617,21 @@
         });
         requestAnimationFrame(fit);
     });
-    $("add-bubble").addEventListener("click", function () { update(function () { var b = api.addBubble(graph, { x: 265 + graph.bubbles.length * 60, y: 230 + graph.bubbles.length * 60 }); selected = b.id; }); });
+    $("add-frame").addEventListener("click",function () {if (suppressLibraryClick !== "block:frame") addBlock("frame");});
+    $("add-bubble").addEventListener("click",function () {if (suppressLibraryClick !== "block:condition") addBlock("condition");});
     $("arrange").addEventListener("click", function () { update(arrange); requestAnimationFrame(fit); });
-    var fitButton = button("适应", fit); $("arrange").after(fitButton);
+    var fitButton = button("适应", fit); $("toolbar-view").appendChild(fitButton);
     fitButton.after(button("1:1", function () { zoom = 1; resizeWorld(); requestAnimationFrame(drawWires); }));
     $("clear").addEventListener("click", function () { update(function () { var next = api.createGraph(); next.version = graph.version; next.actor = graph.actor; graph = next; selected = null; }); $("matches").replaceChildren(); zoom = 1; resizeWorld(); });
     $("copy").addEventListener("click", async function () {
         var result = api.generate(graph); if (!result.code) return;
-        try { await navigator.clipboard.writeText(result.code); notify("代码已复制"); }
+        try { await navigator.clipboard.writeText(result.code); notify("代码已复制", "info"); }
         catch (error) {
             var range = document.createRange(); range.selectNodeContents($("code")); var selection = window.getSelection(); selection.removeAllRanges(); selection.addRange(range); notify("自动复制不可用，已选中代码，可按 Ctrl+C 复制");
         }
     });
-    new ResizeObserver(function () { resizeWorld(); requestAnimationFrame(drawWires); }).observe(board);
+    var resizeFrame;
+    new ResizeObserver(function () {cancelAnimationFrame(resizeFrame);resizeFrame=requestAnimationFrame(function () {resizeWorld();drawWires();});}).observe(board);
     new ResizeObserver(constrainInspector).observe($("inspector"));
     var restored = false;
     try { var saved = localStorage.getItem(storageKey); if (saved) { graph = api.validateGraph(JSON.parse(saved)); restored = true; } }

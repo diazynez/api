@@ -67,7 +67,7 @@ test("bubble placement validates return values, moves cards atomically and order
 });
 
 test("unsupported and negated conditions are never silently turned into unconditional operations", () => {
-    for (const text of ["如果目标在场，就震屏", "不要跳到“招2”", "耐力不少于20且血量低于500时，跳到“招2”", "在空中时闪白光，否则恢复100点血量"]) {
+    for (const text of ["如果目标在场，就震屏", "不要跳到“招2”", "在空中时闪白光，否则恢复100点血量"]) {
         const result = c.fromText(text);
         assert.ok(result.notes.length);
         assert.equal(c.generate(result.graph).code, "", text);
@@ -158,7 +158,8 @@ test("ownership cannot silently retain a character-only API in an assister works
     const graph = c.fromText("耐力不少于20时，跳到“招2”").graph;
     assert.ok(c.changeActor(graph, "assister").length);
     assert.equal(c.generate(graph).code, "");
-    assert.ok(c.generate(graph).errors.some(e => e.includes("辅助")));
+    assert.ok(c.generate(graph).errors.some(e => e.includes("尚未连接")));
+    assert.ok(!graph.nodes.some(n => n.key === "assisterOwner_fighter_ctrler"));
 });
 
 test("demo asset versions match the visible badge and output uses a full-width panel", () => {
@@ -500,7 +501,7 @@ test("automatic paths use native shortcuts while explicit goFrame retains advanc
     node.params.name = "招7"; node.params.playFrame = 6;
     assert.match(c.generate(explicit).code, /getFighterMc\(\)\.goFrame\("招7", true, 6\)/);
     const setup = c.generate(c.fromText("血量不足120时跳到招3", "3.0", "main").graph).code;
-    assert.match(setup, /function get \$self_main\(\): \*\n\{/);
+    assert.match(setup, /function get \$self_main\(\): \* \{for each/);
     assert.match(setup, /getMC\(\)\.goFrame/);
 });
 
@@ -862,4 +863,286 @@ test("placement metadata, attack-property vocabulary and label aliases compose i
     assert.equal(c.generate(empty.graph).code, "");
     assert.ok(!empty.notes.some(n => n.includes("尚未识别")));
     assert.equal(c.generate(c.fromText('跳转到“跳转到回血100”').graph).code, 'parent.$mc_ctrler.gotoAndPlay("跳转到回血100");');
+});
+
+
+function frameScript(code) {
+    const body = code.slice(code.indexOf("// 登记一次"));
+    return body.replace(/var (\w+):(?:\*|Boolean|int)/g, "var $1").replace(/function (\w+)\(\):void/g, "function $1()");
+}
+
+test("old-version action disabling rechecks current resources on every scheduled frame", () => {
+    for (const version of ["3.0", "3.3", "3.5", "3.6"]) for (const scheduler of ["delay", "animate"]) {
+        const result = c.fromText('耐力不少于20时，禁用“招2”', version);
+        const block = result.graph.bubbles[0]; block.scheduler = scheduler; block.frames = 3;
+        assert.equal(block.kind, "frame");
+        const generated = c.generate(result.graph); assert.deepEqual(generated.errors, []);
+        assert.match(generated.code, /getAction\(\)\.zhao2 = null/);
+        assert.doesNotMatch(generated.code, /setDisabled\(/);
+        let energy = 19; const action = {zhao2:"招2"}, queue=[];
+        const owner = {energy:19, delayCall:fn=>queue.push(fn),setAnimateFrameOut:fn=>queue.push(fn)};
+        const context={ $self_main:owner, parent:{$mc_ctrler:{getAction:()=>action},$fighter_ctrler:{getEnergy:()=>energy}} };
+        vm.runInNewContext(frameScript(generated.code),context);
+        assert.equal(action.zhao2,"招2");
+        queue.shift()(); assert.equal(action.zhao2,"招2");
+        energy=20; owner.energy=20; queue.shift()(); assert.equal(action.zhao2,null);
+        action.zhao2="新登记"; queue.shift()(); assert.equal(action.zhao2,null);
+        assert.equal(queue.length,0);
+    }
+});
+
+test("native disabling and continuous conditional disabling retain different lifetimes", () => {
+    const once=c.generate(c.fromText('耐力不少于20时，禁用“招2”').graph);
+    assert.match(once.code,/setDisabled\("zhao2", function\(\):Boolean/);
+    assert.doesNotMatch(once.code,/if \(/);
+    assert.doesNotMatch(once.code,/addRenderFunc/);
+    const result=c.fromText('逐帧检测耐力不少于20时，禁用“招2”');
+    const generated=c.generate(result.graph); assert.deepEqual(generated.errors,[]);
+    let energy=19, callback=null; const calls=[];
+    const owner={addRenderFunc:fn=>{callback=fn;},removeRenderFunc:fn=>{assert.equal(fn,callback); calls.push("removed");}};
+    const action={setDisabled:(key,value)=>calls.push(["disable",key,value]),removeDisabled:key=>calls.push(["enable",key])};
+    const context={parent:{$fighter_ctrler:{getSelf:()=>owner,getEnergy:()=>energy},$mc_ctrler:{getAction:()=>action}}};
+    vm.runInNewContext(frameScript(generated.code),context);
+    callback(); assert.equal(calls.length,0);
+    energy=20; callback(); assert.deepEqual(calls.pop(),["disable","zhao2",true]);
+    energy=19; callback(); assert.equal(calls.length,0);
+    assert.doesNotMatch(generated.code,/frameActive|frameRemaining|removeRenderFunc/);
+    const restore=c.generate(c.fromText('解除禁用“招2”').graph);
+    assert.match(restore.code,/removeDisabled\("zhao2"\)/); assert.doesNotMatch(restore.code,/setDisabled/);
+    const disabledNode=result.graph.nodes.find(n=>n.key === "setDisabled"); disabledNode.params.action="bad()";
+    assert.doesNotThrow(()=>c.generate(result.graph)); assert.equal(c.generate(result.graph).code,"");
+});
+
+test("frame blocks can omit a condition but incomplete conditional requests never execute", () => {
+    const plain=c.fromText("逐帧闪白光"); assert.equal(plain.graph.bubbles[0].condition,null);
+    assert.match(c.generate(plain.graph).code,/addRenderFunc/);
+    assert.equal(c.generate(c.fromText("每帧如果目标在场，就闪白光").graph).code,"");
+    const raw=c.fromText("getAction().zhao2 = null", "3.5");
+    assert.equal(raw.graph.bubbles[0].kind,"frame"); assert.deepEqual(c.generate(raw.graph).errors,[]);
+    for(const text of ['跳到“getAction().zhao2 = null”','跳到“逐帧闪白光”']) assert.equal(c.fromText(text).graph.bubbles.length,0);
+    const manual=c.createGraph(),node=c.addNode(manual,"clearBinding");c.attachPath(manual,node);
+    assert.equal(c.generate(manual).code,"");assert.match(c.generate(manual).errors.join(""),/逐帧执行块/);
+});
+
+test("cooldown predicates become per-frame checks and never start cooldowns implicitly", () => {
+    for(const text of ['冷却“cd1”结束时，闪白光','cd1的冷却结束时，闪白光','冷却cd1结束时，闪白光']) {
+        const result=c.fromText(text,"3.0"); const output=c.generate(result.graph);
+        assert.deepEqual(output.errors,[]); assert.equal(result.graph.bubbles[0].kind,"frame");
+        assert.match(output.code,/CDOK\("cd1"\)/); assert.doesNotMatch(output.code,/setCD\(/);
+        const queue=[],calls=[];let ready=false;
+        vm.runInNewContext(frameScript(output.code),{$self_main:{delayCall:fn=>queue.push(fn)},parent:{$mc_ctrler:{getAction:()=>({CDOK:()=>ready})},$effect_ctrler:{shine:()=>calls.push("shine")}}});
+        queue.shift()();assert.deepEqual(calls,[]); ready=true;queue.shift()();assert.deepEqual(calls,["shine"]);
+    }
+    const graph=c.createGraph(),block=c.addBubble(graph),node=c.addNode(graph,"CDOK");c.place(graph,node.id,block.id,"condition");assert.equal(block.kind,"frame");
+});
+
+test("frame settings round trip, validate schedulers and gate native callbacks by version", () => {
+    const graph=c.fromText("每帧闪白光").graph,block=graph.bubbles[0];block.scheduler="animate";block.frames=4;
+    const restored=c.validateGraph(JSON.parse(JSON.stringify(graph)));
+    assert.equal(c.generate(restored).code,c.generate(graph).code);
+    for(const [key,value] of [["scheduler","injected()"],["kind","other"],["frames",-2],["frames",null]]) {
+        const bad=JSON.parse(JSON.stringify(graph));bad.bubbles[0][key]=value;assert.throws(()=>c.validateGraph(bad));
+    }
+    graph.version="3.5";block.scheduler="render";assert.match(c.generate(graph).errors.join(""),/3.8开发/);
+    const legacy=c.createGraph(),empty=c.addBubble(legacy);delete empty.kind;delete empty.scheduler;delete empty.frames;
+    assert.equal(c.validateGraph(legacy).bubbles[0].kind,"condition");
+});
+
+test("new card fields remain literals and preserve version restrictions", () => {
+    for(const [key,params,fragment] of [["setDisabled",{action:"zhao2",condition:"30"},'setDisabled("zhao2", 30)'],["removeDisabled",{action:"null"},'removeDisabled(null)'],["fire",{mcName:"波1",params:'{"x":5,"hold":2}'},'fire("波1", {"x":5,"hold":2})'],["writeHitpowerRate",{value:2},'.powerRate = 2']]) {
+        const graph=c.createGraph(),node=c.addNode(graph,key,{params});const source=c.attachPath(graph,node);if(source.key==="getHitVO")source.params.id="A1";
+        assert.ok(c.generate(graph).code.includes(fragment));
+        if(key==="setDisabled") {node.params.condition="fn(); injected()";assert.equal(c.generate(graph).code,"");graph.version="3.5";node.params.condition="true";assert.equal(c.generate(graph).code,"");}
+        if(key==="fire"){node.params.params='function(){}';assert.equal(c.generate(graph).code,"");}
+    }
+});
+
+test("nullable object chains guard intermediate receivers and automatic routing does not switch to owners", () => {
+    const graph=c.createGraph(),mc=c.addNode(graph,"mc"),assist=c.addNode(graph,"getAssister"),owner=c.addNode(graph,"assisterOwner_fighter_ctrler"),heal=c.addNode(graph,"addHp",{params:{v:3}});
+    c.connect(graph,mc.id,assist.id);c.connect(graph,assist.id,owner.id);c.connect(graph,owner.id,heal.id);
+    const result=c.generate(graph);assert.deepEqual(result.errors,[]);
+    assert.doesNotThrow(()=>vm.runInNewContext(result.code.replace(/var (target\d+):\*/g,"var $1"),{parent:{$mc_ctrler:{getAssister:()=>null}}}));
+    let hp=0;vm.runInNewContext(result.code.replace(/var (target\d+):\*/g,"var $1"),{parent:{$mc_ctrler:{getAssister:()=>({owner_fighter_ctrler:{addHp:v=>hp+=v}})}}});assert.equal(hp,3);
+});
+
+
+test("multiple conditions support AND, OR and explicit top-to-bottom grouping", () => {
+    const r=c.fromText("耐力不少于20或血量低于300且气量不少于100时，闪白光"), g=c.generate(r.graph);
+    assert.deepEqual(g.errors,[]);assert.equal(c.conditionsOf(r.graph.bubbles[0]).length,3);
+    for (const energy of [10,30]) for (const hp of [100,500]) for (const qi of [0,100]) {
+        let calls=0;vm.runInNewContext(g.code,{parent:{$fighter_ctrler:{getEnergy:()=>energy,getSelf:()=>({hp,qi})},$effect_ctrler:{shine:()=>calls++}}});
+        assert.equal(calls,Number((energy>=20 || hp<300) && qi>=100));
+    }
+    const and=c.fromText("耐力不少于20且血量低于300时，闪白光");assert.match(c.generate(and.graph).code,/ >= 20 && /);
+    const bad=c.fromText("耐力不少于20血量低于300时，闪白光");assert.equal(c.generate(bad.graph).code,"");
+    const block=and.graph.bubbles[0],first=block.condition,second=block.extraConditions[0].id;
+    c.detach(and.graph,first);assert.equal(block.condition,second);assert.equal(block.extraConditions.length,0);
+});
+
+test("logical operators short circuit nullable reads inside their own operands", () => {
+    const graph=c.createGraph(),block=c.addBubble(graph),energy=c.addNode(graph,"getEnergy"),air=c.addNode(graph,"targetIsInAir"),shine=c.addNode(graph,"shine");
+    [energy,air,shine].forEach(n=>c.attachPath(graph,n));c.place(graph,energy.id,block.id,"condition");c.updateCondition(graph,block.id,energy.id,{operator:">=",value:"20"});c.place(graph,air.id,block.id,"condition");c.place(graph,shine.id,block.id,"actions");
+    for(const join of ["and","or"]) for(const amount of [10,30]) for(const target of [null,{isInAir:true}]) {
+        c.updateCondition(graph,block.id,air.id,{join});const output=c.generate(graph);assert.deepEqual(output.errors,[]);
+        let reads=0,calls=0;vm.runInNewContext(output.code.replace(/var (target\d+):\*/g,"var $1").replace(/function\(\):Boolean/g,"function()"),{parent:{$fighter_ctrler:{getEnergy:()=>amount,getTargetSP:()=>{reads++;return target;}},$effect_ctrler:{shine:()=>calls++}}});
+        const skipped=join==="and" ? amount<20 : amount>=20;assert.equal(reads,skipped?0:1);
+        assert.equal(calls,Number(join==="and" ? amount>=20 && !!target : amount>=20 || !!target));
+    }
+});
+
+test("frame blocks contain nested condition blocks without registering callbacks every frame", () => {
+    const graph=c.createGraph(),frame=c.addBubble(graph,{kind:"frame",frames:2}),condition=c.addBubble(graph),value=c.addNode(graph,"getEnergy"),shine=c.addNode(graph,"shine");
+    [value,shine].forEach(n=>c.attachPath(graph,n));c.place(graph,value.id,condition.id,"condition");c.updateCondition(graph,condition.id,value.id,{operator:">=",value:"20"});c.place(graph,shine.id,condition.id,"actions");c.place(graph,condition.id,frame.id,"actions");
+    const output=c.generate(graph);assert.deepEqual(output.errors,[]);assert.equal((output.code.match(/addRenderFunc\(/g)||[]).length,1);
+    let callback,energy=10,calls=0,removed=0;const host={addRenderFunc:fn=>callback=fn,removeRenderFunc:fn=>{assert.equal(fn,callback);removed++;}};
+    vm.runInNewContext(frameScript(output.code),{parent:{$fighter_ctrler:{getSelf:()=>host,getEnergy:()=>energy},$effect_ctrler:{shine:()=>calls++}}});
+    callback();assert.equal(calls,0);energy=30;callback();assert.equal(calls,1);assert.equal(removed,1);
+    assert.equal(c.generate(c.validateGraph(JSON.parse(JSON.stringify(graph)))).code,output.code);
+    assert.throws(()=>c.place(graph,frame.id,condition.id,"actions"),/自身|子块/);
+    const otherFrame=c.addBubble(graph,{kind:"frame"});assert.throws(()=>c.place(graph,otherFrame.id,condition.id,"actions"),/逐帧/);
+    c.remove(graph,condition.id);assert.equal(shine.container,frame.id);assert.ok(frame.actions.includes(shine.id));
+});
+
+test("nested blocks and extra conditions reject corrupt saved references and cycles", () => {
+    const graph=c.fromText("耐力不少于20且血量低于300时，闪白光").graph;
+    const restored=c.validateGraph(JSON.parse(JSON.stringify(graph)));assert.equal(c.conditionsOf(restored.bubbles[0]).length,2);
+    const duplicate=JSON.parse(JSON.stringify(graph));duplicate.bubbles[0].extraConditions[0].id=duplicate.bubbles[0].condition;assert.throws(()=>c.validateGraph(duplicate),/多个区域/);
+    const invalid=JSON.parse(JSON.stringify(graph));invalid.bubbles[0].extraConditions[0].join="xor";assert.throws(()=>c.validateGraph(invalid),/条件配置/);
+    const loop=c.createGraph(),a=c.addBubble(loop),b=c.addBubble(loop);a.actions=[b.id];b.actions=[a.id];assert.throws(()=>c.validateGraph(loop),/嵌套循环/);assert.equal(c.generate(loop).code,"");
+});
+
+test("unlimited frames use -1 and omit all counter and automatic ending branches", () => {
+    for(const scheduler of ["render","delay","animate"]) {
+        const graph=c.fromText("每帧闪白光").graph;assert.equal(graph.bubbles[0].frames,-1);graph.bubbles[0].scheduler=scheduler;
+        const output=c.generate(graph);assert.deepEqual(output.errors,[]);assert.doesNotMatch(output.code,/frameRemaining|frameActive|removeRenderFunc|return;/);
+        if(scheduler!=="render")assert.match(output.code,/(?:delayCall|setAnimateFrameOut)\(updateFrame1, 1\)/);
+        const legacy=JSON.parse(JSON.stringify(graph));delete legacy.revision;legacy.bubbles[0].frames=0;assert.equal(c.validateGraph(legacy).bubbles[0].frames,-1);
+        const draft=JSON.parse(JSON.stringify(graph));draft.bubbles[0].frames=0;const restored=c.validateGraph(draft);assert.equal(restored.bubbles[0].frames,0);assert.equal(c.generate(restored).code,"");
+    }
+    const old=c.generate(c.fromText("每帧闪白光","3.0").graph);assert.equal(old.code.split("\n")[0],fs.readFileSync(path.resolve(__dirname,"../zh-cn/core-object-classes/FighterMain.md"),"utf8").match(/^function get \$self_main.*$/m)[0]);
+});
+
+test("legacy conditional disabling migrates to a native predicate without redundant wrappers", () => {
+    const graph=c.createGraph(),frame=c.addBubble(graph,{kind:"frame",releaseDisabled:true}),value=c.addNode(graph,"getEnergy"),disable=c.addNode(graph,"setDisabled");
+    [value,disable].forEach(n=>c.attachPath(graph,n));c.place(graph,value.id,frame.id,"condition");c.updateCondition(graph,frame.id,value.id,{operator:">=",value:"20"});c.place(graph,disable.id,frame.id,"actions");
+    graph.revision=2;
+    const restored=c.validateGraph(JSON.parse(JSON.stringify(graph)));
+    assert.equal(restored.revision,3);assert.equal(restored.bubbles.length,0);
+    assert.equal(c.nodeById(restored,disable.id).release.negate,true);
+    let energy=30,predicate;const actions={setDisabled:(key,fn)=>predicate=fn};
+    const output=c.generate(restored);assert.deepEqual(output.errors,[]);assert.doesNotMatch(output.code,/removeDisabled/);
+    vm.runInNewContext(output.code.replace(/function\(\):Boolean/g,"function()"),{parent:{$fighter_ctrler:{getEnergy:()=>energy},$mc_ctrler:{getAction:()=>actions}}});
+    assert.equal(predicate(),true);energy=10;assert.equal(predicate(),false);
+    assert.equal(c.generate(c.validateGraph(JSON.parse(JSON.stringify(restored)))).code,output.code);
+});
+
+
+test("community action aliases share canonical bindings across case and directional notation", () => {
+    for (const [names,member] of [[["zh2","ZH2","zhao2","ZHAO2","su","SU","↓u","↓+U"],"zhao2"],[["sj","SJ","↓j","↓+J","skill1"],"skill1"],[["zh1","u"],"zhao1"],[["zh3","wu","↑u"],"zhao3"],[["wj","↑j"],"skill2"]]) {
+        for (const name of names) {
+            const result=c.generate(c.fromText("禁用"+name).graph);assert.deepEqual(result.errors,[]);assert.ok(result.code.includes('setDisabled("'+member+'", true)'));
+            const restore=c.generate(c.fromText("解除禁用"+name).graph);assert.ok(restore.code.includes('removeDisabled("'+member+'")'));assert.doesNotMatch(restore.code,/setDisabled/);
+            const old=c.generate(c.fromText("禁用"+name,"3.5").graph);assert.deepEqual(old.errors,[]);assert.ok(old.code.includes('.'+member+' = null'));
+        }
+    }
+});
+
+test("binding aliases also work in registration requests without rewriting labels or attack IDs", () => {
+    for(const alias of ["sj","↓j","↓+J","skill1"]) assert.match(c.generate(c.fromText("设置"+alias+"纽带").graph).code,/setSkill1\("砍技1"\)/);
+    for(const alias of ["zh2","zhao2","↓u","su"]) assert.match(c.generate(c.fromText("设置"+alias+"纽带").graph).code,/setZhao2\("招2"\)/);
+    for(const label of ["zh2","sj","↓j","禁用zh2"]) assert.equal(c.generate(c.fromText('跳到“'+label+'”').graph).code,'parent.$mc_ctrler.gotoAndPlay('+JSON.stringify(label)+');');
+    assert.match(c.generate(c.fromText("攻击zh2伤害改成30").graph).code,/getHitVO\("zh2"\)\.power = 30/);
+    for(const name of ["zh20","zhao2_atm","sj1"]) assert.equal(c.generate(c.fromText("禁用"+name).graph).code,"");
+});
+
+
+test("library searches can expand action aliases without changing unrelated identifiers", () => {
+    for (const [query,term] of [["zh2","zhao2"],["sj","skill1"],["↓j","skill1"],["↓+J","skill1"],["kj","attackAIR"]]) assert.ok(c.aliasTerms(query).includes(term));
+    assert.deepEqual(c.aliasTerms("zh2_atm"),[]);
+});
+
+
+test("frame stop predicates run before the body and end all three scheduling strategies", () => {
+    for (const scheduler of ["delay","animate","render"]) for (const finite of [-1,5]) {
+        const graph=c.fromText("每帧闪白光").graph,block=graph.bubbles[0],value=c.addNode(graph,"getEnergy");c.attachPath(graph,value);
+        block.scheduler=scheduler;block.frames=finite;c.place(graph,value.id,block.id,"condition");c.updateCondition(graph,block.id,value.id,{operator:">=",value:"20"});
+        let energy=10,flashes=0,callback=null;const queue=[],host={delayCall:fn=>queue.push(fn),setAnimateFrameOut:fn=>queue.push(fn),addRenderFunc:fn=>callback=fn,removeRenderFunc:fn=>{assert.equal(fn,callback);callback=null;}};
+        const output=c.generate(graph);assert.deepEqual(output.errors,[]);
+        vm.runInNewContext(frameScript(output.code),{parent:{$fighter_ctrler:{getSelf:()=>host,getEnergy:()=>energy},$effect_ctrler:{shine:()=>flashes++}}});
+        const tick=()=>scheduler === "render" ? callback() : queue.shift()();
+        tick();assert.equal(flashes,1);energy=20;tick();assert.equal(flashes,1);
+        assert.equal(scheduler === "render" ? callback : queue.length,scheduler === "render" ? null : 0);
+        assert.doesNotMatch(output.code,/removeDisabled/);
+    }
+});
+
+test("render callback branches preserve animation, object logic and permanent global parameters", () => {
+    for (const [mode,expected] of [["animation",undefined],["logic",{isFollowFps:true}],["global",{isFollowFps:true,isPermanent:true}]]) {
+        const graph=c.fromText("每帧闪白光").graph;graph.bubbles[0].renderMode=mode;
+        let params;const host={addRenderFunc:(fn,p)=>params=p};
+        vm.runInNewContext(frameScript(c.generate(graph).code),{parent:{$fighter_ctrler:{getSelf:()=>host}}});
+        assert.deepEqual(params && JSON.parse(JSON.stringify(params)),expected);
+        const saved=c.validateGraph(JSON.parse(JSON.stringify(graph)));assert.equal(saved.bubbles[0].renderMode,mode);
+    }
+    const graph=c.fromText("每帧闪白光").graph;graph.bubbles[0].renderMode="invalid";
+    assert.equal(c.generate(graph).code,"");assert.throws(()=>c.validateGraph(graph),/回调分支/);
+});
+
+test("disable-card release conditions use the native function parameter without a frame loop", () => {
+    const graph=c.createGraph(),disable=c.addNode(graph,"setDisabled"),value=c.addNode(graph,"getEnergy");[disable,value].forEach(n=>c.attachPath(graph,n));
+    disable.release={conditions:[{id:value.id,operator:"<",value:"20",join:"and"}],negate:false};
+    let energy=30,predicate;const context={parent:{$fighter_ctrler:{getEnergy:()=>energy},$mc_ctrler:{getAction:()=>({setDisabled:(key,fn)=>predicate=fn})}}};
+    const output=c.generate(graph);assert.deepEqual(output.errors,[]);assert.doesNotMatch(output.code,/addRenderFunc|removeDisabled|var value/);
+    vm.runInNewContext(output.code.replace(/function\(\):Boolean/g,"function()"),context);assert.equal(predicate(),true);energy=10;assert.equal(predicate(),false);
+    assert.equal(c.generate(c.validateGraph(JSON.parse(JSON.stringify(graph)))).code,output.code);
+    const bad=JSON.parse(JSON.stringify(graph));bad.nodes[0].release.conditions[0].id="missing";assert.throws(()=>c.validateGraph(bad),/解除条件/);
+    c.remove(graph,value.id);assert.equal(c.generate(graph).code,"");assert.doesNotThrow(()=>c.validateGraph(graph));
+});
+
+
+test("redundant frame stopping and native release compile to one guarded predicate", () => {
+    const graph=c.createGraph(),frame=c.addBubble(graph,{kind:"frame"}),value=c.addNode(graph,"targetIsInAir"),disable=c.addNode(graph,"setDisabled");
+    [value,disable].forEach(n=>c.attachPath(graph,n));c.place(graph,value.id,frame.id,"condition");c.place(graph,disable.id,frame.id,"actions");
+    disable.release={conditions:c.conditionsOf(frame).map(r=>({...r})),negate:false};
+    const before=JSON.stringify(graph),output=c.generate(graph);assert.deepEqual(output.errors,[]);assert.equal(JSON.stringify(graph),before);
+    assert.doesNotMatch(output.code,/addRenderFunc|removeRenderFunc|updateFrame|if \(/);assert.equal((output.code.match(/getTargetSP\(\)/g)||[]).length,1);
+    let target=null,predicate,calls=0;const context={parent:{$fighter_ctrler:{getTargetSP:()=>target},$mc_ctrler:{getAction:()=>({setDisabled:(key,fn)=>{calls++;predicate=fn;}})}}};
+    vm.runInNewContext(output.code.replace(/function\(\):Boolean/g,"function()").replace(/var (\w+):\*/g,"var $1"),context);
+    assert.equal(calls,1);assert.equal(predicate(),true);target={isInAir:false};assert.equal(predicate(),true);target.isInAir=true;assert.equal(predicate(),false);
+    frame.frames=10;assert.match(c.generate(graph).code,/updateFrame/);frame.frames=-1;
+    disable.release.negate=true;assert.match(c.generate(graph).code,/updateFrame/);disable.release.negate=false;
+    const shine=c.addNode(graph,"shine");c.attachPath(graph,shine);c.place(graph,shine.id,frame.id,"actions");assert.match(c.generate(graph).code,/updateFrame/);
+    c.remove(graph,shine.id);c.simplifyDisabledBlocks(graph);assert.equal(graph.bubbles.length,0);assert.equal(disable.container,null);
+    assert.equal(c.generate(c.validateGraph(JSON.parse(JSON.stringify(graph)))).code,output.code);
+});
+
+test("new frame blocks default to the parameterless animation callback", () => {
+    const graph=c.fromText("每帧闪白光").graph;assert.equal(graph.bubbles[0].renderMode,"animation");
+    assert.match(c.generate(graph).code,/addRenderFunc\(updateFrame1\);$/);
+    delete graph.bubbles[0].renderMode;assert.equal(c.validateGraph(graph).bubbles[0].renderMode,"animation");
+    graph.bubbles[0].renderMode="logic";assert.match(c.generate(c.validateGraph(graph)).code,/isFollowFps:true/);
+});
+
+
+test("natural-language state-based disabling configures one native lifetime predicate", () => {
+    for(const text of ["血量低于100时禁用su","生命值不足100时禁用zh2","如果血量小于100，禁用↓u"]) {
+        const result=c.fromText(text),output=c.generate(result.graph);
+        assert.deepEqual(output.errors,[]);assert.equal(result.graph.bubbles.length,0);assert.doesNotMatch(output.code,/if \(|addRenderFunc|updateFrame/);
+        let calls=0,predicate;const main={hp:50};
+        vm.runInNewContext(output.code.replace(/function\(\):Boolean/g,"function()"),{parent:{$fighter_ctrler:{getSelf:()=>main},$mc_ctrler:{getAction:()=>({setDisabled:(key,fn)=>{assert.equal(key,"zhao2");calls++;predicate=fn;}})}}});
+        assert.equal(calls,1);assert.equal(predicate(),true);main.hp=100;assert.equal(predicate(),false);
+        assert.equal(c.generate(c.validateGraph(JSON.parse(JSON.stringify(result.graph)))).code,output.code);
+    }
+    const combined=c.generate(c.fromText("如果血量低于100或者自身在空中，禁用su").graph);
+    assert.match(combined.code,/hp < 100 \|\| .*isInAir/);assert.doesNotMatch(combined.code,/if \(/);
+    const multiple=c.fromText("耐力不少于20时，禁用zh2并禁用sj");assert.deepEqual(c.generate(multiple.graph).errors,[]);assert.equal(multiple.graph.bubbles.length,0);
+    assert.equal((c.generate(multiple.graph).code.match(/setDisabled\(/g)||[]).length,2);
+});
+
+test("native predicate selection preserves explicit polling, event triggers, mixed actions and old versions", () => {
+    for(const text of ["每帧检测血量低于100时禁用su","攻击k1命中后禁用su","血量低于100时禁用su并闪白光"]) {
+        const result=c.fromText(text),output=c.generate(result.graph);assert.deepEqual(output.errors,[]);assert.ok(result.graph.bubbles.length);assert.match(output.code,/if \(/);assert.doesNotMatch(output.code,/function\(\):Boolean/);
+    }
+    const old=c.generate(c.fromText("血量低于100时禁用su","3.5").graph);assert.match(old.code,/delayCall/);assert.match(old.code,/zhao2 = null/);assert.doesNotMatch(old.code,/setDisabled/);
+    const plain=c.generate(c.fromText("禁用su").graph);assert.match(plain.code,/setDisabled\("zhao2", true\)/);
 });

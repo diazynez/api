@@ -26,7 +26,12 @@
     }
     var attributes = { 血: "Hp", 血量: "Hp", 生命值: "Hp", 耐力: "Energy", 体力: "Energy", 气量: "Qi", 气: "Qi", 伤害: "Power", 攻击力: "Power", 威力: "Power", 硬直时间: "HurtTime", 硬直: "HurtTime", 僵直: "HurtTime", 横向受力: "Hitx", 水平受力: "Hitx", 竖直受力: "Hity", 纵向受力: "Hity" };
     var operations = { 回: "add", 掉: "subtract", 设到: "set", 调到: "set", 要: "set", 设成: "set", 置为: "set", 改到: "set", 设: "set", 给: "give", 恢复: "add", 回复: "add", 消耗: "subtract", 扣: "subtract", 增加: "add", 提高: "add", 提升: "add", 加上: "add", 加: "add", 减少: "subtract", 降低: "subtract", 减去: "subtract", 扣除: "subtract", 减: "subtract", 设置为: "set", 设为: "set", 修改为: "set", 调整为: "set", 设置: "set", 改成: "set", 改为: "set", 调成: "set", 为: "set" };
-    var bindings = { SJ: ["setSkill1", "砍技1"], WJ: ["setSkill2", "砍技2"], U: ["setZhao1", "招1"], SU: ["setZhao2", "招2"], WU: ["setZhao3", "招3"], ADJ: ["setCatch1", "摔1"], ADU: ["setCatch2", "摔2"] };
+    var bindings = { SJ: ["setSkill1", "砍技1"], WJ: ["setSkill2", "砍技2"], U: ["setZhao1", "招1"], SU: ["setZhao2", "招2"], WU: ["setZhao3", "招3"], ADJ: ["setCatch1", "摔1"], ADU: ["setCatch2", "摔2"], J:["setAttack","砍1"], K:["setJump","跳"], L:["setDash","瞬步"], I:["setBisha","必杀"], WI:["setBishaUP","上必杀"], SI:["setBishaSUPER","超必杀"], KJ:["setAttackAIR","跳砍"], KU:["setSkillAIR","跳招"], KI:["setBishaAIR","空中必杀"] };
+    var bindingAliases = {ZH1:"U",ZH2:"SU",ZH3:"WU",ZHAO1:"U",ZHAO2:"SU",ZHAO3:"WU",SKILL1:"SJ",SKILL2:"WJ","↓J":"SJ","↑J":"WJ","↓U":"SU","↑U":"WU","↓I":"SI","↑I":"WI"};
+    function binding(value) {
+        var key = value.toUpperCase().replace(/[+\s]/g, "");
+        return bindings[bindingAliases[key] || key];
+    }
     var bindingVerbs = "设置|设定|登记|绑定|开启|启用|允许|获得|获取|得到";
     function tokens(text) {
         var words = Object.keys(attributes).concat(Object.keys(operations)).sort(function (a, b) { return b.length - a.length; });
@@ -37,7 +42,7 @@
             else {
                 var word = words.find(function (v) { return tail.startsWith(v); });
                 if (word) token = { kind: attributes[word] ? "attribute" : "operation", value: attributes[word] || operations[word], raw: word };
-                else if ((m = tail.match(/^[A-Za-z_$][\w$]*/))) token = { kind: bindings[m[0].toUpperCase()] ? "binding" : "identifier", value: m[0], raw: m[0] };
+                else if ((m = tail.match(/^(?:[↑↓][+\s]*[A-Za-z]+|[A-Za-z_$][\w$]*)/))) token = { kind: binding(m[0]) ? "binding" : "identifier", value: m[0], raw: m[0] };
                 else if ((m = tail.match(new RegExp("^" + number)))) token = { kind: "number", value: numeric(m[0]), raw: m[0] };
             }
             if (token) { token.start = index; token.end = index + token.raw.length; result.push(token); index = token.end; }
@@ -99,7 +104,7 @@
                 var before = text.slice(Math.max(0, t.start - 12), t.start);
                 var prefix = before.match(new RegExp("(?:" + bindingVerbs + ")\\s*$"));
                 if (!prefix) return;
-                var b = bindings[t.value.toUpperCase()], rest = text.slice(t.end), name = rest.match(/^(?:纽带|按键|技能)?\s*(?:为|到|:|使用)?\s*[“"「']([^”"」']+)[”"」']/);
+                var b = binding(t.value), rest = text.slice(t.end), name = rest.match(/^(?:纽带|按键|技能)?\s*(?:为|到|:|使用)?\s*[“"「']([^”"」']+)[”"」']/);
                 registrations.push({ key: b[0], frame: name ? name[1] : b[1], start: t.start - prefix[0].length, end: t.end + (name ? name[0].length : (rest.match(/^(?:纽带|按键|技能)/) || [""])[0].length) });
             }
         });
@@ -192,10 +197,27 @@
         if (/黑幕|黑屏/.test(intentText) && !blackoutLogic) suggest(["bisha", "endBisha"]);
         if (blackoutLogic) suggest(["addRenderFunc", "renderAnimate"]);
         if (/render|逐帧|每帧/i.test(intentText)) suggest(["addRenderFunc", "renderAnimate"]);
-        if (diagnostic || blackoutLogic || /每帧|逐帧|addRenderFunc/.test(intentText)) {
+        if (diagnostic || blackoutLogic || /addRenderFunc/.test(intentText)) {
             result.notes.push(blackoutLogic ? "黑幕中的动画与判定涉及更新时机，请结合动作帧脚本查看相关接口" : "排查需要对应的帧脚本和触发时机，可先查看下方相关接口");
             return result;
         }
+        scan(/(?:逐帧|每(?:一)?帧)(?:执行|检测|判断)?|持续(?:地)?(?:执行|检测|判断)?|一直(?:执行|检测|判断)?/ , function (m) { result.repeat = true; consume(m); });
+        scan(/(?:使用|用)?(?:delayCall|setAnimateFrameOut)(?:循环)?/, function (m) { result.repeat = true; result.scheduler = /setAnimate/.test(m[0]) ? "animate" : "delay"; consume(m); });
+        var actionAliases = { "招1":"zhao1", "招2":"zhao2", "招3":"zhao3", "砍技1":"skill1", "砍技2":"skill2", "跳招":"skillAIR", "跳砍":"attackAIR", "空中必杀":"bishaAIR", "超必杀":"bishaSUPER", "上必杀":"bishaUP", "必杀":"bisha", "普通攻击":"attack", "普攻":"attack", "防御":"defense", "跳跃":"jump", "瞬步":"dash", "变身":"waiKai", "左移":"moveLeft", "右移":"moveRight", "U":"zhao1", "SU":"zhao2", "WU":"zhao3", "SJ":"skill1", "WJ":"skill2", "J":"attack", "K":"jump", "L":"dash", "I":"bisha", "WI":"bishaUP", "SI":"bishaSUPER", "KU":"skillAIR", "KJ":"attackAIR", "KI":"bishaAIR", "ADJ":"catch1", "ADU":"catch2", "JK":"waiKai", "WJK":"waiKaiW", "SJK":"waiKaiS", "zhao1":"zhao1", "zhao2":"zhao2", "zhao3":"zhao3", "attack":"attack", "skill1":"skill1", "skill2":"skill2" };
+        Object.keys(bindingAliases).forEach(function (alias) { actionAliases[alias] = actionAliases[bindingAliases[alias]]; });
+        var aliasLookup = {};
+        Object.keys(actionAliases).forEach(function (alias) {aliasLookup[alias.toLowerCase()] = actionAliases[alias];});
+        var aliases = Object.keys(actionAliases).sort(function (a,b) { return b.length-a.length; }).map(function (alias) {return /^[↑↓]/.test(alias) ? alias[0] + "[+\\s]*" + alias.slice(1) : alias;}).join("|");
+        function actionName(value) { return aliasLookup[value.replace(/[+\s]/g, "").toLowerCase()]; }
+        matches("(?:解除禁用|恢复使用)\\s*[“\"「']?(" + aliases + ")[”\"」']?(?![A-Za-z0-9_])", function (m) { action("removeDisabled", {action:actionName(m[1])}, m); });
+        matches("(?:禁用|禁止使用|不许使用|关闭纽带)\\s*[“\"「']?(" + aliases + ")[”\"」']?(?![A-Za-z0-9_])", function (m) { action("disableAction", {action:actionName(m[1])}, m); });
+        scan(/(?:parent\.\$mc_ctrler\.)?getAction\(\)\.([A-Za-z]+[0-9]*)\s*=\s*null\s*;?/, function (m) {
+            if (!Object.values(actionAliases).includes(m[1])) { blocked("请确认需要清除的动作纽带属性"); consume(m); return; }
+            action("clearBinding", {action:m[1]}, m); result.repeat = true;
+        });
+        var cdLabel = "(?:[“\"「']([^”\"」']+)[”\"」']|([A-Za-z_$][\\w$]*?))", cdState = "(未结束|没结束|未完成|没有结束|结束|完成|好了)";
+        matches("(?:冷却|CD)\\s*(?:ID)?\\s*" + cdLabel + "\\s*(?:的)?" + cdState, function (m) { condition("CDOK", /未|没/.test(m[3]) ? "falsy" : "truthy", "", m, {id:frame(m)}); result.repeat=true; });
+        matches(cdLabel + "\\s*(?:的)?(?:冷却|CD)" + cdState, function (m) { condition("CDOK", /未|没/.test(m[3]) ? "falsy" : "truthy", "", m, {id:frame(m)}); result.repeat=true; });
         if (/(?:取消|关闭|结束|不要|别)(?:当身|防反|反制)/.test(intentText)) { result.notes.push("请结合当前动作说明要如何结束当身，再配置状态切换"); return result; }
         if (/(?:素材|原图|序列图|头像|图层|导出|软件)/.test(intentText) && !/跳转|跳到|血量|耐力|气量|攻击力|当身|防反/.test(intentText)) {
             result.notes.push("这是素材或编辑器操作需求，请描述要由脚本实现的效果"); return result;
@@ -449,7 +471,16 @@
             var readKey = /耐力|体力/.test(intentText) ? "getEnergy" : /血量|生命值/.test(intentText) ? "hp" : /气量|气/.test(intentText) ? "qi" : /当前动作|动作标签/.test(intentText) ? "getCurAction" : null;
             if (readKey) result.values.push({ key: readKey, params: {} });
         }
-        if (conditions.length > 1) blocked("这句话包含多个判断条件，请拆分后配置条件块");
+        conditions.sort(function (a,b) {return a.position-b.position;});
+        conditions.forEach(function (row,index) {
+            row.join = "and";
+            if (!index) return;
+            var previous = conditions[index-1], start = previous.position + previous.evidence.length;
+            var between = text.slice(start,row.position), connector = between.match(/^(?:[\s，,]|时|的时候)*(并且|同时满足|以及|而且|且|和|或者|或|&&|\|\|)(?:[\s，,]|如果)*$/);
+            if (!connector) {blocked("多个条件之间请明确使用“且”或“或”"); return;}
+            row.join = /或|\|\|/.test(connector[1]) ? "or" : "and";
+            consume({index:start,0:between});
+        });
         if (registered && result.actions.length > 1) blocked("当身、触地或碰撞触发后的其他操作，请写在登记的目标动作帧中");
         result.condition = conditions[0] || null;
         if (result.condition && !result.actions.length && /读取|获取|检测|判断|查看/.test(intentText) && !/如果|时|后/.test(intentText) && !result.blocked) {
@@ -489,7 +520,14 @@
         if (!result.actions.length && /转向|转身|朝向/.test(intentText)) result.notes.push("请说明是面向对方，还是反向转身");
         if (result.actions.length > 40) { result.actions = result.actions.slice(0, 40); blocked("操作过多，请拆成较短的需求"); }
         result.actions.sort(function (a, b) { return a.position - b.position; });
+        result.conditions = result.condition ? conditions : [];
         return result;
     }
-    return { parse: parse, analyze: analyze };
+    function aliasTerms(value) {
+        var entry = binding(String(value));
+        if (!entry) return [];
+        var member = entry[0].slice(3);
+        return [entry[0], member[0].toLowerCase() + member.slice(1), entry[1]];
+    }
+    return { parse: parse, analyze: analyze, aliasTerms: aliasTerms };
 }));
