@@ -6,20 +6,27 @@
     <title>接口拼装器 · BVN API</title>
     <link id="theme_css" rel="stylesheet" href="../css/theme-simple.css">
     <link rel="stylesheet" href="../css/tools.css">
-    <link rel="stylesheet" href="composer.css?v=0.13.3">
+    <link rel="stylesheet" href="composer.css?v=0.14.12">
     <script src="../js/theme.js" data-theme-root=".."></script>
     <script src="../js/search-aliases.js" defer></script>
-    <script src="composer-language.js?v=0.13.3" defer></script>
-    <script src="composer-core.js?v=0.13.3" defer></script>
-    <script src="composer-wires.js?v=0.13.3" defer></script>
-    <script src="composer.js?v=0.13.3" defer></script>
+    <script src="composer-language.js?v=0.14.12" defer></script>
+    <script src="composer-core.js?v=0.14.12" defer></script>
+    <script src="composer-wires.js?v=0.14.12" defer></script>
+    <script src="composer-ai.js?v=0.14.12" defer></script>
+    <script src="composer-ai-ui.js?v=0.14.12" defer></script>
+    <script src="composer.js?v=0.14.12" defer></script>
 </head>
 <body class="tool-page composer-page intro-initializing">
 <main class="composer-shell">
     <header class="composer-header">
-        <div class="title-row"><h1>接口拼装器</h1><span class="demo-tag">DEMO v0.13.3</span></div>
-        <label class="global-version">目标版本<select id="version" aria-label="目标版本"></select></label>
-        <div class="header-actions"><span id="save-state" role="status"></span><a href="../index.html#/" target="_blank" rel="noopener">API 文档 ↗</a></div>
+        <div class="header-identity"><div class="title-row"><h1>接口拼装器</h1><span class="demo-tag">DEMO v0.14.12</span></div><span id="save-state" role="status"></span></div>
+        <div class="header-actions">
+            <div class="header-settings" role="group" aria-label="工具设置">
+                <label class="global-version">目标版本<select id="version" aria-label="目标版本"></select></label>
+                <button id="ai-settings" type="button" aria-haspopup="dialog"><span>AI 设置</span><span id="ai-state" class="header-status" data-state="disabled">未启用</span></button>
+            </div>
+            <a class="header-doc-link" href="../index.html#/" target="_blank" rel="noopener">API 文档 ↗</a>
+        </div>
     </header>
     <div class="prompt-stage">
     <section class="prompt-panel" aria-label="自然语言输入">
@@ -64,6 +71,52 @@
     <section class="code-section panel"><div class="panel-heading"><h2>ActionScript</h2><button id="copy" disabled>复制代码</button></div><div id="errors" role="status"></div><pre id="code" tabindex="0"></pre></section>
     <div id="notice" class="notice" role="status" aria-live="polite"></div>
 </main>
+<dialog id="ai-dialog" class="ai-dialog" aria-labelledby="ai-title">
+    <form id="ai-form" method="dialog" autocomplete="on">
+        <div class="panel-heading ai-form-heading"><h2 id="ai-title">AI 补全设置</h2><button id="ai-close" type="button" aria-label="关闭 AI 设置">×</button></div>
+        <div id="ai-form-body" class="ai-form-body">
+        <label class="checkbox-field ai-enable"><input id="ai-enabled" type="checkbox"> 静态解析不完整时使用 AI 补全</label>
+        <div class="ai-form-grid">
+            <label class="tool-field"><span>连接预设</span><select id="ai-provider" name="provider"><option value="siliconflow">硅基流动（试用推荐）</option><option value="custom">自定义服务（含 DeepSeek）</option><option value="openai">OpenAI</option><option value="anthropic">Anthropic</option><option value="gemini">Google Gemini</option></select></label>
+            <label class="tool-field"><span>API 协议</span><select id="ai-protocol"><option value="responses">OpenAI Responses</option><option value="chat">OpenAI Chat Completions</option><option value="messages">Anthropic Messages</option><option value="gemini">Gemini GenerateContent</option></select></label>
+            <aside id="ai-offer" class="ai-wide ai-offer" hidden><a href="https://www.siliconflow.cn/pricing" target="_blank" rel="noopener noreferrer">查看模型价格 ↗</a><div id="ai-offer-activity"><a href="https://cloud.siliconflow.cn/i/ySozbNuf" target="_blank" rel="noopener noreferrer">注册试用（邀请链接）↗</a><details><summary>16 元代金券与领取条件</summary><p>完成实名认证后，可在活动中心领取 16 元认证券；通过邀请链接注册并完成有效实名认证，受邀者与推荐方还可按规则各获 16 元邀请券。券自领取起 180 天有效，活动截至 2026-12-31。</p><a href="https://www.siliconflow.cn/developer-talk/od7wj9rr23p95uhihmhrombp" target="_blank" rel="noopener noreferrer">硅基流动官方活动规则 ↗</a></details></div></aside>
+            <label class="tool-field ai-wide"><span>API 地址</span><input id="ai-url" type="url" required spellcheck="false" placeholder="https://api.example.com/v1"><small>填写基础地址，不包含 /chat/completions 等请求路径</small></label>
+            <label class="tool-field ai-wide"><span>凭据名称</span><input id="ai-account" name="username" type="text" autocomplete="username" placeholder="可选，方便密码管理器区分凭据"></label>
+            <label class="tool-field ai-wide"><span>API Key</span><input id="ai-key" name="password" type="password" autocomplete="current-password" spellcheck="false"><small>默认仅在页面内存中使用，可由密码管理器填充</small></label>
+            <div class="ai-wide"><label class="checkbox-field ai-remember"><input id="ai-remember-key" type="checkbox"> 在此标签页记住 Key（刷新保留）</label><small id="ai-session-help" class="ai-storage-help">使用 sessionStorage，仍为同源脚本可读取的明文；浏览器恢复会话时也可能恢复</small><button id="ai-clear-key" type="button">清除此标签页的 Key</button><p id="ai-file-help" class="ai-storage-help" hidden>file 页面可能无法保存密码或使用会话存储，建议通过 localhost 或 HTTPS 打开</p></div>
+            <label class="tool-field ai-wide"><span>模型</span><div class="ai-model-row"><input id="ai-model" type="text" list="ai-models" maxlength="200" autocomplete="off" spellcheck="false" placeholder="获取后选择，也可手动填写"><datalist id="ai-models"></datalist><button id="ai-load-models" type="button">获取模型</button></div></label>
+            <div id="ai-recommendations" class="ai-wide ai-recommendations"></div>
+            <label id="ai-effort-field" class="tool-field ai-wide" hidden><span>推理设置</span><select id="ai-effort"><option value="auto">服务商默认</option></select></label>
+            <aside id="ai-model-guide" class="ai-wide ai-guide" hidden aria-label="硅基流动模型使用参考">
+                <p><strong>优先试用 Qwen3.5-27B，并选择「关闭推理」</strong>。以下是本拼装器的小样本记录，供选型参考。</p>
+                <details><summary>模型效果与使用建议</summary>
+                    <p>截至 2026-11-22，27B 关闭推理共测试 11 次：8 次返回符合预期，3 次超时。六类需求均已有符合预期的结果，包括多条件跳帧、条件禁用、对手判断与移动、区间判断与修改攻击、逐帧检查，以及对缺少接口的需求说明无法完成。成功返回耗时约 3.5～35 秒。</p>
+                    <p>同轮测试中，Qwen3-14B、Qwen3.5-9B 出现过条件连接错误、比例误读或卡片结构错误，暂作为对照试用。其他型号尚未在此轮验证；模型更大或开启推理也不保证正确。</p>
+                    <p>这些记录包含同题复测，期间工具也有更新，不是独立随机样本或严格的模型排名。「服务商默认」不等于关闭推理，请检查请求结果中的推理设置。</p>
+                </details>
+                <details><summary>价格怎么算？免费额度能用多少次？</summary>
+                    <p>以下为 2026-11-22 硅基流动账单参考价，单位为人民币／百万 tokens；Qwen3.5 按输入少于 128K 的档位估算。价格可能调整，实际以服务商账单为准。</p>
+                    <div class="ai-price-scroll" tabindex="0" role="region" aria-label="模型价格对照表"><table class="ai-price-table"><caption>每次输入 10,000、输出 100 tokens 的费用示例</caption><thead><tr><th scope="col">模型</th><th scope="col">输入／输出单价</th><th scope="col">单次约</th></tr></thead><tbody><tr><th scope="row">Qwen3.5-27B</th><td>¥0.60／¥4.80</td><td>¥0.0065</td></tr><tr><th scope="row">Qwen3-14B</th><td>¥0.50／¥2.00</td><td>¥0.0052</td></tr><tr><th scope="row">Qwen3.5-9B</th><td>¥0.50／¥4.00</td><td>¥0.0054</td></tr></tbody></table></div>
+                    <p>单次费用＝输入 tokens × 输入单价 ÷ 1,000,000 ＋ 输出 tokens × 输出单价 ÷ 1,000,000。输入包含接口说明和上下文，不只是你输入的一句话；近期完整请求约有 10,000 输入 tokens。推理内容如被计费，也会增加用量。</p>
+                    <p>按近期 27B 关闭推理每次约 ¥0.0064～¥0.0070 计算，<strong>16 元可用额度约可发起 2,300～2,500 次请求</strong>；若实际领取并可使用的券合计为 32 元，则约 4,600～5,000 次。1,000 次约 ¥6.4～¥7。这是同等用量下的请求次数估算，不是成功生成次数的承诺，未预留失败后重试或其他用途的消耗。</p>
+                    <p>免费试用来自限时赠券，模型本身按量计费。官方活动列明：实名认证后手动领取 16 元认证券；符合邀请注册与有效实名认证条件时，受邀者还可获 16 元邀请券，推荐方也可获券。券领取后 180 天有效，活动截至 2026-12-31。以账户实际到账、剩余额度、适用范围和到期时间为准，额度用完或过期后请先查看余额与计费设置。</p>
+                    <p><a href="https://www.siliconflow.cn/pricing" target="_blank" rel="noopener noreferrer">官方价格 ↗</a> · <a href="https://www.siliconflow.cn/developer-talk/od7wj9rr23p95uhihmhrombp" target="_blank" rel="noopener noreferrer">官方赠券规则 ↗</a></p>
+                </details>
+            </aside>
+            <details class="ai-wide ai-guide"><summary>失败、费用与代码使用注意事项</summary>
+                <ul>
+                    <li>静态解析能完整处理时无需调用 AI；「测试连接」会单独发送一个小型请求，连接成功不代表完整需求一定成功。</li>
+                    <li>目前单次模型请求等待上限为 45 秒，不自动重试。超时、取消或方案校验失败不代表服务商没有处理请求，仍可能计费；手动重试会发起新请求，请以账单为准。</li>
+                    <li>校验未通过时不会应用 AI 卡片方案。校验通过也可能存在语义错误，使用前请核对且／或、阈值、区间边界、对象、动作 ID 与帧标签，并在游戏中测试。缺少历史数据等接口时，模型可能只能说明无法完成。</li>
+                    <li>AI 请求会把需求、相关接口说明等上下文发送到你配置的服务商。请勿在需求中填写密钥或其他敏感信息。</li>
+                </ul>
+            </details>
+        </div>
+        <p id="ai-status" class="tool-message" role="status" aria-live="polite"></p>
+        </div>
+        <div class="ai-form-footer"><div><button id="ai-test" type="button">测试连接</button><small>会发送一次小型请求，可能产生费用</small></div><button type="submit" class="primary">保存配置</button></div>
+    </form>
+</dialog>
 <noscript>请启用 JavaScript 以使用接口拼装器。</noscript>
 </body>
 </html>

@@ -60,6 +60,7 @@
         }, 180);
     }
     function update(fn) {
+        if (window.BvnComposerAISettings) window.BvnComposerAISettings.cancel();
         var before = JSON.stringify(graph);
         try { fn(); api.simplifyDisabledBlocks(graph); history.push(before); if (history.length > 40) history.shift(); pending = null; render(); }
         catch (error) { graph = JSON.parse(before); render(); notify(error.message); }
@@ -467,31 +468,83 @@
         zoom = Math.max(.45, Math.min(1, (board.clientWidth - 15) / right, (board.clientHeight - 15) / bottom));
         board.scrollLeft = 0; board.scrollTop = 0; resizeWorld(); requestAnimationFrame(drawWires);
     }
-    function extract() {
-        if (!$("prompt").value.trim()) { notify("先写一句想实现的效果"); return; }
-        var result = api.fromText($("prompt").value, graph.version, graph.actor);
-        update(function () { graph = result.graph; arrange(); selected = null; });
+    var extractionId=0;
+    function appendUsage(host,usage,request) {
+        if (request) {
+            var mode={auto:"服务商默认",none:"请求关闭推理",on:"请求开启推理",low:"请求低强度推理"}[request.effort];
+            host.appendChild(el("span","ai-request","本次请求："+request.model+" · "+mode+" · "+(request.parameters.length ? request.parameters.join("，") : "未发送推理参数")+" · 耗时 "+(request.elapsedMs/1000).toFixed(1)+" 秒"));
+            if (request.diagnostic) {
+                var d=request.diagnostic, seconds=function (ms) {return (ms/1000).toFixed(1)+" 秒";};
+                var heading=d.headersMs === null ? "尚未收到响应头" : d.stage === "status" ? "HTTP "+d.httpStatus : d.bodyMs === null ? "正文尚未读取完成" : "响应头 "+seconds(d.headersMs)+" · 正文 "+seconds(d.bodyMs);
+                var details=el("details","ai-diagnostics");details.appendChild(el("summary","","请求诊断 · "+heading));
+                var rows=el("ul","");
+                rows.appendChild(el("li","",d.headersMs === null ? "等待响应头："+seconds(d.elapsedMs) : "收到响应头："+seconds(d.headersMs)+"，HTTP "+d.httpStatus));
+                rows.appendChild(el("li","",d.headersMs === null || d.stage === "status" ? "读取正文：未开始" : d.bodyMs === null ? "读取正文：已等待 "+seconds(Math.max(0,d.elapsedMs-d.headersMs))+"，尚未完成" : "读取正文："+seconds(d.bodyMs)));
+                rows.appendChild(el("li","",d.requestId ? "服务商请求编号："+d.requestId+"（"+d.requestIdHeader+"）" : d.headersMs === null ? "尚未收到服务商请求编号" : "服务商请求编号未返回，或浏览器未开放读取"));
+                details.appendChild(rows);host.appendChild(details);
+            }
+        }
+        if (!usage || !(usage.input || usage.output)) return;
+        host.appendChild(el("span","ai-usage","本次用量：输入 "+usage.input.toLocaleString()+" / 输出 "+usage.output.toLocaleString()+" tokens"+(usage.thinking ? "（含思考 "+usage.thinking.toLocaleString()+"）" : "")));
+    }
+    function showMatches(result) {
         $("matches").replaceChildren();
         if (result.matches.length) {
-            var phrases = el("div", "match-phrases");
-            result.matches.forEach(function (match) { phrases.appendChild(el("span", "", match)); });
+            var phrases=el("div","match-phrases");
+            result.matches.forEach(function (match) {phrases.appendChild(el("span","",match));});
             $("matches").appendChild(phrases);
         }
         if (result.notes.length) {
-            var notes = el("ul", "match-notes");
-            result.notes.forEach(function (note) { notes.appendChild(el("li", "", note)); });
+            var notes=el("ul","match-notes");
+            result.notes.forEach(function (note) {notes.appendChild(el("li","",note));});
             $("matches").appendChild(notes);
         }
         if (result.suggestions.length) {
-            var related = el("div", "match-related"); related.appendChild(el("span", "", "相关接口"));
+            var related=el("div","match-related");related.appendChild(el("span","","相关接口"));
             result.suggestions.forEach(function (key) {
-                var spec = api.catalog[key], item = button(spec.label + " · " + (spec.member || spec.key), function () { addInterface(key); }, "related-interface");
-                item.disabled = !api.available(spec, graph.version); related.appendChild(item);
+                var spec=api.catalog[key],item=button(spec.label+" · "+(spec.member || spec.key),function () {addInterface(key);},"related-interface");
+                item.disabled=!api.available(spec,graph.version);related.appendChild(item);
             });
             $("matches").appendChild(related);
         }
-        setIntroMode(true);
-        moveToWorkspace();
+    }
+    async function extract() {
+        if (!$("prompt").value.trim()) { notify("先写一句想实现的效果"); return; }
+        var ai=window.BvnComposerAI, settings=window.BvnComposerAISettings, requestId=++extractionId;
+        settings.cancel();
+        var text=$("prompt").value, version=graph.version, actor=graph.actor;
+        var result = api.fromText(text, version, actor);
+        showMatches(result);
+        if (!ai.needsAI(api,text,result)) {
+            update(function () {graph=result.graph;arrange();selected=null;});
+            setIntroMode(true);moveToWorkspace();return;
+        }
+        if (!settings.enabled()) return;
+        var state=el("div","ai-progress");$("matches").appendChild(state);
+        if (!settings.ready()) {state.appendChild(el("span","","静态解析未完成；填充 Key 后可使用 AI 补全"));state.appendChild(button("配置 AI",settings.open));return;}
+        var progress=el("span","","AI 补全中…");state.appendChild(progress);
+        state.appendChild(button("取消",function () {settings.cancel();}));
+        var snapshot=JSON.stringify(graph);
+        try {
+            var supplemented=await settings.run(text,version,actor,result,function (info) {if (requestId === extractionId && info.result === "pending") progress.textContent=info.stage === "headers" ? "等待 API 响应头…" : "已收到响应头，正在读取正文…";});
+            if (requestId !== extractionId) return;
+            if (JSON.stringify(graph) !== snapshot || $("prompt").value !== text) {state.replaceChildren(el("span","","需求或工作台已修改，本次 AI 结果未应用"));return;}
+            if (!supplemented.graph) {
+                state.replaceChildren(el("strong","","待配置"));
+                var list=el("ul","match-notes");supplemented.notes.forEach(function (note) {list.appendChild(el("li","",note));});state.appendChild(list);appendUsage(state,supplemented.usage,supplemented.request);return;
+            }
+            update(function () {graph=supplemented.graph;arrange();selected=null;});
+            showMatches(supplemented);appendUsage($("matches"),supplemented.usage,supplemented.request);
+            setIntroMode(true);moveToWorkspace();
+        } catch (error) {
+            if (requestId !== extractionId) return;
+            state.replaceChildren(el("span","",error.name === "AbortError" ? "已取消 AI 补全" : "AI 补全未完成："+error.message));
+            appendUsage(state,error.usage,error.request);
+            if (error.modelPlan) {
+                var debug=el("details","ai-debug");debug.appendChild(el("summary","","查看模型返回的卡片方案"));
+                debug.appendChild(el("pre","",JSON.stringify(error.modelPlan,null,2).slice(0,18000)));state.appendChild(debug);
+            }
+        }
     }
     function position(event) { var rect = world.getBoundingClientRect(); return { x: (event.clientX - rect.left) / zoom, y: (event.clientY - rect.top) / zoom }; }
     function startWire(id) { pending = id; renderCanvas(); notify("连接到另一张卡片左侧的圆点；返回值卡片可直接拖入条件区", "info"); }
@@ -632,6 +685,7 @@
     });
     window.addEventListener("pointercancel", function () { if (drag && drag.ghost) drag.ghost.remove(); drag = null; world.style.cursor = ""; renderCanvas(); });
     window.addEventListener("keydown", function (event) {
+        if ($("ai-dialog").open) return;
         if (event.key === "Escape") clearSelection();
         if (event.key === "Delete" && !event.repeat && !event.defaultPrevented && !event.ctrlKey && !event.metaKey && !event.altKey && !event.target.closest("input, textarea, select, [contenteditable]:not([contenteditable='false'])") && selected) {event.preventDefault();deleteItem(selected);}
         if ((event.ctrlKey || event.metaKey) && event.key === "z" && !event.target.closest("input, textarea, select")) { event.preventDefault(); undo(); }
@@ -653,6 +707,7 @@
         if (event.key !== "Enter" || event.isComposing || event.keyCode === 229) return;
         event.preventDefault(); extract();
     });
+    $("prompt").addEventListener("input",function () {window.BvnComposerAISettings.cancel();});
     $("library-search").addEventListener("input", renderLibrary);
     $("auto-path").addEventListener("change", function () {libraryOpen.delete("paths");renderLibrary();});
     try {if (localStorage.getItem("bvn-api-composer-grouping") === "type") $("library-grouping").value="type";} catch (error) {}
@@ -698,6 +753,7 @@
     function releaseIntroLock() {
         if (introLayoutPending || introScrollActive) return;
         document.documentElement.classList.remove("intro-scroll-locked");
+        document.documentElement.classList.toggle("intro-expanded",!document.body.classList.contains("workspace-mode"));
         window.scrollTo({top:introAnchor,behavior:"instant"});introLocked=false;
     }
     function setIntroMode(compact) {
@@ -709,6 +765,7 @@
         document.documentElement.classList.add("intro-scroll-locked");
         window.scrollTo({top:introAnchor,behavior:"instant"});
         document.body.classList.toggle("workspace-mode",compact);
+        document.documentElement.classList.toggle("intro-expanded",!compact);
         introReady=new Promise(function (resolve) {
             requestAnimationFrame(function () {
                 var stage=document.querySelector(".prompt-stage"), animations=stage.getAnimations ? stage.getAnimations({subtree:true}) : [];
@@ -720,11 +777,8 @@
         });
         return introReady;
     }
-    function moveToWorkspace() {
-        cancelAnimationFrame(introScrollFrame);
-        introScrollActive=true;introLocked=true;topArmed=false;clearTimeout(topTimer);
-        document.documentElement.classList.add("intro-scroll-locked");
-        fit();
+    var introWorkspaceTarget=0;
+    function workspaceTarget() {
         var stage=document.querySelector(".prompt-stage"), measure=stage.cloneNode(true);
         measure.classList.add("intro-measure");measure.setAttribute("aria-hidden","true");measure.setAttribute("inert","");
         measure.querySelectorAll("[id]").forEach(function (node) {node.removeAttribute("id");});
@@ -733,32 +787,42 @@
         // Measure the compact layout without finishing or restarting the visible transitions
         var finalHeight=measure.getBoundingClientRect().height;
         measure.remove();
+        return Math.max(1,document.querySelector(".basket").getBoundingClientRect().top+window.scrollY-stage.getBoundingClientRect().height+finalHeight-12);
+    }
+    function moveToWorkspace() {
+        cancelAnimationFrame(introScrollFrame);
+        introScrollActive=true;introLocked=true;topArmed=false;clearTimeout(topTimer);
+        document.documentElement.classList.add("intro-scroll-locked");
+        fit();
         var startY=window.scrollY, startTime=null;
-        var targetY=Math.max(1,document.querySelector(".basket").getBoundingClientRect().top+window.scrollY-stage.getBoundingClientRect().height+finalHeight-12);
+        introWorkspaceTarget=workspaceTarget();
         var duration=window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : parseFloat(getComputedStyle(document.body).getPropertyValue("--composer-intro-duration")) || 260;
         function advance(time) {
             if (startTime === null) startTime=time;
             var progress=duration ? Math.min(1,(time-startTime)/duration) : 1, eased=1-Math.pow(1-progress,3);
-            window.scrollTo({top:startY+(targetY-startY)*eased,behavior:"instant"});introAnchor=window.scrollY;
+            window.scrollTo({top:startY+(introWorkspaceTarget-startY)*eased,behavior:"instant"});introAnchor=window.scrollY;
             if (progress < 1) introScrollFrame=requestAnimationFrame(advance);
             else {introScrollActive=false;releaseIntroLock();}
         }
         introScrollFrame=requestAnimationFrame(advance);
     }
+    var introGestureUntil=0;
     function scrollIntent(event,delta) {
         if (!delta) return;
-        if (introLocked) {event.preventDefault();return;}
-        if (event.target.closest && event.target.closest("#board, #library-list, #inspector")) return;
+        if ($("ai-dialog").open) return;
+        if (introLocked) {event.preventDefault();introGestureUntil=performance.now()+160;return;}
         var compact=document.body.classList.contains("workspace-mode");
-        if (!compact && delta > 0) {event.preventDefault();setIntroMode(true);}
-        else if (compact && delta < 0 && window.scrollY <= 0) {
+        if (!compact) {event.preventDefault();introGestureUntil=performance.now()+160;if (delta > 0) setIntroMode(true);return;}
+        if (performance.now() < introGestureUntil) {event.preventDefault();introGestureUntil=performance.now()+160;return;}
+        if (event.target.closest && event.target.closest("#board, #library-list, #inspector")) return;
+        if (compact && delta < 0 && window.scrollY <= 0) {
             event.preventDefault();
             if (topArmed) setIntroMode(false); else armTop();
         } else {topArmed=false;clearTimeout(topTimer);}
     }
-    window.addEventListener("wheel",function (event) {if (!event.ctrlKey) scrollIntent(event,event.deltaY);},{passive:false});
+    window.addEventListener("wheel",function (event) {if (!event.ctrlKey) scrollIntent(event,event.deltaY);},{passive:false,capture:true});
     window.addEventListener("touchstart",function (event) {touchY=event.touches.length === 1 ? event.touches[0].clientY : null;},{passive:true});
-    window.addEventListener("touchmove",function (event) {if (touchY === null || event.touches.length !== 1) return;var y=event.touches[0].clientY;scrollIntent(event,touchY-y);touchY=y;},{passive:false});
+    window.addEventListener("touchmove",function (event) {if (touchY === null || event.touches.length !== 1) return;var y=event.touches[0].clientY;scrollIntent(event,touchY-y);touchY=y;},{passive:false,capture:true});
     window.addEventListener("keydown",function (event) {
         if (event.target.closest("input, textarea, select, [contenteditable='true']") || event.ctrlKey || event.metaKey || event.altKey) return;
         var delta=["ArrowDown","PageDown"," ","End"].includes(event.key) ? 1 : ["ArrowUp","PageUp"].includes(event.key) ? -1 : 0;
@@ -773,6 +837,7 @@
     function finishInitialLayout() {
         requestAnimationFrame(function () {requestAnimationFrame(function () {
             document.body.classList.toggle("workspace-mode",window.scrollY > 0);
+            document.documentElement.classList.toggle("intro-expanded",window.scrollY <= 0);
             void document.querySelector(".prompt-stage").offsetHeight;
             document.body.classList.remove("intro-initializing");introInitializing=false;
         });});

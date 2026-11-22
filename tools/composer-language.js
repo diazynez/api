@@ -233,6 +233,9 @@
             condition(unit === "%" ? "hpRate" : key,"between",JSON.stringify({lower:String(numeric(m[2])*rate),upper:String(numeric(m[4])*rate),includeLower:lo,includeUpper:hi}),m);
         });
         var operators = { "不足": "<", "少于": "<", "不多于": "<=", "达到": ">=", "不少于": ">=", "不低于": ">=", "至少": ">=", "大于等于": ">=", "小于等于": "<=", "不超过": "<=", "不高于": "<=", "至多": "<=", "高于": ">", "超过": ">", "大于": ">", "低于": "<", "小于": "<", "等于": "==", "不等于": "!=" };
+        ["足够", "足以", "够", "不够", "不足以"].forEach(function (word) {
+            ["", "支付", "消耗", "扣除", "扣", "使用"].forEach(function (verb) { operators[word + verb] = word.startsWith("不") ? "<" : ">="; });
+        });
         matches("(耐力|体力|血量|生命值|气量|气)\\s*(" + Object.keys(operators).sort(function (a, b) { return b.length - a.length; }).join("|") + "|>=|<=|==|!=|>|<)\\s*" + number + "(?![零〇一二两三四五六七八九十百千半\\d.])\\s*(%|格|点)?", function (m) {
             var key = /耐力|体力/.test(m[1]) ? "getEnergy" : /气/.test(m[1]) ? "qi" : "hp";
             if (m[4] === "%" && key !== "hp") { blocked("比例条件目前支持血量，请把耐力或气量换成具体数值"); return; }

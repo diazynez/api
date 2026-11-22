@@ -154,6 +154,26 @@ test("changing logical ownership preserves conditions, action order and attack I
     assert.match(c.generate(power).code, /\$assisterCtrler\.hitModel\.getHitVO\("k1"\)\.power = 80/);
 });
 
+test("constructed and converted cards retain only parameters declared by their current interface", () => {
+    function check(graph) {
+        graph.nodes.forEach(n=>assert.deepEqual(Object.keys(n.params).sort(),c.catalog[n.key].fields.map(f=>f.key).sort(),n.key));
+    }
+    for(const actor of Object.keys(c.actors))for(const version of c.versions)for(const [,text] of c.demoExamples(actor,version)) check(c.fromText(text,version,actor).graph);
+    const graph=c.fromText("跳到招2并停止，然后关闭重力").graph;
+    for(const actor of ["assister","attacker","character"]) {c.changeActor(graph,actor);check(graph);}
+    const jump=c.fromText("跳到招2并播放").graph.nodes.find(n=>n.key === "gotoAndPlay");
+    assert.deepEqual(jump.params,{name:"招2"});
+});
+
+test("resource sufficiency phrases include the exact cost and insufficient phrases exclude it", () => {
+    for(const [resource,key] of [["耐力","getEnergy"],["体力","getEnergy"],["气量","qi"]])for(const [phrase,op] of [["足够支付",">="],["够扣",">="],["足以消耗",">="],["不够支付","<"],["不足以扣除","<"]]) {
+        const result=c.parse(resource+phrase+"20点时闪白光");
+        assert.equal(result.conditions[0].key,key);assert.equal(result.conditions[0].operator,op);assert.equal(result.conditions[0].value,"20");
+    }
+    const negative=c.parse("体力不够支付20点时闪白光");assert.equal(negative.conditions.length,1);
+    assert.equal(c.parse('跳到“耐力足够支付20点”').conditions.length,0);
+});
+
 test("ownership cannot silently retain a character-only API in an assister workspace", () => {
     const graph = c.fromText("耐力不少于20时，跳到“招2”").graph;
     assert.ok(c.changeActor(graph, "assister").length);

@@ -7,7 +7,7 @@
     "use strict";
 
     // Update the composer.html asset versions with each demo release
-    var demoVersion = "0.13.3";
+    var demoVersion = "0.14.12";
     var versions = ["3.0", "3.3", "3.5", "3.6", "3.8开发"];
     var fighterDoc = "zh-cn/main-fighter-ctrlers/FighterCtrler";
     var mcDoc = "zh-cn/main-fighter-ctrlers/FighterMcCtrler";
@@ -212,6 +212,14 @@
     ["delayCall", "setAnimateFrameOut"].forEach(function (member) { method(member, member === "delayCall" ? "延迟逻辑帧调用" : "延迟动画帧调用", "FighterMain", baseDoc, [field("func", "回调函数名称", "Function", "", true), field("frame", "延迟帧数", "int", 1, true)]); });
     var catalog = Object.create(null);
     specs.forEach(function (spec) { catalog[spec.key] = spec; spec.fields = spec.fields || []; });
+    specs.forEach(function (spec) {
+        spec.fields.forEach(function (f) {if (/^(?:NullableActionName|ActionName|BindingName)$/.test(f.type)) f.choices = (f.type === "NullableActionName" ? ["null"] : []).concat(bindingNames);});
+        var key = spec.semantic || spec.key;
+        var quantity = {hp:["hp","current"], hpRate:["hp","ratio"], energy:["energy","current"], getEnergy:["energy","current"], mainenergyMax:["energy","maximum"], maincustomHpMax:["hp","maximum"], qi:["qi","current"]}[key];
+        if (quantity) spec.quantity = { resource: quantity[0], basis: quantity[1] };
+        if (key === "hpRate") spec.hint = "当前血量占满血的比例，1 为满血；百分比除以 100，几成除以 10，不是绝对血量";
+        if (key === "moveToTarget" && spec.fields.some(function (f) {return f.key === "setDirect";})) spec.hint = "移动到对方位置的相对偏移；x 按自身朝向取向，常规面对对方时正数对应身后、负数对应身前；y=0 与对方同高；setDirect 控制移动后面向对方";
+    });
     var searchConcepts = [
         {members:["goFrame","gotoAndPlay","gotoAndStop","loop","justHitToPlay"], words:"跳帧 跳转 切换动作 帧标签 goFrame"},
         {members:["isApplyG","setApplyG"], words:"重力 下落"},
@@ -253,14 +261,17 @@
     function available(spec, version) { return !spec.since || versions.indexOf(version) >= versions.indexOf(spec.since); }
     function createGraph() { return { format: 1, revision: 3, context: null, version: "3.8开发", actor: "character", root: null, nextId: 1, nodes: [], edges: [], bubbles: [] }; }
     function nodeById(graph, id) { return graph.nodes.find(function (node) { return node.id === id; }); }
+    function parameters(spec, values) {
+        var params = {};
+        spec.fields.forEach(function (f) { params[f.key] = values && values[f.key] !== undefined ? values[f.key] : f.value; });
+        return params;
+    }
     function addNode(graph, key, options) {
         if (graph.nodes.length >= 150) throw new Error("首版最多放置 150 张卡片");
         var spec = catalog[key];
         if (!spec) throw new Error("未知接口：" + key);
-        var defaults = {};
-        spec.fields.forEach(function (f) { defaults[f.key] = f.value; });
-        var node = Object.assign({ id: "n" + graph.nextId++, key: key, params: defaults, x: 40, y: 40, container: null }, options);
-        node.params = Object.assign(defaults, options && options.params);
+        var node = Object.assign({ id: "n" + graph.nextId++, key: key, x: 40, y: 40, container: null }, options);
+        node.params = parameters(spec, options && options.params);
         graph.nodes.push(node);
         return node;
     }
@@ -358,7 +369,7 @@
             var old = catalog[n.key], key = contextualKey(n.key, actor, n.params);
             n.key = key;
             if (catalog[key].key === "goFrame" && old.semantic === "goFrame") n.params = Object.assign({ isPlay: !/GotoAndStop$/.test(old.key), playFrame: 0 }, n.params);
-            catalog[key].fields.forEach(function (f) { if (n.params[f.key] === undefined) n.params[f.key] = f.value; });
+            n.params = parameters(catalog[key], n.params);
             try {
                 var source = attachPath(graph, n);
                 if (source.key === "getHitVO" && hitIds.has(n.id)) source.params.id = hitIds.get(n.id);
