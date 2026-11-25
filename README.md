@@ -37,6 +37,12 @@
 </div>
 </section>
 
+<section class="home-tools home-composer">
+<h2>接口拼装器（BETA）</h2>
+<p>输入想实现的效果，生成接口卡片和 ActionScript 代码；可查看接口说明，也可自行配置 AI 补全。</p>
+<p><a href="tools/composer.html" data-no-router>打开接口拼装器 →</a></p>
+</section>
+
 <p class="home-about"><a href="#/about">关于文档与贡献者 →</a></p>
 
 </div>

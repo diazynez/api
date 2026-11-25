@@ -498,6 +498,19 @@
         if (!usage || !(usage.input || usage.output)) return;
         host.appendChild(el("span","ai-usage","本次用量：输入 "+usage.input.toLocaleString()+" / 输出 "+usage.output.toLocaleString()+" tokens"+(usage.thinking ? "（含思考 "+usage.thinking.toLocaleString()+"）" : "")));
     }
+    function appendDraft(host,draft) {
+        if (!draft || !draft.nodes.some(function (n) {return api.catalog[n.key].kind === "action";})) return;
+        var details=el("details",""), list=el("ul","match-notes");
+        details.appendChild(el("summary","","已识别的卡片草稿（待完善）"));
+        details.appendChild(el("p","muted","以下仅展示已识别的卡片，尚未生成完整代码"));
+        draft.nodes.filter(function (n) {return api.catalog[n.key].kind === "action";}).forEach(function (n) {list.appendChild(el("li","",api.catalog[n.key].label+" · "+api.catalog[n.key].fields.map(function (f) {return f.label+"："+n.params[f.key];}).join("；")));});
+        details.appendChild(list);host.appendChild(details);
+    }
+    function appendWarnings(host,warnings) {
+        if (!warnings || !warnings.length) return;
+        host.appendChild(el("strong","","使用提醒"));var list=el("ul","match-notes");
+        warnings.forEach(function (note) {list.appendChild(el("li","",note));});host.appendChild(list);
+    }
     function showMatches(result) {
         $("matches").replaceChildren();
         if (result.matches.length) {
@@ -506,10 +519,12 @@
             $("matches").appendChild(phrases);
         }
         if (result.notes.length) {
+            if (result.required && result.required.length) $("matches").appendChild(el("strong","","待补充"));
             var notes=el("ul","match-notes");
             result.notes.forEach(function (note) {notes.appendChild(el("li","",note));});
             $("matches").appendChild(notes);
         }
+        appendWarnings($("matches"),result.warnings);
         if (result.suggestions.length) {
             var related=el("div","match-related");related.appendChild(el("span","","相关接口"));
             result.suggestions.forEach(function (key) {
@@ -530,6 +545,7 @@
             update(function () {graph=result.graph;arrange();selected=null;});
             setIntroMode(true);moveToWorkspace();return;
         }
+        appendDraft($("matches"),result.graph);
         if (!settings.enabled()) return;
         var state=el("div","ai-progress");$("matches").appendChild(state);
         if (!settings.ready()) {state.appendChild(el("span","","静态解析未完成；填充 Key 后可使用 AI 补全"));state.appendChild(button("配置 AI",settings.open));return;}
@@ -542,7 +558,7 @@
             if (JSON.stringify(graph) !== snapshot || $("prompt").value !== text) {state.replaceChildren(el("span","","需求或工作台已修改，本次 AI 结果未应用"));return;}
             if (!supplemented.graph) {
                 state.replaceChildren(el("strong","","待配置"));
-                var list=el("ul","match-notes");supplemented.notes.forEach(function (note) {list.appendChild(el("li","",note));});state.appendChild(list);appendUsage(state,supplemented.usage,supplemented.request);return;
+                var list=el("ul","match-notes");supplemented.notes.forEach(function (note) {list.appendChild(el("li","",note));});state.appendChild(list);appendWarnings(state,supplemented.warnings);appendDraft(state,supplemented.draftGraph);appendUsage(state,supplemented.usage,supplemented.request);return;
             }
             update(function () {graph=supplemented.graph;arrange();selected=null;});
             showMatches(supplemented);appendUsage($("matches"),supplemented.usage,supplemented.request);
@@ -758,7 +774,7 @@
         var initial = api.fromText($("prompt").value); graph = initial.graph; arrange();
         initial.matches.forEach(function (match) { $("matches").appendChild(el("span", "", match)); });
     }
-    document.querySelector(".demo-tag").textContent = "DEMO v" + api.demoVersion;
+    document.querySelector(".demo-tag").textContent = "BETA v" + api.demoVersion;
     var introInitializing=true;
     var introLocked=false, introLayoutPending=false, introScrollActive=false, introTransitionId=0, introScrollFrame, introAnchor=0, introReady=Promise.resolve(), topArmed=false, topTimer, touchY=null;
     function armTop() {clearTimeout(topTimer);topTimer=setTimeout(function () {topArmed=window.scrollY <= 0 && document.body.classList.contains("workspace-mode");},180);}

@@ -92,6 +92,23 @@ test("inclusive negative comparisons execute at equality and preserve percent un
     assert.equal(c.generate(c.fromText('播放“血量不小于20”').graph).code,'parent.$mc_ctrler.gotoAndPlay("血量不小于20");');
 });
 
+test("multi-stage binding shorthand preserves authored conventions and input keys",()=>{
+    for(const [text,key,name] of [['纽3j','setAttack','砍3'],['扭3J','setAttack','砍3'],['绑定j3','setAttack','砍3'],['纽sj2','setSkill1','砍技12'],['纽wj2','setSkill2','砍技22'],['纽su3','setZhao2','招23'],['通过u按键扭sj2','setZhao1','砍技12'],['u扭3j','setZhao1','砍3'],['u扭“3j”','setZhao1','3j'],['纽sj12','setSkill1','砍技112']]) {
+        const result=c.fromText(text),output=c.generate(result.graph),calls=[];assert.deepEqual(result.notes,[],text);assert.deepEqual(output.errors,[],text);
+        vm.runInNewContext(output.code,{parent:{$mc_ctrler:{[key]:v=>calls.push(v)}}});assert.deepEqual(calls,[name],text);
+    }
+    assert.equal(c.generate(c.fromText('播放“纽3j”').graph).code,'parent.$mc_ctrler.gotoAndPlay("纽3j");');
+    for(const text of ['纽0j','纽3j1','不要纽sj2']) assert.equal(c.generate(c.fromText(text).graph).code,"",text);
+});
+
+test("binding placement reminders permit code but unspecified temporary lifetimes remain pending",()=>{
+    const result=c.fromText('U术中扭wu');assert.deepEqual(result.notes,[]);assert.match(result.warnings[0],/不会自动/);
+    const output=c.generate(c.validateGraph(JSON.parse(JSON.stringify(result.graph))));assert.deepEqual(output.errors,[]);assert.match(output.code,/setZhao3\("招3"\)/);assert.doesNotMatch(output.code,/getCurAction|removeDisabled|addRenderFunc/);
+    for(const text of ['仅在U期间，如果血量低于20，纽wu；否则纽sj','仅在U期间纽wu']) {const result=c.fromText(text);assert.ok(result.required.length,text);assert.equal(c.generate(result.graph).code,'',text);}
+    const pending=c.fromText('仅在U期间纽wu');assert.ok(pending.notes.length);assert.equal(c.generate(pending.graph).code,"");assert.ok(pending.graph.nodes.some(n=>n.key === "setZhao3"));
+    const progress=c.fromText('纽3j，需要普攻进度达到2');assert.equal(c.generate(progress.graph).code,"");assert.ok(progress.graph.nodes.some(n=>n.key === "setAttack"));
+});
+
 test("community binding verbs preserve their exact action mapping",()=>{
     for(const [word,key,name] of [["纽zh2","setZhao2","招2"],["纽sj","setSkill1","砍技1"],["纽wj","setSkill2","砍技2"]]) {
         assert.equal(c.generate(c.fromText(word).graph).code,'parent.$mc_ctrler.'+key+'('+JSON.stringify(name)+');');
@@ -452,10 +469,10 @@ test("ownership cannot silently retain a character-only API in an assister works
     assert.ok(!graph.nodes.some(n => n.key === "assisterOwner_fighter_ctrler"));
 });
 
-test("demo asset versions match the visible badge and output uses a full-width panel", () => {
+test("asset versions match the visible beta badge and output uses a full-width panel", () => {
     const html = fs.readFileSync(path.resolve(__dirname, "../tools/composer.html"), "utf8");
     for (const file of ["composer.css", "composer-language.js", "composer-core.js", "composer-wires.js", "composer.js"]) assert.ok(html.includes(file + "?v=" + c.demoVersion));
-    assert.ok(html.includes("DEMO v" + c.demoVersion));
+    assert.ok(html.includes("BETA v" + c.demoVersion));
     assert.doesNotMatch(html, /id="(?:export|import|import-file)"|demo-note|篮筐/);
     assert.match(html, /<\/section>\s*<\/div>\s*<section class="code-section panel">/);
 });

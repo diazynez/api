@@ -81,6 +81,23 @@ test("an AI semantic plan uses native shortcuts and respects the actual combined
     inAir=true;vm.runInNewContext(code,context);assert.equal(calls,1);
     inAir=false;energy=19;vm.runInNewContext(code,context);assert.equal(calls,1);
 });
+test("AI usage warnings accompany validated code and required gaps only expose validated drafts",()=>{
+    const source={steps:[{api:"setSkill1",args:{action:"砍技12"}}],warnings:["请放在 U 动作的适当帧"],unresolved:[]};
+    const complete=ai.buildPlan(core,source,"3.8开发","character");assert.deepEqual(complete.warnings,source.warnings);assert.match(core.generate(complete.graph).code,/setSkill1\("砍技12"\)/);
+    const pending=ai.buildPlan(core,{...source,unresolved:["缺少恢复标签"]},"3.8开发","character");assert.equal(pending.graph,null);assert.ok(pending.draftGraph);assert.deepEqual(pending.notes,["缺少恢复标签"]);assert.deepEqual(pending.matches,[]);
+    const mandatory=ai.buildPlan(core,source,"3.8开发","character",null,["缺少恢复标签"]);assert.equal(mandatory.graph,null);assert.ok(mandatory.draftGraph);assert.deepEqual(mandatory.notes,["缺少恢复标签"]);
+    const invalid=ai.buildPlan(core,{...source,steps:[{api:"invented"}],unresolved:["缺少恢复标签"]},"3.8开发","character");assert.equal(invalid.graph,null);assert.equal(invalid.draftGraph,null);
+    for(const warnings of [false,"text",[""]]) assert.throws(()=>ai.buildPlan(core,{...source,warnings},"3.8开发","character"),/列表|文字/);
+});
+
+test("read-only card drafts render no code and no completion message",()=>{
+    const source=fs.readFileSync(require.resolve("../tools/composer.js"),"utf8"),fragment=source.slice(source.indexOf("    function appendDraft"),source.indexOf("    function showMatches"));
+    function el(tag,css,text) {return {tag,text,children:[],appendChild(child){this.children.push(child);}};}
+    const context={api:core,el};vm.runInNewContext(fragment,context);
+    const host=el("div"),draft=core.fromText('仅在U期间纽wu').graph;context.appendDraft(host,draft);
+    const rendered=JSON.stringify(host);assert.match(rendered,/卡片草稿/);assert.match(rendered,/尚未生成完整代码/);assert.match(rendered,/动作标签：招3/);assert.doesNotMatch(rendered,/setZhao3|补全完成/);
+});
+
 test("unresolved requests remain pending and no partial generated code is accepted",()=>{
     const p=plan();p.unresolved=["缺少动作帧标签"];
     const result=ai.buildPlan(core,p,"3.8开发","character");assert.equal(result.graph,null);assert.deepEqual(result.notes,p.unresolved);
@@ -313,7 +330,7 @@ test("failed parsing stays at the input and preserves the workbench; only succes
     const nodes=new Map();function element(id) {if (!nodes.has(id)) nodes.set(id,{value:"",appendChild(){},replaceChildren(){}});return nodes.get(id);}
     let scrolls=0,enabled=false,supplemented=null;
     const settings={cancel(){},enabled:()=>enabled,ready:()=>true,run:async()=>supplemented};
-    const context={api:core,graph:core.createGraph(),extractionId:0,$:element,window:{BvnComposerAI:ai,BvnComposerAISettings:settings},el:()=>({appendChild(){},replaceChildren(){}}),button:()=>({}),showMatches(){},appendUsage(){},arrange(){},selected:null,notify(){},setIntroMode(){},moveToWorkspace(){scrolls++;}};
+    const context={api:core,graph:core.createGraph(),extractionId:0,$:element,window:{BvnComposerAI:ai,BvnComposerAISettings:settings},el:()=>({appendChild(){},replaceChildren(){}}),button:()=>({}),showMatches(){},appendDraft(){},appendWarnings(){},appendUsage(){},arrange(){},selected:null,notify(){},setIntroMode(){},moveToWorkspace(){scrolls++;}};
     context.update=fn=>fn();vm.runInNewContext(fragment,context);
     const before=JSON.stringify(context.graph);element("prompt").value="双脚仍在地面且体力足够支付20点时，切到“招2”继续播放";
     await context.extract();assert.equal(scrolls,0);assert.equal(JSON.stringify(context.graph),before);

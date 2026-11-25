@@ -361,7 +361,7 @@
             '“生成锁定的独立道具”属于生成者的 addAttacker 初始化配置，params 用 x:{moveToTarget:true},y:{moveToTarget:true}；明确无重力时再填 applyG:false。不要因为“锁定”切换 actor 或改成已有道具内部的 moveToTarget。持续跟随用 followTarget，不能把创建时定位自行升级成持续追踪；缺少元件名时列为 unresolved，不编造 bsmc 等名称。',
             "recognizedFragments 是已识别出的片段，保留其中符合原句的操作与判断，再补齐遗漏部分。涉及‘条件成立时执行’的需求不得退化为孤立的读取步骤；每个判断必须放进 if，每个被要求的执行操作必须放进 then 或 steps。若发现片段与原句冲突，在 unresolved 中说明。",
             "帧标签、攻击ID及其他名称是精确字面量，逐字保留原文，不增加空格、不翻译、不润色。比较边界也必须保留：足够支付、至少、不少于表示 >=，不足、不够支付表示 <；恰好达到所需数额也足够支付。",
-            '输出结构只有 {"steps":[],"unresolved":[]}。一个普通操作是 {"api":"接口表中的api","args":{"真实参数名":"参数值"}}，无参数可省略 args。args 只允许 arguments 中列出的参数，不得复制 meaning、use、returns、type、default 等说明字段。',
+            '输出结构为 {"steps":[],"unresolved":[],"warnings":[]}，warnings 可省略。一个普通操作是 {"api":"接口表中的api","args":{"真实参数名":"参数值"}}，无参数可省略 args。args 只允许 arguments 中列出的参数，不得复制 meaning、use、returns、type、default 等说明字段。',
             '条件步骤是 {"if":[{"api":"读取接口","op":"比较符","value":比较值}],"then":[操作步骤]}。op 支持 >=、>、<=、<、==、!=、truthy、falsy、between。布尔值是/否用 truthy/falsy 并省略 value；第二个起的条件用 join:"and" 或 "or" 与前面结果组合。支持嵌套 if。',
             '互斥分支在同一个 if 步骤内添加 "elseIf":[{"if":[条件],"then":[步骤]}] 和 "else":[步骤]，两项均可省略。按顺序只执行第一个成立的分支；else 必须最后执行且没有条件。不要把互斥分支改成多个独立 if。“反之”“不然就”“不然的话”表示兜底分支；“此外如果”“另外如果”“同时如果”表示独立 if，允许与前一个判断同时成立，不能合并为 elseIf。',
             '每个条件项都必须有 api 和 op，join 与它们放在同一项中，不能单独成项；value 只存比较值，不能把整个条件接口嵌进 value。不要重复列出同一条件。',
@@ -371,6 +371,8 @@
             '带 receiver 的操作必须用 from 选择实例；如 {"api":"addPower","args":{"value":8},"from":{"api":"getHitVO","args":{"id":"atkA"}}}。动作标识参数仅从 choices 选择，输入别名按 actionAliases 转换；这些别名不用于改写帧标签或攻击 ID。',
             '逐帧步骤是 {"eachFrame":{"frames":-1,"scheduler":"auto","renderMode":"animation"},"until":[],"steps":[]}。until 为满足时停止的条件，可省略；每帧仅在条件成立时执行则在 steps 内嵌套 if。frames=-1 持续执行。',
             "repeatRequired 操作必须置于逐帧步骤内。setDisabled 自带维持/解除机制，不需要逐帧重复登记；仅在状态条件成立期间禁用时写一个 if 步骤，平台会转换为单次回调登记。优先使用直接包装接口：人物跳帧用 gotoAndPlay/gotoAndStop。",
+            '纽/扭/绑定是纽带设置。多段名称按约定：纽3j 为 setAttack("砍3")，纽sj2 为 setSkill1("砍技12")，其他技能续段在默认标签后追加段数。不要凭这些命名自行增加普攻进度条件。',
+            'warnings 是不阻止生成的简短使用提醒字符串数组；如 U术中纽WU，可生成纽带操作，提醒放到 U 动作的适当帧，并说明不会自动恢复原纽带。unresolved 表示影响逻辑正确性的缺项，如要求仅在动作期间生效却未给恢复安排、角色专用进度条件缺少接口或数值；保留能确定的 steps 用于只读草稿，不能将这些缺项降为 warnings。',
             "只有缺少实际需求信息、无可用游戏接口或超出平台内建逻辑时才填写 unresolved 字符串数组。已经可以用读取+比较+执行表达的逻辑不要列为未解决。确实未解决时保留原需求的短句和原因，不输出长篇讨论，不编造其他操作或函数。不要把建议性说明转为额外操作，例如当身目标帧的无敌应由制作者在该帧配置。"
         ].join("\n");
         function argumentsFor(key, values) {
@@ -392,12 +394,12 @@
         });
     }
     function semanticPlan(core, plan, version, actor) {
-        fields(plan,["steps","unresolved","version","actor"],"方案");
+        fields(plan,["steps","unresolved","warnings","version","actor"],"方案");
         [["version",version],["actor",actor]].forEach(function (entry) {
             if (Object.hasOwn(plan,entry[0]) && plan[entry[0]] !== entry[1]) throw new Error("模型回传的 "+entry[0]+" 与当前设置不一致");
         });
         if (!Array.isArray(plan.steps) || plan.steps.length > 100) throw new Error("AI 语义步骤格式无效");
-        var output={nodes:[],blocks:[],order:[],unresolved:pendingNotes(plan.unresolved === undefined ? [] : plan.unresolved)}, next=0;
+        var output={nodes:[],blocks:[],order:[],warnings:pendingNotes(plan.warnings === undefined ? [] : plan.warnings),unresolved:pendingNotes(plan.unresolved === undefined ? [] : plan.unresolved)}, next=0;
         if (output.unresolved.length) return output;
         function fields(item,keys,path) {
             if (!item || typeof item !== "object" || Array.isArray(item)) throw new Error((path || "AI 步骤")+"需要一个对象");
@@ -460,7 +462,14 @@
         }
         output.order=steps(plan.steps,0,"steps");return output;
     }
-    function buildPlan(core, plan, version, actor, context) {
+    function buildPlan(core, plan, version, actor, context, required) {
+        if (required && required.length) plan=Object.assign({},plan,{unresolved:Array.from(new Set(pendingNotes(plan.unresolved || []).concat(pendingNotes(required))))});
+        var pending=plan && pendingNotes(plan.unresolved || []), warnings=plan && pendingNotes(plan.warnings === undefined ? [] : plan.warnings);
+        if (pending && pending.length) {
+            var draft=null;
+            try {draft=buildPlan(core,Object.assign({},plan,{unresolved:[]}),version,actor,context).graph;} catch (error) {}
+            return {graph:null,draftGraph:draft,notes:pending,warnings:warnings,matches:[],suggestions:[]};
+        }
         if (plan && Object.hasOwn(plan,"steps")) plan=semanticPlan(core,plan,version,actor);
         if (!plan || !Array.isArray(plan.nodes) || !Array.isArray(plan.blocks) || !Array.isArray(plan.order) || !Array.isArray(plan.unresolved) || plan.nodes.length > 100 || plan.blocks.length > 30 || plan.order.length > 130 || plan.unresolved.length > 20) throw new Error("AI 卡片方案格式无效");
         var notes=pendingNotes(plan.unresolved);
@@ -558,7 +567,7 @@
         graph=core.validateGraph(graph);
         var generated=core.generate(graph);
         if (generated.errors.length || !generated.code) throw new Error("AI 方案未通过校验："+(generated.errors.join("；") || "没有可生成的代码"));
-        return {graph:graph,notes:[],matches:["AI 补全完成"],suggestions:[]};
+        return {graph:graph,warnings:warnings || [],notes:[],matches:["AI 补全完成"],suggestions:[]};
     }
     return {presets:presets,config:config,compatibility:compatibility,efforts:efforts,models:models,complete:complete,test:test,needsAI:needsAI,reconcile:reconcile,coverage:coverage,prompt:prompt,buildPlan:buildPlan,body:body,readOutput:readOutput};
 }));

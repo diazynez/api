@@ -51,6 +51,8 @@
 .api-home .home-help h3 + p { margin-top: .5rem; }
 .home-tools { margin-top: 2.8rem; }
 .home-tools > p { font-size: .9rem; }
+.home-composer { padding: 1.4rem; border: 1px solid var(--mono-tint2); border-radius: 6px; }
+.home-composer > p:last-child { margin-bottom: 0; }
 .home-tool-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
 .api-home .home-tool { display: block; padding: 1.2rem; border: 1px solid var(--mono-tint2); border-radius: 6px; color: var(--base-color); text-decoration: none; }
 .api-home .home-tool:hover { border: 1px solid var(--theme-color); text-decoration: none; }

@@ -7,7 +7,7 @@
     "use strict";
 
     // Update the composer.html asset versions with each demo release
-    var demoVersion = "0.14.22";
+    var demoVersion = "0.14.23";
     var versions = ["3.0", "3.3", "3.5", "3.6", "3.8开发"];
     var fighterDoc = "zh-cn/main-fighter-ctrlers/FighterCtrler";
     var mcDoc = "zh-cn/main-fighter-ctrlers/FighterMcCtrler";
@@ -846,7 +846,7 @@
             try { attachPath(graph, node); } catch (error) { notes.push(error.message); }
         });
         var suggestions = (result.suggestions || []).map(function (key) { return contextualKey(key, graph.actor, {}); }).filter(function (key, index, keys) { return catalog[key] && keys.indexOf(key) === index && usable(catalog[key], graph.actor, graph.version); });
-        return { graph: graph, notes: Array.from(new Set(notes)), suggestions: suggestions, matches: Array.from(new Set(requestedConditions.map(function (r) {return r.evidence;}).concat(result.actions.map(function (a) { return a.evidence; })))) };
+        return { graph: graph, warnings: result.warnings || [], required: result.required || [], notes: Array.from(new Set(notes)), suggestions: suggestions, matches: Array.from(new Set(requestedConditions.map(function (r) {return r.evidence;}).concat(result.actions.map(function (a) { return a.evidence; })))) };
     }
     function validateGraph(value) {
         if (!value || value.format !== 1 || !versions.includes(value.version) || (value.actor && !Object.hasOwn(actors, value.actor)) || !Array.isArray(value.nodes) || !Array.isArray(value.edges) || !Array.isArray(value.bubbles)) throw new Error("本地工作台数据无效");

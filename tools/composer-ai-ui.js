@@ -161,8 +161,9 @@
                 if (controller.signal.aborted) {var aborted=new Error("已取消 AI 请求");aborted.name="AbortError";throw aborted;}
                 var prompt=ai.prompt(core,text,version,actor,result,docs);
                 plan=await ai.complete(snapshot,credential,prompt.system,prompt.user,{signal:controller.signal,metadata:modelData,onUsage:function (usage) {used=usage;},onRequest:function (info) {requestInfo=info;started=Date.now();},onDiagnostic:function (info) {if (requestInfo) requestInfo.diagnostic=info;if (onProgress) onProgress(info);}});
-                var built=ai.reconcile(core,text,result,ai.buildPlan(core,plan,version,actor,result.graph.context));
-                var gaps=ai.coverage(core,text,result,built.graph);
+                var built=ai.reconcile(core,text,result,ai.buildPlan(core,plan,version,actor,result.graph.context,result.required));
+                built.warnings=Array.from(new Set((result.warnings || []).concat(built.warnings || [])));
+                var gaps=built.graph ? ai.coverage(core,text,result,built.graph) : [];
                 if (gaps.length) throw new Error("方案未覆盖已识别的需求："+gaps.join("；"));
                 built.usage=used;if (requestInfo) {requestInfo.elapsedMs=Date.now()-started;built.request=requestInfo;}return built;
             } catch (error) {
