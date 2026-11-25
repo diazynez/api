@@ -58,6 +58,40 @@ test("branch deletion, frame promotion and validation preserve ownership",()=>{
     const other=branchGraph();other.fallback.isElse=false;other.fallback.kind="frame";
     assert.throws(()=>c.validateGraph(other.graph),/分支/);
 });
+test("explicit input keys select the binding API while the authored frame stays literal",()=>{
+    const cases=[['通过u按键纽招1','setZhao1','招1'],['通过u按键纽招13','setZhao1','招13'],['通过U按键纽招2','setZhao1','招2'],['用 U 键绑定“招13”','setZhao1','招13'],['使用u键来纽招13','setZhao1','招13'],['U键绑定到招13','setZhao1','招13'],['给U键设置动作为“新招”','setZhao1','新招'],['把招13绑定到U键','setZhao1','招13'],['将“新 招13”绑定在U按键上','setZhao1','新 招13'],['招13纽到U','setZhao1','招13'],['用SU键绑定招13','setZhao2','招13'],['用S + J键绑定招13','setSkill1','招13'],['通过↑U按键纽招13','setZhao3','招13'],['用SI键绑定“必杀 新”','setBishaSUPER','必杀 新']];
+    for(const [text,key,name] of cases) {
+        const result=c.fromText(text),output=c.generate(result.graph),calls=[];
+        assert.deepEqual(result.notes,[],text);assert.deepEqual(output.errors,[],text);
+        vm.runInNewContext(output.code,{parent:{$mc_ctrler:{[key]:(...args)=>calls.push(args)}}});
+        assert.deepEqual(calls,[[name,...(key === "setBishaSUPER" ? [300] : [])]],text);
+    }
+});
+
+test("input-key binding targets never become extra commands and incomplete requests do not execute",()=>{
+    for(const name of ['否则','反之如果','血量不大于20','闪白光','锁定','招2']) {
+        const text='通过u按键纽“'+name+'”',result=c.fromText(text);
+        assert.deepEqual(result.notes,[],text);assert.equal(c.generate(result.graph).code,'parent.$mc_ctrler.setZhao1('+JSON.stringify(name)+');');
+    }
+    for(const text of ['通过u按键纽','不要通过u按键纽招13','通过ux按键纽招13','将招13绑定到未知键','播放“招13”绑定到U键']) assert.equal(c.generate(c.fromText(text).graph).code,"",text);
+    for(const name of ['通过u按键纽招13','招13绑定到U键']) assert.equal(c.generate(c.fromText('播放“'+name+'”').graph).code,'parent.$mc_ctrler.gotoAndPlay('+JSON.stringify(name)+');');
+    const result=c.fromText('如果耐力不小于20，通过u按键纽招13；反之用SU键绑定招1'),output=c.generate(c.validateGraph(JSON.parse(JSON.stringify(result.graph))));
+    assert.deepEqual(result.notes,[]);assert.deepEqual(output.errors,[]);
+    for(const energy of [19,20,21]) {const calls=[];vm.runInNewContext(output.code,{parent:{$fighter_ctrler:{getEnergy:()=>energy},$mc_ctrler:{setZhao1:n=>calls.push([1,n]),setZhao2:n=>calls.push([2,n])}}});assert.deepEqual(calls,[energy >= 20 ? [1,'招13'] : [2,'招1']]);}
+});
+
+test("inclusive negative comparisons execute at equality and preserve percent units",()=>{
+    for(const [words,op] of [[['不大于','小于或等于','没有超过','没超过','未超过'],'<='],[['不小于','大于或等于','没有低于','没低于','未低于'],'>=']]) for(const word of words) {
+        const text='如果耐力'+word+'20，播放“A”；否则播放“B”',result=c.fromText(text),output=c.generate(result.graph);
+        assert.deepEqual(result.notes,[],text);assert.deepEqual(output.errors,[],text);
+        for(const energy of [19,20,21]) {const calls=[];vm.runInNewContext(output.code,{parent:{$fighter_ctrler:{getEnergy:()=>energy},$mc_ctrler:{gotoAndPlay:n=>calls.push(n)}}});assert.deepEqual(calls,[(op === '<=' ? energy <= 20 : energy >= 20) ? 'A' : 'B'],text);}
+    }
+    for(const [word,op] of [['不大于','<='],['不小于','>=']]) {
+        const parsed=c.parse('血量'+word+'30%时闪白光');assert.equal(parsed.condition.key,'hpRate');assert.equal(parsed.condition.operator,op);assert.equal(parsed.condition.value,'0.3');
+    }
+    assert.equal(c.generate(c.fromText('播放“血量不小于20”').graph).code,'parent.$mc_ctrler.gotoAndPlay("血量不小于20");');
+});
+
 test("community binding verbs preserve their exact action mapping",()=>{
     for(const [word,key,name] of [["纽zh2","setZhao2","招2"],["纽sj","setSkill1","砍技1"],["纽wj","setSkill2","砍技2"]]) {
         assert.equal(c.generate(c.fromText(word).graph).code,'parent.$mc_ctrler.'+key+'('+JSON.stringify(name)+');');

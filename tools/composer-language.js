@@ -37,6 +37,25 @@
         return bindings[bindingAliases[key] || key];
     }
     var bindingVerbs = "设置|设定|登记|绑定|开启|启用|允许|获得|获取|得到|纽带|纽";
+    function keyBindings(text, literalRanges) {
+        var quoted=[], found=[];
+        text.replace(/[“"「'][^”"」'\n]*[”"」']/g,function (value,index) {quoted.push([index,index+value.length]);return value;});
+        var key="([↑↓][+\\s]*[A-Za-z]+|[A-Za-z][A-Za-z0-9_]*(?:\\s*\\+\\s*[A-Za-z]+)*)", keySuffix="(?:按键|键位|键)?", verb="(?:绑定|绑(?!定)|设置|设定|登记|纽带|纽(?!带))";
+        var target="(?:(?:动作标签|帧标签|招式|动作|标签)\\s*(?:为|使用|用)?\\s*)?"+label;
+        var forward=new RegExp("(?:(?:通过|使用|用|给|将|把|按下|按|设置|设定|登记|绑定|开启|启用|允许|获得|获取|得到)\\s*)?"+key+"\\s*"+keySuffix+"\\s*(?:来|去)?\\s*"+verb+"\\s*(?:到|为|成)?\\s*"+target,"gi");
+        var reverse=new RegExp("(?:把|将)?\\s*(?:动作标签|帧标签|招式|动作|标签)?\\s*(?:[“\"「']([^”\"」'\\n]+)[”\"」']|([A-Za-z0-9_\\u4e00-\\u9fff]+?))\\s*"+verb+"\\s*(?:到|在|给)\\s*"+key+"\\s*"+keySuffix+"(?:上)?(?![A-Za-z0-9_])","gi");
+        function scan(pattern,reversed) {
+            var m;
+            while ((m=pattern.exec(text))) {
+                if (quoted.some(function (span) {return m.index > span[0] && m.index < span[1];}) || (literalRanges || []).some(function (span) {return m.index < span[1] && m.index+m[0].length > span[0];}) || found.some(function (r) {return m.index < r.end && m.index+m[0].length > r.start;})) continue;
+                var entry=binding(m[reversed ? 3 : 1]), name=reversed ? m[1] || m[2] : frame(m,2);
+                if (!entry || !name) continue;
+                var offset=reversed ? m[0].indexOf(name) : m[0].lastIndexOf(name);
+                found.push({key:entry[0],frame:name,start:m.index,end:m.index+m[0].length,labelStart:m.index+offset,labelEnd:m.index+offset+name.length});
+            }
+        }
+        scan(forward,false);scan(reverse,true);return found;
+    }
     function tokens(text) {
         var words = Object.keys(attributes).concat(Object.keys(operations)).sort(function (a, b) { return b.length - a.length; });
         var result = [], index = 0;
@@ -54,9 +73,10 @@
         }
         return result;
     }
-    function analyze(text, literalRanges) {
+    function analyze(text, literalRanges, explicitBindings) {
         literalRanges = literalRanges || [];
-        var list = tokens(text).filter(function (t) { return !literalRanges.some(function (span) { return t.start >= span[0] && t.start < span[1]; }); }), edits = [], registrations = [], declarations = [], entity = null;
+        explicitBindings=explicitBindings || keyBindings(text,literalRanges);
+        var list = tokens(text).filter(function (t) { return !literalRanges.some(function (span) { return t.start >= span[0] && t.start < span[1]; }) && !explicitBindings.some(function (r) {return t.start >= r.start && t.start < r.end;}); }), edits = [], registrations = explicitBindings.slice(), declarations = [], entity = null;
         var declarationPattern = /(?:攻击(?:面|ID|编号)?|判定面|编号|(?:命中|打中|击中)(?:编号|ID))\s*(?:[“"「']([^”"」']+)[”"」']|([A-Za-z_$][\w$]*))/ig, declared;
         while ((declared = declarationPattern.exec(text))) {
             var withinLabel = list.some(function (t) { return t.kind === "label" && declared.index > t.start && declared.index < t.end; });
@@ -183,11 +203,13 @@
             var labelStart = literalMatch.index + literalMatch[0].lastIndexOf(rawLabel);
             literalRanges.push([labelStart, labelStart + rawLabel.length]);
         }
+        var explicitBindings=keyBindings(text,literalRanges);
+        explicitBindings.forEach(function (r) {literalRanges.push([r.labelStart,r.labelEnd]);});
         var branchChars=text.split("");
         text.replace(/[“"「'][^”"」'\n]*[”"」']/g,function (value,index) {for (var i=index;i<index+value.length;i++) branchChars[i]=" ";return value;});
         literalRanges.forEach(function (span) {for (var i=span[0];i<span[1];i++) branchChars[i]=" ";});
         if (text.length <= 4000) {var branched=parseBranches(text,branchChars.join(""));if (branched) return branched;}
-        var slots = analyze(text, literalRanges);
+        var slots = analyze(text, literalRanges, explicitBindings);
         var result = { context: (hurtContext || hurtStart) ? "hurtFrame" : frameContext ? "actionStart" : (operationContext || currentFrameContext || placement || actionPlacement) ? "actionFrame" : null, intents: slots, condition: null, actions: [], values: [], notes: frameContext ? ["请将这段代码放在该动作开始执行的帧中"] : [], suggestions: [], blocked: false, actor: null };
         var claimed = [], conditions = [], quoted = [];
         var intentText = text.replace(/[“"「'][^”"」'\n]*[”"」']/g, function (value, index) {
@@ -274,7 +296,7 @@
             var rate=unit === "%" ? .01 : unit === "格" ? 100 : 1;
             condition(unit === "%" ? "hpRate" : key,"between",JSON.stringify({lower:String(numeric(m[2])*rate),upper:String(numeric(m[4])*rate),includeLower:lo,includeUpper:hi}),m);
         });
-        var operators = { "不足": "<", "少于": "<", "不多于": "<=", "达到": ">=", "不少于": ">=", "不低于": ">=", "至少": ">=", "大于等于": ">=", "小于等于": "<=", "不超过": "<=", "不高于": "<=", "至多": "<=", "高于": ">", "超过": ">", "大于": ">", "低于": "<", "小于": "<", "等于": "==", "不等于": "!=" };
+        var operators = { "不大于":"<=", "不小于":">=", "大于或等于":">=", "小于或等于":"<=", "没有超过":"<=", "没超过":"<=", "未超过":"<=", "没有低于":">=", "没低于":">=", "未低于":">=", "不足": "<", "少于": "<", "不多于": "<=", "达到": ">=", "不少于": ">=", "不低于": ">=", "至少": ">=", "大于等于": ">=", "小于等于": "<=", "不超过": "<=", "不高于": "<=", "至多": "<=", "高于": ">", "超过": ">", "大于": ">", "低于": "<", "小于": "<", "等于": "==", "不等于": "!=" };
         ["足够", "足以", "够", "不够", "不足以"].forEach(function (word) {
             ["", "支付", "消耗", "扣除", "扣", "使用"].forEach(function (verb) { operators[word + verb] = word.startsWith("不") ? "<" : ">="; });
         });

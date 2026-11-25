@@ -7,7 +7,7 @@
     "use strict";
 
     // Update the composer.html asset versions with each demo release
-    var demoVersion = "0.14.21";
+    var demoVersion = "0.14.22";
     var versions = ["3.0", "3.3", "3.5", "3.6", "3.8开发"];
     var fighterDoc = "zh-cn/main-fighter-ctrlers/FighterCtrler";
     var mcDoc = "zh-cn/main-fighter-ctrlers/FighterMcCtrler";
