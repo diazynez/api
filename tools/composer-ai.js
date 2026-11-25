@@ -280,6 +280,13 @@
             else {
                 var found=remaining.splice(index,1)[0], spec=core.catalog[wanted.key];
                 if (!/^timeline/.test(family(wanted))) spec.fields.forEach(function (f) {
+                    if (f.type === "ObjectConfig" && (spec.member || spec.key) === "addAttacker" && wanted.params[f.key]) {
+                        function includes(a,b) {return a && typeof a === "object" ? b && typeof b === "object" && Object.keys(a).every(function (key) {return Object.hasOwn(b,key) && includes(a[key],b[key]);}) : a === b;}
+                        var valid=false;
+                        try {valid=includes(JSON.parse(wanted.params[f.key]),JSON.parse(found.params[f.key]));} catch (error) {}
+                        if (!valid) issues.push("独立道具初始化配置与原文不一致："+spec.label);
+                        return;
+                    }
                     if (!["String","Boolean","Number","int","uint","ActionName","BindingName"].includes(f.type) || !Object.hasOwn(found.params,f.key)) return;
                     var a=wanted.params[f.key],b=found.params[f.key];
                     if (a === "" || a === undefined) return;
@@ -351,10 +358,12 @@
             "平台内建能力：读取一个值，与数字或字符串比较，以 Boolean 判断是/否，将多个条件用且/或组合，成立时依次执行操作，以及逐帧执行。上述能力由平台生成代码，不需要寻找专门实现比较、条件分支或连接的游戏 API。普通大小比较不需要额外的 checkXXX 接口。",
             "先将需求拆成读取值、比较关系、执行操作，再用接口表表达。条件中的数额仅用于比较；检查资源是否足够不等于扣除资源，用户没有要求的操作不得加入。口语描述按游戏中的通常含义理解，不因修饰词而要求新的物理检测接口。",
             "不要增加需求没有提出的判断或操作，包括资源上限非零、容量可用等额外前提。quantity.basis 的 current 是当前数值，maximum 是容量上限，ratio 是占满值的比例；不要混淆。effect 的 = 表示赋值，+=/-= 表示增减；‘加12’不能改成‘设为12’。",
+            '“生成锁定的独立道具”属于生成者的 addAttacker 初始化配置，params 用 x:{moveToTarget:true},y:{moveToTarget:true}；明确无重力时再填 applyG:false。不要因为“锁定”切换 actor 或改成已有道具内部的 moveToTarget。持续跟随用 followTarget，不能把创建时定位自行升级成持续追踪；缺少元件名时列为 unresolved，不编造 bsmc 等名称。',
             "recognizedFragments 是已识别出的片段，保留其中符合原句的操作与判断，再补齐遗漏部分。涉及‘条件成立时执行’的需求不得退化为孤立的读取步骤；每个判断必须放进 if，每个被要求的执行操作必须放进 then 或 steps。若发现片段与原句冲突，在 unresolved 中说明。",
             "帧标签、攻击ID及其他名称是精确字面量，逐字保留原文，不增加空格、不翻译、不润色。比较边界也必须保留：足够支付、至少、不少于表示 >=，不足、不够支付表示 <；恰好达到所需数额也足够支付。",
             '输出结构只有 {"steps":[],"unresolved":[]}。一个普通操作是 {"api":"接口表中的api","args":{"真实参数名":"参数值"}}，无参数可省略 args。args 只允许 arguments 中列出的参数，不得复制 meaning、use、returns、type、default 等说明字段。',
             '条件步骤是 {"if":[{"api":"读取接口","op":"比较符","value":比较值}],"then":[操作步骤]}。op 支持 >=、>、<=、<、==、!=、truthy、falsy、between。布尔值是/否用 truthy/falsy 并省略 value；第二个起的条件用 join:"and" 或 "or" 与前面结果组合。支持嵌套 if。',
+            '互斥分支在同一个 if 步骤内添加 "elseIf":[{"if":[条件],"then":[步骤]}] 和 "else":[步骤]，两项均可省略。按顺序只执行第一个成立的分支；else 必须最后执行且没有条件。不要把互斥分支改成多个独立 if。“反之”“不然就”“不然的话”表示兜底分支；“此外如果”“另外如果”“同时如果”表示独立 if，允许与前一个判断同时成立，不能合并为 elseIf。',
             '每个条件项都必须有 api 和 op，join 与它们放在同一项中，不能单独成项；value 只存比较值，不能把整个条件接口嵌进 value。不要重复列出同一条件。',
             'between 的 value 为 {"lower":20,"upper":50,"includeLower":true,"includeUpper":false}。字符串比较传字符串，数值比较传数字。',
             actor === "character" ? '例如“血量低于500时先闪白光，再恢复100血量”应输出 {"steps":[{"if":[{"api":"hp","op":"<","value":500}],"then":[{"api":"shine","args":{"color":"0xffffff"}},{"api":"addHp","args":{"v":100}}]}],"unresolved":[]}。这是平台内建的条件逻辑，无需专门的检查血量接口。' : '例如“闪白光”应输出 {"steps":[{"api":"shine","args":{"color":"0xffffff"}}],"unresolved":[]}。不要添加任何人物控制器路径步骤。',
@@ -422,9 +431,23 @@
                 if (step && Object.hasOwn(step,"api")) {fields(step,["api","args","from"],location);return node(step,["action","value"],depth,location);}
                 var block={id:"block"+(++next),kind:"condition",conditions:[],actions:[]};
                 if (step && Object.hasOwn(step,"if")) {
-                    fields(step,["if","then"],location);block.conditions=conditions(step.if,depth,location+".if");
+                    fields(step,["if","then","elseIf","else"],location);block.conditions=conditions(step.if,depth,location+".if");
                     if (!block.conditions.length) throw new Error("AI 条件步骤缺少判断条件");
                     block.actions=steps(step.then,depth+1,location+".then");
+                    var tail=block;
+                    if (step.elseIf !== undefined) {
+                        if (!Array.isArray(step.elseIf) || step.elseIf.length > 10) throw new Error("AI elseIf 分支格式无效");
+                        step.elseIf.forEach(function (branch,index) {
+                            fields(branch,["if","then"],location+".elseIf["+index+"]");
+                            if (!Object.hasOwn(branch,"if")) throw new Error("AI elseIf 分支缺少条件");
+                            var branchId=steps([branch],depth+1,location+".elseIf")[0];
+                            tail.otherwise=branchId;tail=output.blocks.find(function (b) {return b.id === branchId;});
+                        });
+                    }
+                    if (step.else !== undefined) {
+                        var fallback={id:"block"+(++next),kind:"condition",isElse:true,conditions:[],actions:steps(step.else,depth+1,location+".else")};
+                        output.blocks.push(fallback);tail.otherwise=fallback.id;
+                    }
                 } else if (step && Object.hasOwn(step,"eachFrame")) {
                     fields(step,["eachFrame","until","steps"],location);fields(step.eachFrame,["frames","scheduler","renderMode"],location+".eachFrame");
                     block.kind="frame";block.frames=step.eachFrame.frames === undefined ? -1 : step.eachFrame.frames;
@@ -485,11 +508,18 @@
         plan.blocks.forEach(function (row) {
             identity(row);
             if (!["condition","frame"].includes(row.kind) || !Array.isArray(row.conditions) || !Array.isArray(row.actions) || row.conditions.length > 30 || row.actions.length > 130) throw new Error("AI 执行块格式无效");
-            if (!row.conditions.length && row.kind === "condition") throw new Error("AI 条件块缺少条件");
+            if (!row.conditions.length && row.kind === "condition" && row.isElse !== true) throw new Error("AI 条件块缺少条件");
             if (row.kind === "frame" && row.frames !== undefined && (!Number.isInteger(row.frames) || row.frames < -1 || row.frames === 0)) throw new Error("AI 执行帧数无效");
-            var block=core.addBubble(graph,{kind:row.kind,frames:row.frames === undefined ? -1 : row.frames,scheduler:row.scheduler || "auto",renderMode:row.renderMode || "animation"});items.set(row.id,block);
+            if (row.isElse !== undefined && typeof row.isElse !== "boolean") throw new Error("AI else 分支格式无效");
+            var block=core.addBubble(graph,{kind:row.kind,isElse:row.isElse === true,frames:row.frames === undefined ? -1 : row.frames,scheduler:row.scheduler || "auto",renderMode:row.renderMode || "animation"});items.set(row.id,block);
         });
         function use(id) {if (!items.has(id) || referenced.has(id)) throw new Error("AI 节点重复使用或不存在");referenced.add(id);return items.get(id);}
+        plan.blocks.forEach(function (row) {
+            if (!row.otherwise) return;
+            var owner=items.get(row.id),branch=use(row.otherwise);
+            if (owner.kind !== "condition" || owner.isElse || branch.key || branch.kind !== "condition") throw new Error("AI 条件分支归属无效");
+            owner.elseBlock=branch.id;branch.container=owner.id;
+        });
         // Attach block ancestry before placing actions that may require a frame ancestor
         plan.blocks.forEach(function (row) {
             row.actions.forEach(function (id) {
@@ -521,7 +551,7 @@
         });
         plan.blocks.forEach(function (row) {if (!referenced.has(row.id)) throw new Error("AI 执行块没有放入执行顺序");});
         // A sole state-dependent setDisabled is maintained by its own callback
-        graph.bubbles.slice().filter(function (b) {return b.kind === "condition" && !b.container && b.actions.length && b.actions.every(function (id) {var n=core.nodeById(graph,id);return n && n.key === "setDisabled" && String(n.params.condition) === "true";}) && core.conditionsOf(b).every(function (r) {var s=core.catalog[core.nodeById(graph,r.id).key];return !s.watchCondition && s.key !== "justHit";});}).forEach(function (b) {
+        graph.bubbles.slice().filter(function (b) {return b.kind === "condition" && !b.elseBlock && !b.container && b.actions.length && b.actions.every(function (id) {var n=core.nodeById(graph,id);return n && n.key === "setDisabled" && String(n.params.condition) === "true";}) && core.conditionsOf(b).every(function (r) {var s=core.catalog[core.nodeById(graph,r.id).key];return !s.watchCondition && s.key !== "justHit";});}).forEach(function (b) {
             b.actions.map(function (id) {return core.nodeById(graph,id);}).forEach(function (node) {node.release={conditions:core.conditionsOf(b).map(function (r) {return Object.assign({},r);}),negate:true};});
             core.remove(graph,b.id);
         });

@@ -107,6 +107,10 @@ button[data-block-kind] { touch-action: none; user-select: none; cursor: grab; }
 .bubble-header { border-bottom: 1px solid var(--mono-tint2); padding: 12px 14px; color: var(--composer-value); }
 .bubble-header strong { font-size: 13px; }
 .bubble-header span { font: 10px Consolas, monospace; }
+.branch-chain { margin-top: 12px; border-top: 1px solid var(--composer-value); }
+.branch-chain > .bubble { position: relative; width: 100%; border: 0; border-radius: 0; padding-bottom: 0; }
+.branch-controls { display: flex; gap: 8px; padding: 12px 14px 0; }
+.branch-controls button { font-size: 11px; }
 .drop-region { margin: 12px 14px 0; padding: 10px; border: 1px dashed var(--mono-tint2); border-radius: 8px; min-height: 66px; }
 .drop-region > h3 { font-size: 10px; font-weight: 500; margin: 0 0 8px; opacity: .65; }
 .drop-region > p { font-size: 10px; line-height: 1.6; opacity: .45; margin: 0; }
@@ -228,6 +232,13 @@ button.condition-join { margin-left: auto; margin-right: auto; }
 html { scrollbar-width: none; scrollbar-gutter: auto; }
 html::-webkit-scrollbar { display: none; width: 0; height: 0; }
 html.intro-scroll-locked, html.intro-expanded { overflow-y: hidden; overscroll-behavior-y: none; }
+#page-scroll { appearance: none; -webkit-appearance: none; position: fixed; z-index: 30; right: 0; top: 0; height: 100dvh; width: 4px; min-width: 0; margin: 0; padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; writing-mode: vertical-lr; direction: ltr; cursor: default; touch-action: none; }
+html.intro-expanded #page-scroll, .intro-initializing #page-scroll { display: none; }
+#page-scroll::-webkit-slider-runnable-track { width: 4px; height: 100%; background: color-mix(in srgb, var(--base-color) 8%, transparent); border: 0; }
+#page-scroll::-webkit-slider-thumb { appearance: none; -webkit-appearance: none; width: 4px; height: 36px; border: 0; border-radius: 2px; background: color-mix(in srgb, var(--base-color) 45%, transparent); }
+#page-scroll::-moz-range-track { width: 4px; height: 100%; background: color-mix(in srgb, var(--base-color) 8%, transparent); border: 0; }
+#page-scroll::-moz-range-thumb { width: 4px; height: 36px; border: 0; border-radius: 2px; background: color-mix(in srgb, var(--base-color) 45%, transparent); }
+#page-scroll:focus, #page-scroll:focus-visible { outline: none; box-shadow: none; }
 
 .intro-measure { position: absolute !important; top: 0; left: 0; visibility: hidden; pointer-events: none; min-height: 0 !important; }
 .intro-measure, .intro-measure * { transition: none !important; animation: none !important; }

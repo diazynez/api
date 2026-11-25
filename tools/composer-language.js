@@ -28,11 +28,15 @@
     var operations = { 回: "add", 掉: "subtract", 设到: "set", 调到: "set", 要: "set", 设成: "set", 置为: "set", 改到: "set", 设: "set", 给: "give", 恢复: "add", 回复: "add", 消耗: "subtract", 扣: "subtract", 增加: "add", 提高: "add", 提升: "add", 加上: "add", 加: "add", 减少: "subtract", 降低: "subtract", 减去: "subtract", 扣除: "subtract", 减: "subtract", 设置为: "set", 设为: "set", 修改为: "set", 调整为: "set", 设置: "set", 改成: "set", 改为: "set", 调成: "set", 为: "set" };
     var bindings = { SJ: ["setSkill1", "砍技1"], WJ: ["setSkill2", "砍技2"], U: ["setZhao1", "招1"], SU: ["setZhao2", "招2"], WU: ["setZhao3", "招3"], ADJ: ["setCatch1", "摔1"], ADU: ["setCatch2", "摔2"], J:["setAttack","砍1"], K:["setJump","跳"], L:["setDash","瞬步"], I:["setBisha","必杀"], WI:["setBishaUP","上必杀"], SI:["setBishaSUPER","超必杀"], KJ:["setAttackAIR","跳砍"], KU:["setSkillAIR","跳招"], KI:["setBishaAIR","空中必杀"] };
     var bindingAliases = {"招1":"U","招2":"SU","招3":"WU","砍技1":"SJ","砍技2":"WJ",ZH1:"U",ZH2:"SU",ZH3:"WU",ZHAO1:"U",ZHAO2:"SU",ZHAO3:"WU",SKILL1:"SJ",SKILL2:"WJ","↓J":"SJ","↑J":"WJ","↓U":"SU","↑U":"WU","↓I":"SI","↑I":"WI"};
+    bindings.JUMPDOWN=["setJumpDown","落"];
+    Object.assign(bindingAliases,{"普通攻击":"J","普攻":"J","砍1":"J","投技1":"ADJ","投技2":"ADU","摔技1":"ADJ","摔技2":"ADU","摔1":"ADJ","摔2":"ADU","必杀":"I","上必杀":"WI","超必杀":"SI","空中必杀":"KI","空中攻击":"KJ","跳砍":"KJ","空中技能":"KU","跳招":"KU","跳跃":"K","下台阶":"JUMPDOWN","瞬步":"L"});
+    var plainBindings={"行走":"setMove","防御":"setDefense","全部地面动作":"setAllAct","全部空中动作":"setAirAllAct"};
+    var bindingWords=Object.keys(bindingAliases).filter(function (word) {return /[\u4e00-\u9fff]/.test(word);}).sort(function (a,b) {return b.length-a.length;});
     function binding(value) {
         var key = value.toUpperCase().replace(/[+\s]/g, "");
         return bindings[bindingAliases[key] || key];
     }
-    var bindingVerbs = "设置|设定|登记|绑定|开启|启用|允许|获得|获取|得到";
+    var bindingVerbs = "设置|设定|登记|绑定|开启|启用|允许|获得|获取|得到|纽带|纽";
     function tokens(text) {
         var words = Object.keys(attributes).concat(Object.keys(operations)).sort(function (a, b) { return b.length - a.length; });
         var result = [], index = 0;
@@ -42,7 +46,7 @@
             else {
                 var word = words.find(function (v) { return tail.startsWith(v); });
                 if (word) token = { kind: attributes[word] ? "attribute" : "operation", value: attributes[word] || operations[word], raw: word };
-                else if ((m = tail.match(/^(?:招[123]|砍技[12]|[↑↓][+\s]*[A-Za-z]+|[A-Za-z_$][\w$]*)/))) token = { kind: binding(m[0]) ? "binding" : "identifier", value: m[0], raw: m[0] };
+                else if ((m = tail.match(new RegExp("^(?:"+bindingWords.join("|")+"|[↑↓][+\\s]*[A-Za-z]+|[A-Za-z_$][\\w$]*)")))) token = { kind: binding(m[0]) ? "binding" : "identifier", value: m[0], raw: m[0] };
                 else if ((m = tail.match(new RegExp("^" + number)))) token = { kind: "number", value: numeric(m[0]), raw: m[0] };
             }
             if (token) { token.start = index; token.end = index + token.raw.length; result.push(token); index = token.end; }
@@ -70,11 +74,11 @@
             }
             if (t.kind === "attribute") {
                 var op = list[i + 1], amount = list[i + 2];
-                if (!(op && op.kind === "operation" && amount && amount.kind === "number" && gap(t, op, /^(?:的|麻烦|请|帮我|\s)*$/) && gap(op, amount, /^(?:自身|自己|人物|当前|对方|对面|敌人|目标|对手|\s)*$/))) {
+                if (!(op && op.kind === "operation" && amount && amount.kind === "number" && gap(t, op, /^(?:的|麻烦|请|帮我|\s)*$/) && gap(op, amount, /^(?:我方|自身|自己|人物|当前|对方|对面|敌人|目标|对手|\s)*$/))) {
                     op = list[i - 2]; amount = list[i - 1];
-                    if (!(op && op.kind === "operation" && amount && amount.kind === "number" && gap(op, amount, /^(?:自身|自己|人物|当前|对方|对面|敌人|目标|对手|\s)*$/) && gap(amount, t, /^\s*(?:点|格|%)?(?:的)?\s*$/))) {
+                    if (!(op && op.kind === "operation" && amount && amount.kind === "number" && gap(op, amount, /^(?:我方|自身|自己|人物|当前|对方|对面|敌人|目标|对手|\s)*$/) && gap(amount, t, /^\s*(?:点|格|%)?(?:的)?\s*$/))) {
                         op = list[i - 1]; amount = list[i + 1];
-                        if (!(op && op.kind === "operation" && amount && amount.kind === "number" && gap(op, t, /^(?:自身|自己|人物|当前|对方|对面|敌人|目标|对手|\s)*$/) && gap(t, amount, /^\s*$/))) return;
+                        if (!(op && op.kind === "operation" && amount && amount.kind === "number" && gap(op, t, /^(?:我方|自身|自己|人物|当前|对方|对面|敌人|目标|对手|\s)*$/) && gap(t, amount, /^\s*$/))) return;
                     }
                 }
                 var position = Math.min(t.start, op.start), start = position, end = Math.max(t.end, amount.end);
@@ -100,7 +104,7 @@
                 }
                 edits.push({ field: t.value, operation: op.value === "give" ? (hitField ? "set" : op.start < t.start ? "add" : "ambiguous") : op.value, amount: amount.value, entity: id, target: target, recipient: recipientName, position: position, start: start, end: end, unit: unit });
             }
-            if (t.kind === "binding" || t.kind === "label" && binding(t.value) && /^\s*(?:纽带|按键|技能)/.test(text.slice(t.end))) {
+            if (t.kind === "binding" || t.kind === "label" && binding(t.value)) {
                 var before = text.slice(Math.max(0, t.start - 12), t.start);
                 var prefix = before.match(new RegExp("(?:" + bindingVerbs + ")\\s*$"));
                 if (!prefix) return;
@@ -110,16 +114,47 @@
         });
         return { tokens: list, edits: edits, registrations: registrations, declarations: declarations };
     }
+    function parseBranches(text, masked) {
+        var conditional="(?:如果说|如果|假如|假若|假设|要是|若是|倘若|倘使|若|当)", padding="\\s*(?:的话)?\\s*[，,]?\\s*";
+        var fallback="(?:要不然|不然|否则|反之|要不|在其他情况下|其他情况下|其余情况下)", independent="(?:除此之外|与此同时|此外|另外|还有|同时)";
+        var pattern=new RegExp("("+independent+")"+padding+conditional+"|"+fallback+"(?:"+padding+conditional+")?|\\belse\\s+if\\b|\\belif\\b|\\belse\\b","gi"), markers=[], m;
+        while ((m=pattern.exec(masked))) markers.push({start:m.index,end:m.index+m[0].length,independent:!!m[1],conditional:new RegExp(conditional+"$|else\\s+if$|elif$","i").test(m[0])});
+        if (!markers.length) return null;
+        var failure={condition:null,conditions:[],actions:[],values:[],notes:[],suggestions:[],blocked:true,actor:null,context:null};
+        function fail(note) {failure.notes.push(note);return failure;}
+        if (markers.length > 10 || /[{}]/.test(masked)) return fail("分支过多或含有嵌套结构，请拆开配置或使用 AI 补全");
+        var pieces=[text.slice(0,markers[0].start)].concat(markers.map(function (marker,i) {return text.slice(marker.end,i+1 < markers.length ? markers[i+1].start : text.length);}));
+        var parsed=[], fallback=false;
+        for (var i=0;i<pieces.length;i++) {
+            var source=pieces[i].replace(/^[\s，,；;：:]+|[\s，,；;。]+$/g,"");
+            if (!source || fallback && !markers[i-1].independent) return fail("分支内容缺失，或“否则”后仍有其他分支，请检查分支顺序");
+            var isElse=i > 0 && !markers[i-1].conditional;
+            // Only flat chains have an unambiguous owner without explicit block delimiters
+            var visible=source.replace(/[“"「'][^”"」'\n]*[”"」']/g,"");
+            if ((visible.match(/如果|若(?=.{0,20}(?:时|则|就|血量|耐力|气量|对方))|\bif\b/g) || []).length > (isElse ? 0 : 1)) return fail("嵌套条件的分支归属不明确，请拆开配置或使用 AI 补全");
+            if (i && !isElse) source="如果"+source;
+            if (isElse) source=source.replace(/^(?:的话)?\s*(?:那么就|那就|那么|就|则)?\s*[，,：:]?\s*/,"");
+            var row=parse(source);
+            if (row.blocked || !row.actions.length || row.values.length || (isElse ? row.condition : !row.condition) || i && row.repeat) return fail("第"+(i+1)+"个分支未完整识别，请为条件分支填写条件和操作，“否则”只填写操作");
+            if (i && row.actor && row.actor !== parsed[0].actor) return fail("各分支的调用对象不一致，请在工作台中分别配置对象路径");
+            row.isElse=isElse;row.independent=i > 0 && markers[i-1].independent;parsed.push(row);fallback=isElse;
+        }
+        var root=parsed.shift();root.branches=parsed;
+        root.notes=root.notes.concat.apply(root.notes,parsed.map(function (row) {return row.notes;}));
+        root.suggestions=Array.from(new Set(root.suggestions.concat.apply(root.suggestions,parsed.map(function (row) {return row.suggestions;}))));
+        return root;
+    }
     function parse(input) {
         var text = String(input || "").trim().split(/([“"「'][^”"」'\n]*[”"」'])/).map(function (part, index) {
             return index % 2 ? part : part.normalize("NFKC");
         }).join("");
         text = text.split(/([“"「'][^”"」'\n]*[”"」'])/).map(function (part, i) {
-            return i % 2 ? part : part.replace(/(?:当)?检测到|检查到|判断出/g, "如果").replace(/跳帧(?:到|至)?|跳转到|跳转至|切到|切去|跳回|转到/g, "跳到").replace(/的同时|与此同时|同时(?!满足)/g, "并");
+            return i % 2 ? part : part.replace(/(?:当)?检测到|检查到|判断出/g, "如果").replace(/跳帧(?:到|至)?|跳转到|跳转至|切到|切去|跳回|转到/g, "跳到").replace(/的同时|与此同时(?!\s*(?:如果说|如果|假如|假若|假设|要是|若是|倘若|倘使|若|当))|同时(?!满足|\s*(?:如果说|如果|假如|假若|假设|要是|若是|倘若|倘使|若|当))/g, "并");
         }).join("");
         // Request wrappers sit outside the operation; quoted labels are left intact
         text = text.replace(/^(?:(?:大佬们?|各位|请问|请|麻烦(?:帮我)?|帮(?:我|忙)(?:弄|做|配|加(?=一下|一个|个|下))?(?:一下|一个|个|下)?|我想(?:要|让)?|想要?|求(?:一个|个)?)[，,\s]*)+/, "");
         text = text.replace(/(?:[，,]\s*)?(?:能(?:不能)?帮我(?:配|做|弄|加)(?:一下|下)?(?:吗)?|(?:能|可以|可不可以|能不能)(?:配|做)(?:吗)?|怎么(?:写|配|实现)|(?:帮我|麻烦)(?:加上|加一下|配上|配一下|做下|做一下))[？?。！!\s]*$/, "");
+        text=text.replace(/^(每(?:一)?帧(?:执行|检测|判断)?\s*)?(?:如果说|假如|假若|假设|要是|若是|倘若|倘使|若)/,"$1如果");
         text = text.replace(/^(?:这一击|这次攻击|这招)(?:的)?(?=伤害|攻击力|硬直|僵直|横向受力|竖直受力)/, "");
         var operationContext = /^(?:这招|这个技能|当前招式|当前动作|这段动作)(?:里|中)?(?=消耗|扣|恢复|增加|减少|跳|闪|关闭|开启|移动)/.test(text);
         text = text.replace(/^(?:这招|这个技能|当前招式|当前动作|这段动作)(?:里|中)?(?=消耗|扣|恢复|增加|减少|跳|闪|关闭|开启|移动)/, "");
@@ -141,13 +176,17 @@
         text = text.replace(/[，,]\s*(?:具体)?(?:回多少|扣多少|加多少|恢复多少)(?:我|你)?(?:还|暂时)?(?:没想好|未确定|以后再定)[。！？?!\s]*$/, "");
         text = text.replace(/[，,]\s*(?:名字|名称|标签名)(?:还|暂时)?(?:没定|未定|没想好)[。！？?!\s]*$/, "");
         // Action-label data is not another command, even when it is unquoted
-        var literalRanges = [], literalMatch, literalPattern = new RegExp("(?:跳转(?:到|至)?|跳到|切换到|播放动作|动作到)\\s*(?:(?:已有(?:的)?)?(?:动作标签|帧标签|标签)\\s*|动作(?=\\s|[“\"「'])\\s*)?" + label, "g");
+        var literalRanges = [], literalMatch, literalPattern = new RegExp("(?:跳转(?:到|至)?|跳到|切换到|播放动作|播放(?=\\s*[“\"「'])|动作到)\\s*(?:(?:已有(?:的)?)?(?:动作标签|帧标签|标签)\\s*|动作(?=\\s|[“\"「'])\\s*)?" + label, "g");
         while ((literalMatch = literalPattern.exec(text))) {
             var rawLabel = literalMatch[1] || literalMatch[2];
             if (!literalMatch[1] && /^第(?:[\d零〇一二两三四五六七八九十百千]|$)/.test(rawLabel)) continue;
             var labelStart = literalMatch.index + literalMatch[0].lastIndexOf(rawLabel);
             literalRanges.push([labelStart, labelStart + rawLabel.length]);
         }
+        var branchChars=text.split("");
+        text.replace(/[“"「'][^”"」'\n]*[”"」']/g,function (value,index) {for (var i=index;i<index+value.length;i++) branchChars[i]=" ";return value;});
+        literalRanges.forEach(function (span) {for (var i=span[0];i<span[1];i++) branchChars[i]=" ";});
+        if (text.length <= 4000) {var branched=parseBranches(text,branchChars.join(""));if (branched) return branched;}
         var slots = analyze(text, literalRanges);
         var result = { context: (hurtContext || hurtStart) ? "hurtFrame" : frameContext ? "actionStart" : (operationContext || currentFrameContext || placement || actionPlacement) ? "actionFrame" : null, intents: slots, condition: null, actions: [], values: [], notes: frameContext ? ["请将这段代码放在该动作开始执行的帧中"] : [], suggestions: [], blocked: false, actor: null };
         var claimed = [], conditions = [], quoted = [];
@@ -166,6 +205,7 @@
             result.actions.push({ key: key, params: params || {}, evidence: m[0], position: m.position === undefined ? m.index : m.position, hitId: hitId }); consume(m);
         }
         function condition(key, operator, value, m, params) {
+            if (registrationRanges.some(function (span) {return m.index < span[1] && m.index+m[0].length > span[0];})) return;
             conditions.push({ key: key, operator: operator, value: value, evidence: m[0], position: m.index, params: params || {} }); consume(m);
         }
         function scan(re, fn) {
@@ -181,8 +221,8 @@
             while ((match = re.exec(source))) { id = match[1] || match[2]; if (position === undefined) break; }
             return id;
         }
-        var actor = text.match(/^(?:(?:大佬|请问|请|怎么|如何|咋|我想|想|让|使|给)\s*)*(辅助|攻击对象)(?:自身|自己)?/);
-        if (actor) result.actor = actor[1] === "辅助" ? "assister" : "attacker";
+        var actor = text.match(/^(?:(?:大佬|请问|请|怎么|如何|咋|我想|想|让|使|给)\s*)*(辅助|攻击对象|独立道具)(?:自身|自己|内部|内)?/);
+        if (actor) {result.actor = actor[1] === "辅助" ? "assister" : "attacker";consume(actor);}
 
         // Troubleshooting and frame scheduling are discovery requests, not executable commands
         var diagnostic = /报错|没反应|没有反应|不生效|失效|不起作用|为什么|为啥|怎么回事|怎么办|咋办|哪里错|无法|不能正常|放在哪(?:一)?帧|放哪帧|写在哪/.test(intentText);
@@ -204,7 +244,7 @@
         scan(/(?:逐帧|每(?:一)?帧)(?:执行|检测|判断)?|持续(?:地)?(?:执行|检测|判断)?|一直(?:执行|检测|判断)?/ , function (m) { result.repeat = true; consume(m); });
         scan(/(?:使用|用)?(?:delayCall|setAnimateFrameOut)(?:循环)?/, function (m) { result.repeat = true; result.scheduler = /setAnimate/.test(m[0]) ? "animate" : "delay"; consume(m); });
         var actionAliases = { "招1":"zhao1", "招2":"zhao2", "招3":"zhao3", "砍技1":"skill1", "砍技2":"skill2", "跳招":"skillAIR", "跳砍":"attackAIR", "空中必杀":"bishaAIR", "超必杀":"bishaSUPER", "上必杀":"bishaUP", "必杀":"bisha", "普通攻击":"attack", "普攻":"attack", "防御":"defense", "跳跃":"jump", "瞬步":"dash", "变身":"waiKai", "左移":"moveLeft", "右移":"moveRight", "U":"zhao1", "SU":"zhao2", "WU":"zhao3", "SJ":"skill1", "WJ":"skill2", "J":"attack", "K":"jump", "L":"dash", "I":"bisha", "WI":"bishaUP", "SI":"bishaSUPER", "KU":"skillAIR", "KJ":"attackAIR", "KI":"bishaAIR", "ADJ":"catch1", "ADU":"catch2", "JK":"waiKai", "WJK":"waiKaiW", "SJK":"waiKaiS", "zhao1":"zhao1", "zhao2":"zhao2", "zhao3":"zhao3", "attack":"attack", "skill1":"skill1", "skill2":"skill2" };
-        Object.keys(bindingAliases).forEach(function (alias) { actionAliases[alias] = actionAliases[bindingAliases[alias]]; });
+        Object.keys(bindingAliases).forEach(function (alias) {if (actionAliases[bindingAliases[alias]]) actionAliases[alias] = actionAliases[bindingAliases[alias]];});
         var aliasLookup = {};
         Object.keys(actionAliases).forEach(function (alias) {aliasLookup[alias.toLowerCase()] = actionAliases[alias];});
         var aliases = Object.keys(actionAliases).sort(function (a,b) { return b.length-a.length; }).map(function (alias) {return /^[↑↓]/.test(alias) ? alias[0] + "[+\\s]*" + alias.slice(1) : alias;}).join("|");
@@ -215,6 +255,8 @@
             if (!Object.values(actionAliases).includes(m[1])) { blocked("请确认需要清除的动作纽带属性"); consume(m); return; }
             action("clearBinding", {action:m[1]}, m); result.repeat = true;
         });
+        var registrationRanges=slots.registrations.map(function (r) {return [r.start,r.end];});
+        matches("(?:"+bindingVerbs+")\\s*("+Object.keys(plainBindings).join("|")+")(?:纽带)?",function (m) {registrationRanges.push([m.index,m.index+m[0].length]);});
         var cdLabel = "(?:[“\"「']([^”\"」']+)[”\"」']|([A-Za-z_$][\\w$]*?))", cdState = "(未结束|没结束|未完成|没有结束|结束|完成|好了)";
         matches("(?:冷却|CD)\\s*(?:ID)?\\s*" + cdLabel + "\\s*(?:的)?" + cdState, function (m) { condition("CDOK", /未|没/.test(m[3]) ? "falsy" : "truthy", "", m, {id:frame(m)}); result.repeat=true; });
         matches(cdLabel + "\\s*(?:的)?(?:冷却|CD)" + cdState, function (m) { condition("CDOK", /未|没/.test(m[3]) ? "falsy" : "truthy", "", m, {id:frame(m)}); result.repeat=true; });
@@ -330,6 +372,7 @@
             action(key, params, { index: edit.start, position: edit.position, 0: text.slice(edit.start, edit.end) }, edit.entity);
         });
         slots.registrations.forEach(function (r) { action(r.key, { action: r.frame }, { index: r.start, 0: text.slice(r.start, r.end) }); });
+        matches("(?:"+bindingVerbs+")\\s*("+Object.keys(plainBindings).join("|")+")(?:纽带)?",function (m) {action(plainBindings[m[1]],{},m);});
         var spatial = text.match(new RegExp("(?:对方|对面|目标|敌人)(?:角色|人物)?(?:在|处于)(?:我|自己|自身)?(?:的)?(面前|前方|前面|身后|后方|后面)(?:\\s*(?:距离)?\\s*" + number + "(?:\\s*(?:到|至|~)\\s*" + number + ")?\\s*(?:像素|范围|距离|以内|内)*)?(?:的)?(?:时候|时)?"));
         if (spatial) {
             var distance = spatial[2] === undefined ? null : numeric(spatial[2]), far = spatial[3] === undefined ? distance : numeric(spatial[3]);
@@ -364,7 +407,7 @@
             matches("(?:跳转(?:到|至)?|跳到|切换到|播放动作)\\s*第\\s*" + number + "\\s*帧", function (m) {
                 action("goFrame", { name: "", isPlay: true, playFrame: 0 }, m);
             });
-            matches("(?:跳转(?:到|至)?|跳到|切换到|播放动作)\\s*(?:(?:已有(?:的)?)?(?:动作标签|帧标签|标签)\\s*|动作(?=\\s|[“\"「'])\\s*)?" + label, function (m) {
+            matches("(?:跳转(?:到|至)?|跳到|切换到|播放动作|播放(?=\\s*[“\"「']))\\s*(?:(?:已有(?:的)?)?(?:动作标签|帧标签|标签)\\s*|动作(?=\\s|[“\"「'])\\s*)?" + label, function (m) {
                 var playback = text.slice(m.index + m[0].length).match(/^\s*(?:标签)?(?:[，,]?\s*(?:并|接着|然后|再|随后))?\s*(?:继续播(?:放)?|停止播(?:放)?|不播放|停止|停住|播放)/);
                 var name = frame(m);
                 if (!m[1] && (/^(?:继续播(?:放)?|停止播(?:放)?|播放)$/.test(name) || /^(?:那个|某个).*(?:标签|动作)$/.test(name))) name = "";
@@ -410,7 +453,7 @@
             ["addQi", "恢复|回复|增加|加", "气量|气", "qi"],
             ["loseQi", "消耗|扣除|扣掉|减少|扣", "气量|气", "v"]
         ].forEach(function (rule) {
-            var source = "(?:" + rule[1] + ")\\s*(?:自身|人物|当前|自己)?\\s*(?:" + rule[2] + ")\\s*" + number + "|(?:" + rule[1] + ")\\s*" + number + "\\s*(?:点)?(?:" + rule[2] + ")";
+            var source = "(?:" + rule[1] + ")\\s*(?:我方|自身|人物|当前|自己)?\\s*(?:" + rule[2] + ")\\s*" + number + "|(?:" + rule[1] + ")\\s*" + number + "\\s*(?:点)?(?:" + rule[2] + ")";
             matches(source, function (m) { var params = {}; params[rule[3]] = numeric(m[1] || m[2]); action(rule[0], params, m); });
         });
         [
@@ -418,7 +461,7 @@
             ["Energy", "耐力|体力", "delta", "addEnergy", "loseEnergy"],
             ["Qi", "气量|气", "qi", "addQi", "loseQi"]
         ].forEach(function (rule) {
-            var recipientWords = "对方|对面|目标|敌人|对手|我自己|角色本人|自己|自身|人物|我|他";
+            var recipientWords = "对方|对面|目标|敌人|对手|我自己|角色本人|我方|自己|自身|人物|我|他";
             var missing = "(?:(?:给|让|使)?(" + recipientWords + ")\\s*)?(恢复|回复|增加|加|回|消耗|扣除|扣掉|减少|减|扣|掉)\\s*(?:点)?(" + rule[1] + ")(?![量零〇一二两三四五六七八九十百千\\d])";
             matches(missing, function (m) {
                 if (claimed.some(function (span) { return m.index >= span[0] && m.index < span[1]; })) return;
@@ -453,6 +496,21 @@
             action("moveOnce", { x: /后/.test(m[1]) ? -numeric(m[2]) : numeric(m[2]), y: 0 }, m);
         });
         var directions = "身前|身后|背后|后方|前方|面前|前面|后面|位置|身上";
+        var attackerName="(?:[“\"「']([^”\"」'\\n]+)[”\"」']|([A-Za-z_$][\\w$]*))";
+        matches("(?:生成|创建|添加|加入)\\s*(?:一个|个)?\\s*(?:(?:锁定(?:对方|对面|敌人|目标|对手)?|无重力)(?:的)?\\s*)*(?:独立道具|攻击对象)(?:\\s*(?:元件)?(?:名为|叫做|叫|名称为|名称是)?\\s*"+attackerName+")?",function (m) {
+            var config={},tail=text.slice(m.index+m[0].length).match(/^(?:[，,\s]*(?:并|且)?(?:锁定(?:对方|对面|敌人|目标|对手)?|无重力|不受重力|受重力))+/);
+            var description=m[0].replace(/[“"「'][^”"」'\n]*[”"」']/g,"")+(tail ? tail[0] : "");
+            if (/锁定/.test(description)) {config.x={moveToTarget:true};config.y={moveToTarget:true};}
+            if (/无重力|不受重力/.test(description)) config.applyG=false;
+            else if (/受重力/.test(description)) config.applyG=true;
+            action("addAttacker",{mcName:m[1] || m[2] || "",params:Object.keys(config).length ? JSON.stringify(config) : ""},m);
+            if (tail) consume({index:m.index+m[0].length,0:tail[0]});
+            if (!m[1] && !m[2]) result.notes.push("请填写要生成的独立道具元件名称");
+        });
+        if (/锁定/.test(intentText) && !result.actions.some(function (a) {return a.key === "addAttacker";})) {
+            suggest(["addAttacker"]);
+            blocked("锁定通常在生成独立道具时通过 addAttacker 的位置配置设置；请补充生成操作和元件名称。若要修改已有道具，请说明调用对象和时机");
+        }
         matches("(?:移动到|瞬移到|传送到)(?:(?:对方|对面|敌人|目标)(?:的)?(?:((?:" + directions + ")))?|((?:" + directions + ")))(?:\\s*" + number + "\\s*(?:像素|单位)?)?", function (m) {
             var direction = m[1] || m[2] || "", distance = m[3] === undefined ? 50 : Math.abs(numeric(m[3]));
             var x = /身后|背后|后方|后面/.test(direction) ? distance : /身前|前方|面前|前面/.test(direction) ? -distance : 0;
@@ -488,12 +546,12 @@
             row.join = "and";
             if (!index) return;
             var previous = conditions[index-1], start = previous.position + previous.evidence.length;
-            var between = text.slice(start,row.position), connector = between.match(/^(?:[\s，,]|时|的时候)*(并且|同时满足|以及|而且|且|和|或者|或|&&|\|\|)(?:[\s，,]|如果)*$/);
+            var between = text.slice(start,row.position), connector = between.match(/^(?:[\s，,]|时|的时候)*(并且|同时满足|以及|而且|且|和|或者|或|&&|\|\|)(?:[\s，,]|如果)*(?:(?:我方|自身|自己)(?:角色|人物)?(?:的)?\s*)?$/);
             if (!connector) {blocked("多个条件之间请明确使用“且”或“或”"); return;}
             row.join = /或|\|\|/.test(connector[1]) ? "or" : "and";
             consume({index:start,0:between});
         });
-        if (registered && result.actions.length > 1) blocked("当身、触地或碰撞触发后的其他操作，请写在登记的目标动作帧中");
+        if (registered && result.actions.length > 1) blocked("当身、触地或碰撞触发后的其他操作，请写在指定的目标动作帧中");
         result.condition = conditions[0] || null;
         if (result.condition && !result.actions.length && /读取|获取|检测|判断|查看/.test(intentText) && !/如果|时|后/.test(intentText) && !result.blocked) {
             result.values.push({ key: result.condition.key, params: result.condition.params }); result.condition = null;
@@ -502,6 +560,7 @@
         var remaining = text.split("");
         claimed.forEach(function (span) { for (var i = span[0]; i < span[1]; i++) remaining[i] = " "; });
         remaining = remaining.join("");
+        if (/否则|不然|\belif\b|\belse\b/i.test(intentText)) blocked("分支请在条件块中添加“否则如果”和“否则”，或使用 AI 补全");
         if (/否则|或者|并且|同时满足|且|循环|每隔|不要|不能|禁止|不得|别/.test(remaining)) blocked("分支、复合条件、定时循环或否定操作请拆开配置");
         if (/如果|当.{0,20}(?:时|后)|(?:被打|受击|命中|落地|触地)后/.test(remaining) && !result.condition && !registered) blocked("尚未识别触发条件，请补充条件接口");
         if (/(?:血量|生命值|耐力|体力|气量).{0,12}(?:时|才能|才可)/.test(remaining)) blocked("尚未识别这部分数值条件，请换成具体的比较方式");
@@ -516,12 +575,12 @@
             blocked("这是招式消耗配置；若要在招式执行帧直接消耗资源，请改写为消耗指定数值");
         }
         if (/(?:气量|气|耐力)(?:的)?(?:消耗|花费|消耗量)(?:配置|配一下)/.test(remaining)) {
-            blocked("请说明是在招式执行帧消耗资源，还是配置招式登记时的消耗，并补充数值");
+            blocked("请说明是在招式执行帧消耗资源，还是配置纽带设置时的消耗，并补充数值");
         }
         if (result.actions.length || result.condition) {
             var residue = remaining.replace(/(?:攻击(?:面|ID|编号)?|判定面)\s*(?:[“"「'][^”"」']+[”"」']|[a-zA-Z_$][\w$]*)/ig, "");
             if (result.actions.some(function (a) { return a.key === "goFrame"; })) residue = residue.replace(/并停止|停止播放|不播放|并播放/g, "");
-            residue = residue.replace(/FighterCtrler|FighterMcCtrler|FighterMC|从|出发|找到|大佬们?|请问|我想|想要|求个?|有没有|有吗|可不可以|能不能|怎么|如何|怎样|咋|写法|代码|接口|效果|人物|角色|自身|自己|当前|攻击对象|辅助|当身|防反|反制|触发|成功|实现|谢谢|麻烦了|一次就行|一下|如果|的话|就|请|让|使|给|将|把|先|然后|接着|再|并|的|个|吗|时候|以后|之后|时|后|点|[\s，,。；;！？?、:：]/g, "");
+            residue = residue.replace(/FighterCtrler|FighterMcCtrler|FighterMC|从|出发|找到|大佬们?|请问|我想|想要|求个?|有没有|有吗|可不可以|能不能|怎么|如何|怎样|咋|写法|代码|接口|效果|人物|角色|我方|自身|自己|当前|攻击对象|辅助|当身|防反|反制|触发|成功|实现|谢谢|麻烦了|一次就行|一下|如果|的话|那么|那就|则|就|请|让|使|给|将|把|先|然后|接着|再|并|的|个|吗|时候|以后|之后|时|后|点|[\s，,。；;！？?、:：]/g, "");
             if (residue) blocked((/对方|对面|敌人|目标/.test(residue) ? "尚未识别对方相关条件或操作：" : "尚未识别：") + "“" + residue.slice(0, 40) + "”，请补充对应的状态、对象或操作");
         }
         if (/特效/.test(intentText) && !result.actions.some(function (a) { return ["shine", "shake", "bisha", "endBisha"].includes(a.key); })) {
@@ -536,7 +595,8 @@
         return result;
     }
     function aliasTerms(value) {
-        var entry = binding(String(value));
+        var name=String(value).replace(/^(?:纽带|纽)\s*/,""),entry = binding(name);
+        if (Object.hasOwn(plainBindings,name)) {var key=plainBindings[name];return [key,key.slice(3).replace(/^./,function (c) {return c.toLowerCase();}),name];}
         if (!entry) return [];
         var member = entry[0].slice(3);
         return [entry[0], member[0].toLowerCase() + member.slice(1), entry[1]];

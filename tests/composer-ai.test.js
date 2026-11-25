@@ -5,6 +5,46 @@ const fs=require("node:fs");
 const vm=require("node:vm");
 const ai=require("../tools/composer-ai.js");
 const core=require("../tools/composer-core.js");
+
+test("attacker initialization hints and coverage preserve lock and gravity configuration",()=>{
+    const text='生成一个锁定的独立道具“bsmc”，无重力',baseline=core.fromText(text);
+    const prompt=ai.prompt(core,text,"3.8开发","character",baseline,[]),data=JSON.parse(prompt.user);
+    assert.match(data.interfaces.find(row=>row.api === "addAttacker").hint,/moveToTarget:true/);
+    assert.match(prompt.system,/不要因为“锁定”切换 actor/);
+    const plan=params=>({steps:[{api:"addAttacker",args:{mcName:"bsmc",params}}],unresolved:[]});
+    const good=ai.buildPlan(core,plan({applyG:false,y:{moveToTarget:true},x:{moveToTarget:true}}),"3.8开发","character");
+    assert.deepEqual(ai.coverage(core,text,baseline,good.graph),[]);
+    for(const params of [{x:{moveToTarget:true},y:{moveToTarget:true},applyG:true},{x:{moveToTarget:true},applyG:false}]) {
+        const bad=ai.buildPlan(core,plan(params),"3.8开发","character");
+        assert.ok(ai.coverage(core,text,baseline,bad.graph).some(note=>note.includes("初始化配置")));
+    }
+});
+
+test("recognized local branch chains do not request paid AI completion",()=>{
+    for(const text of ['如果血量低于20，播放“A”；否则如果耐力低于10，播放“B”；否则播放“C”','攻击k1命中后跳到“招2”，否则播放“站立”']) {
+        const baseline=core.fromText(text);assert.deepEqual(baseline.notes,[]);assert.equal(ai.needsAI(core,text,baseline),false);
+        assert.doesNotMatch(core.generate(baseline.graph).code,/justHitToPlay/);
+    }
+    const bad='如果血量低于20，播放“A”；否则如果';assert.equal(ai.needsAI(core,bad,core.fromText(bad)),true);
+});
+
+test("semantic else-if and else steps preserve exclusive control flow",()=>{
+    const source={steps:[{if:[{api:"hp",op:"<",value:20}],then:[{api:"gotoAndPlay",args:{name:"A"}}],elseIf:[{if:[{api:"getEnergy",op:"<",value:10}],then:[{api:"gotoAndPlay",args:{name:"B"}}]}],else:[{api:"gotoAndPlay",args:{name:"C"}}]}],unresolved:[]};
+    const built=ai.buildPlan(core,source,"3.8开发","character"),code=core.generate(built.graph).code;
+    assert.match(code,/else if \(/);assert.match(code,/else \{/);
+    for(const [hp,energy,name] of [[19,0,"A"],[20,0,"B"],[20,10,"C"]]) {
+        const calls=[];
+        vm.runInNewContext(code,{parent:{$fighter_ctrler:{getSelf:()=>({hp}),getEnergy:()=>energy},$mc_ctrler:{gotoAndPlay:v=>calls.push(v)}}});
+        assert.deepEqual(calls,[name]);
+    }
+    for(const elseIf of [null,{},[{then:[]}],[{if:[],then:[]}]]) assert.throws(()=>ai.buildPlan(core,{steps:[{...source.steps[0],elseIf}],unresolved:[]},"3.8开发","character"),/elseIf|条件/);
+    assert.throws(()=>ai.buildPlan(core,{steps:[{...source.steps[0],else:{api:"shine"}}],unresolved:[]},"3.8开发","character"),/步骤/);
+    const disabled={steps:[{if:[{api:"hp",op:"<",value:20}],then:[{api:"setDisabled",args:{action:"skill1",condition:"true"}}],else:[{api:"shine"}]}],unresolved:[]};
+    const output=core.generate(ai.buildPlan(core,disabled,"3.8开发","character").graph);
+    assert.match(output.code,/else \{/);assert.doesNotMatch(output.code,/function\(\):Boolean/);
+    const nested={steps:[{eachFrame:{frames:-1},steps:source.steps}],unresolved:[]};
+    assert.match(core.generate(ai.buildPlan(core,nested,"3.8开发","character").graph).code,/else if \(/);
+});
 const settings=ai.config({provider:"openai",model:"gpt-6.2-sol",effort:"low",enabled:true},true);
 function plan() {
     return {nodes:[{id:"ground",key:"isInAir",params:{}},{id:"energy",key:"getEnergy",params:{}},{id:"jump",key:"gotoAndPlay",params:{name:"招2"}}],blocks:[{id:"when",kind:"condition",conditions:[{node:"ground",operator:"falsy",value:"",join:"and"},{node:"energy",operator:">=",value:"20",join:"and"}],actions:["jump"]}],order:["when"],unresolved:[]};
@@ -137,9 +177,32 @@ test("cancelling a pending network request stops the call without retrying",asyn
     controller.abort();await assert.rejects(promise,error=>error.name === "AbortError");
 });
 
+test("a top-only collapse expands with one upward event both immediately and after idle",()=>{
+    const source=fs.readFileSync(require.resolve("../tools/composer.js"),"utf8");
+    const start=source.indexOf("    var introGestureUntil=0,"),end=source.indexOf('    window.addEventListener("scroll"',start);
+    for(const [animating,idle] of [[true,20],[false,20],[false,5000]]) {
+        let compact=false,now=1000,modes=[],armed=0;
+        const handlers={},ctx={introLocked:false,introScrollActive:false,performance:{now:()=>now},document:{body:{classList:{contains:()=>compact}}},$:()=>({open:false}),window:{scrollY:0,addEventListener:(name,fn)=>handlers[name]=fn},setIntroMode:value=>{modes.push(value);compact=value;ctx.introLocked=true;},topArmed:false,topTimer:null,touchY:null,clearTimeout:()=>{},armTop:()=>armed++};
+        vm.runInNewContext(source.slice(start,end),ctx);
+        function wheel(deltaY) {handlers.wheel({deltaY,preventDefault(){},target:{closest:()=>null}});}
+        wheel(100);ctx.window.scrollY=0;ctx.introLocked=animating;now+=idle;
+        wheel(-100);assert.deepEqual(modes,[true,false]);assert.equal(armed,0);
+    }
+    let compact=false,now=1000,modes=[],armed=0;
+    const handlers={},ctx={introLocked:false,introScrollActive:false,performance:{now:()=>now},document:{body:{classList:{contains:()=>compact}}},$:()=>({open:false}),window:{scrollY:0,addEventListener:(name,fn)=>handlers[name]=fn},setIntroMode:value=>{modes.push(value);compact=value;},topArmed:false,topTimer:null,touchY:null,clearTimeout:()=>{},armTop:()=>armed++};
+    vm.runInNewContext(source.slice(start,end),ctx);
+    function wheel(deltaY) {handlers.wheel({deltaY,preventDefault(){},target:{closest:()=>null}});}
+    wheel(100);ctx.window.scrollY=400;now+=500;wheel(-100);
+    assert.deepEqual(modes,[true]);
+    // Once the page has moved, the existing arrive-at-top gesture stays separate
+    ctx.introTopCollapsed=false;ctx.window.scrollY=0;wheel(-100);
+    assert.deepEqual(modes,[true]);assert.equal(armed,1);
+    ctx.topArmed=true;wheel(-100);assert.deepEqual(modes,[true,false]);
+});
+
 test("expanded-page wheel events are consumed even over the canvas, and animation consumes further motion",()=>{
     const source=fs.readFileSync(require.resolve("../tools/composer.js"),"utf8");
-    const start=source.indexOf("    var introGestureUntil=0;"),end=source.indexOf('    window.addEventListener("scroll"',start);
+    const start=source.indexOf("    var introGestureUntil=0,"),end=source.indexOf('    window.addEventListener("scroll"',start);
     let compact=false,now=1000,prevented=0,modes=[],target="#board";
     const handlers={},ctx={
         introLocked:false,performance:{now:()=>now},document:{body:{classList:{contains:()=>compact}}},
@@ -296,7 +359,7 @@ test("semantic disable conditions still use a native single registration",()=>{
 test("semantic steps reject metadata in arguments, irrelevant graph fields and unknown operations",()=>{
     assert.throws(()=>ai.buildPlan(core,{steps:[{api:"gotoAndPlay",args:{name:"招2",owner:"FighterMcCtrler"}}],unresolved:[]},"3.8开发","character"),/未知或无效参数/);
     assert.throws(()=>ai.buildPlan(core,{steps:[{api:"getMcCtrl"}],unresolved:[]},"3.8开发","character"),/对象选择器/);
-    assert.throws(()=>ai.buildPlan(core,{steps:[{if:[{api:"hp",op:"<",value:50}],then:[{api:"shine"}],else:[{api:"addHp"}]}],unresolved:[]},"3.8开发","character"),/未支持/);
+    assert.throws(()=>ai.buildPlan(core,{steps:[{if:[{api:"hp",op:"<",value:50}],then:[{api:"shine"}],finally:[{api:"addHp"}]}],unresolved:[]},"3.8开发","character"),/未支持/);
     assert.throws(()=>ai.buildPlan(core,{steps:[{api:"madeUpAction"}],unresolved:[]},"3.8开发","character"),/接口类型/);
 });
 

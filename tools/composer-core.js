@@ -7,7 +7,7 @@
     "use strict";
 
     // Update the composer.html asset versions with each demo release
-    var demoVersion = "0.14.12";
+    var demoVersion = "0.14.21";
     var versions = ["3.0", "3.3", "3.5", "3.6", "3.8开发"];
     var fighterDoc = "zh-cn/main-fighter-ctrlers/FighterCtrler";
     var mcDoc = "zh-cn/main-fighter-ctrlers/FighterMcCtrler";
@@ -67,7 +67,7 @@
     specs.push({ key: "setHitTarget", label: "登记碰撞触发动作", kind: "action", owner: "FighterMcCtrler", output: "void", fields: [field("checker", "待检测对象名称", "String", "", true), field("action", "碰撞后的动作标签", "String", "", true)], doc: mcDoc });
     specs.push({ key: "justHitToPlay", label: "命中后播放动作", kind: "action", owner: "FighterMcCtrler", output: "void", fields: [field("hitid", "攻击 ID", "String", "", true), field("frame", "命中后的动作标签", "String", "", true), field("noIdle", "未命中时回到站立", "Boolean", false), field("inCludeDefense", "计入被防御的命中", "Boolean", false)], doc: mcDoc });
     var baseDoc = "zh-cn/abstract-interface-classes/BaseGameSprite";
-    [["setSkill1", "登记 SJ 技能", "砍技1"], ["setSkill2", "登记 WJ 技能", "砍技2"], ["setZhao1", "登记 U 技能", "招1"], ["setZhao2", "登记 SU 技能", "招2"], ["setZhao3", "登记 WU 技能", "招3"], ["setCatch1", "登记 ADJ 投技", "摔1"], ["setCatch2", "登记 ADU 投技", "摔2"]].forEach(function (s) {
+    [["setSkill1", "设置砍技1纽带", "砍技1"], ["setSkill2", "设置砍技2纽带", "砍技2"], ["setZhao1", "设置招1纽带", "招1"], ["setZhao2", "设置招2纽带", "招2"], ["setZhao3", "设置招3纽带", "招3"], ["setCatch1", "设置投技1纽带", "摔1"], ["setCatch2", "设置投技2纽带", "摔2"]].forEach(function (s) {
         specs.push({ key: s[0], label: s[1], kind: "action", owner: "FighterMcCtrler", output: "void", fields: [field("action", "动作标签", "String", s[2], true)], doc: mcDoc });
     });
     specs.push({ key: "targetInRange", label: "对方是否在范围内", kind: "value", owner: "FighterCtrler", output: "Boolean", fields: [field("rx", "相对朝向的水平范围 [左,右]", "Range", "", true), field("ry", "竖直范围 [上,下]，不限填 null", "Range", "null")], doc: fighterDoc });
@@ -168,7 +168,7 @@
     method("isDisabled", "动作是否被禁用", "FighterAction", actionDoc, [field("action", "动作标识", "ActionName", "zhao2", true)], "3.8开发", "Boolean");
     method("CDOK", "冷却是否结束", "FighterAction", actionDoc, [field("id", "冷却 ID", "String", "", true)], null, "Boolean", { watchCondition: true });
     method("getCD", "读取剩余冷却", "FighterAction", actionDoc, [field("id", "冷却 ID", "String", "", true)], "3.8开发", "Number", { watchCondition: true });
-    method("clearBinding", "清除动作纽带", "FighterAction", actionDoc, [field("action", "动作纽带属性", "BindingName", "zhao2", true)], null, null, { computedMember: true, nullAssignment: true, anchor: "zhao2", repeatRequired: true, hint: "持续禁用时放入逐帧执行块；停止清空后，后续动作登记会恢复纽带。" });
+    method("clearBinding", "清除动作纽带", "FighterAction", actionDoc, [field("action", "动作纽带属性", "BindingName", "zhao2", true)], null, null, { computedMember: true, nullAssignment: true, anchor: "zhao2", repeatRequired: true, hint: "持续禁用时放入逐帧执行块；停止清空后，后续重新设置动作会恢复纽带。" });
     method("writeBinding", "设置动作纽带", "FighterAction", actionDoc, [field("action", "动作纽带属性", "BindingName", "zhao2", true), field("frame", "动作标签", "String", "", true)], null, null, { computedMember: true, anchor: "zhao2" });
     ["isMoving", "isJumping", "isDefensing", "isDashing", "isHurting", "isHurtFlying", "isDefenseHiting", "isSteelHiting"].forEach(function (name) {
         var labels = { isMoving: "移动", isJumping: "跳跃", isDefensing: "防御", isDashing: "冲刺", isHurting: "受击", isHurtFlying: "击飞", isDefenseHiting: "防御受击", isSteelHiting: "钢身受击" };
@@ -184,7 +184,7 @@
     method("setPowerRate", "设置全部攻击的伤害倍率", "FighterHitModel", modelDoc, [field("v", "倍率", "Number", 1, true)]);
     method("getHitVOByDisplayName", "按攻击面元件名取得攻击配置", "FighterHitModel", modelDoc, [field("name", "元件名称", "String", "", true)], null, "HitVO", { kind: "object" });
     method("getHitVOLike", "按 ID 片段查找攻击配置", "FighterHitModel", modelDoc, [field("likeId", "ID 片段", "String", "", true)], null, "Vector.<HitVO>");
-    [["idle", "恢复站立或下落", [field("frame", "站立标签", "String", "站立", true)]], ["stop", "停止动画"], ["dash", "开始冲刺", [field("speedPlus", "速度倍率", "Number", 3)]], ["dashStop", "结束冲刺", [field("loseSpdPercent", "失速度比例", "Number", .5)]], ["setAllAct", "登记全部地面动作"], ["setAirAllAct", "登记全部空中动作"], ["setAirMove", "设置空中移动", [field("v", "允许移动", "Boolean", true)]], ["setMove", "登记行走"], ["setDefense", "登记防御"], ["endAct", "结束当前动作登记"], ["damping", "设置移动阻力", [field("x", "水平阻力", "Number", 0), field("y", "竖直阻力", "Number", 0)]], ["movePercent", "按角色速度比例移动", [field("x", "水平比例", "Number", 0), field("y", "竖直比例", "Number", 0)]], ["dampingPercent", "按角色速度比例设置阻力", [field("x", "水平比例", "Number", 0), field("y", "竖直比例", "Number", 0)]]].forEach(function (s) { method(s[0], s[1], "FighterMcCtrler", mcDoc, s[2]); });
+    [["idle", "恢复站立或下落", [field("frame", "站立标签", "String", "站立", true)]], ["stop", "停止动画"], ["dash", "开始冲刺", [field("speedPlus", "速度倍率", "Number", 3)]], ["dashStop", "结束冲刺", [field("loseSpdPercent", "失速度比例", "Number", .5)]], ["setAllAct", "登记全部地面动作"], ["setAirAllAct", "登记全部空中动作"], ["setAirMove", "设置空中移动", [field("v", "允许移动", "Boolean", true)]], ["setMove", "登记行走"], ["setDefense", "登记防御"], ["endAct", "结束当前动作"], ["damping", "设置移动阻力", [field("x", "水平阻力", "Number", 0), field("y", "竖直阻力", "Number", 0)]], ["movePercent", "按角色速度比例移动", [field("x", "水平比例", "Number", 0), field("y", "竖直比例", "Number", 0)]], ["dampingPercent", "按角色速度比例设置阻力", [field("x", "水平比例", "Number", 0), field("y", "竖直比例", "Number", 0)]]].forEach(function (s) { method(s[0], s[1], "FighterMcCtrler", mcDoc, s[2]); });
     [["setJump", "登记跳跃", "跳"], ["setJumpDown", "登记下台阶", "落"], ["setDash", "登记瞬步", "瞬步"], ["setAttack", "登记普通攻击", "砍1"], ["setAttackAIR", "登记空中攻击", "跳砍"], ["setSkillAIR", "登记空中技能", "跳招"]].forEach(function (s) { method(s[0], s[1], "FighterMcCtrler", mcDoc, [field("action", "动作标签", "String", s[2], true)]); });
     [["setBisha", "登记必杀", "必杀", 100], ["setBishaUP", "登记上必杀", "上必杀", 100], ["setBishaSUPER", "登记超必杀", "超必杀", 300], ["setBishaAIR", "登记空中必杀", "空中必杀", 100]].forEach(function (s) { method(s[0], s[1], "FighterMcCtrler", mcDoc, [field("action", "动作标签", "String", s[2], true), field("qi", "消耗气量", "int", s[3])]); });
     method("setSteelBody", "设置钢身效果", "FighterMcCtrler", mcDoc, [field("v", "开启钢身", "Boolean", true), field("isSuper", "超级钢身", "Boolean", false)], "3.3");
@@ -204,7 +204,7 @@
         method(name("getOwner"), "取得主人对象", owner, doc, [], prefix === "attacker" ? "3.8开发" : null, "IGameSprite", { kind: "object", nullable: true, manualPath: true, member: "getOwner", anchor: "getowner" });
         ["stop", "endAct", "damping", "setTouchFloor", "setTouchSide", "removeRenderFunc"].forEach(function (member) {
             var args = member === "damping" ? [field("x", "水平阻力", "Number", 0), field("y", "竖直阻力", "Number", 0)] : member === "setTouchFloor" || member === "setTouchSide" ? [field("frame", "动作标签", "String", "", true)] : member === "removeRenderFunc" ? [field("func", "回调函数名称", "Function", "", true)] : [];
-            method(name(member), {stop:"停止动画",endAct:"结束动作登记",damping:"设置阻力",setTouchFloor:"登记触地动作",setTouchSide:"登记触边动作",removeRenderFunc:"移除逐帧回调"}[member], owner, doc, args, /setTouchSide|removeRenderFunc/.test(member) ? "3.8开发" : null, null, { member: member, anchor: member.toLowerCase() });
+            method(name(member), {stop:"停止动画",endAct:"结束动作",damping:"设置阻力",setTouchFloor:"登记触地动作",setTouchSide:"登记触边动作",removeRenderFunc:"移除逐帧回调"}[member], owner, doc, args, /setTouchSide|removeRenderFunc/.test(member) ? "3.8开发" : null, null, { member: member, anchor: member.toLowerCase() });
         });
     });
     method("assisterFinish", "结束辅助并退场", "AssisiterCtrler", assisterDoc, [field("showEffect", "播放退场特效", "Boolean", true)], null, null, { member: "finish", anchor: "finish" });
@@ -213,15 +213,19 @@
     var catalog = Object.create(null);
     specs.forEach(function (spec) { catalog[spec.key] = spec; spec.fields = spec.fields || []; });
     specs.forEach(function (spec) {
+        if (/^登记/.test(spec.label)) {spec.label=spec.label.replace(/^登记/,"设置");if (/^set(?:Skill|Zhao|Catch|Attack|Jump|Dash|Bisha|Move|Defense|AllAct|AirAllAct)/.test(spec.key)) spec.label+="纽带";}
+        if ((spec.member || spec.key) === "addAttacker") {spec.searchWords="锁定 独立道具 生成";spec.hint='生成独立道具；初始化锁定位置用 params 的 x:{moveToTarget:true}, y:{moveToTarget:true}。followTarget 表示持续跟随，不能与创建时定位混淆；applyG 默认 true，明确不受重力时填 false。元件名称必须填写实际名称';}
         spec.fields.forEach(function (f) {if (/^(?:NullableActionName|ActionName|BindingName)$/.test(f.type)) f.choices = (f.type === "NullableActionName" ? ["null"] : []).concat(bindingNames);});
         var key = spec.semantic || spec.key;
         var quantity = {hp:["hp","current"], hpRate:["hp","ratio"], energy:["energy","current"], getEnergy:["energy","current"], mainenergyMax:["energy","maximum"], maincustomHpMax:["hp","maximum"], qi:["qi","current"]}[key];
         if (quantity) spec.quantity = { resource: quantity[0], basis: quantity[1] };
         if (key === "hpRate") spec.hint = "当前血量占满血的比例，1 为满血；百分比除以 100，几成除以 10，不是绝对血量";
         if (key === "moveToTarget" && spec.fields.some(function (f) {return f.key === "setDirect";})) spec.hint = "移动到对方位置的相对偏移；x 按自身朝向取向，常规面对对方时正数对应身后、负数对应身前；y=0 与对方同高；setDirect 控制移动后面向对方";
+        if (key === "moveToTarget") spec.hint = (spec.hint || "移动到对方位置的相对偏移") + "；每次调用只移动一次，持续追踪需逐帧执行，不会自动创建投技捕捉判定";
     });
     var searchConcepts = [
         {members:["goFrame","gotoAndPlay","gotoAndStop","loop","justHitToPlay"], words:"跳帧 跳转 切换动作 帧标签 goFrame"},
+        {members:["moveToTarget"], words:"追踪 跟踪 捕捉 捕获 瞬移 瞬身"},
         {members:["isApplyG","setApplyG"], words:"重力 下落"},
         {members:["addRenderFunc","removeRenderFunc","delayCall","setAnimateFrameOut"], words:"逐帧 回调 定时 延迟"}
     ];
@@ -230,8 +234,9 @@
         if (actor === "attacker" && version !== "3.8开发") return [["跳转并播放", "跳到“招2”并播放"],["跳转并停止", "跳到“招3”并停止"],["组合特效", "闪白光并震屏"]];
         if (actor === "character") return [
             ["多条件判断", "血量低于500并且自身在地面时，恢复100血量"],
+            ["分支判断", "如果血量低于100，播放“招1”；否则如果血量低于500，播放“招2”；否则播放“站立”"],
             ["条件禁用", "血量低于100时禁用su"],
-            ["条件登记纽带", "气量不少于150时，获得“招2”纽带"],
+            ["条件设置纽带", "气量不少于150时，纽zh2"],
             ["修改攻击配置", "攻击k1伤害增加30，然后攻击k2硬直改为500"],
             ["对方状态与瞬移", "如果对方不在空中，瞬移到对方身后"],
             ["逐帧判断", "每帧如果耐力不少于20，闪白光"],
@@ -250,7 +255,7 @@
             if (!usable(spec,actor,version)) return false;
             var member=spec.member || spec.key, semantic=spec.semantic || member;
             var peers=specs.filter(function (other) {return (other.semantic || other.member || other.key) === semantic;});
-            var words=[spec.key,member,spec.owner,spec.output,spec.label,spec.words || "",spec.owner+"."+member,semantic];
+            var words=[spec.key,member,spec.owner,spec.output,spec.label,spec.words || "",spec.searchWords || "",spec.owner+"."+member,semantic];
             peers.forEach(function (other) {words.push(other.label,other.words || "");});
             searchConcepts.forEach(function (concept) {if (concept.members.includes(member) || concept.members.includes(semantic)) words.push(concept.words);});
             spec.fields.forEach(function (f) {words.push(f.label,f.key);});
@@ -259,7 +264,7 @@
         });
     }
     function available(spec, version) { return !spec.since || versions.indexOf(version) >= versions.indexOf(spec.since); }
-    function createGraph() { return { format: 1, revision: 3, context: null, version: "3.8开发", actor: "character", root: null, nextId: 1, nodes: [], edges: [], bubbles: [] }; }
+    function createGraph() { return { format: 1, revision: 4, context: null, version: "3.8开发", actor: "character", root: null, nextId: 1, nodes: [], edges: [], bubbles: [] }; }
     function nodeById(graph, id) { return graph.nodes.find(function (node) { return node.id === id; }); }
     function parameters(spec, values) {
         var params = {};
@@ -349,6 +354,7 @@
         var semantic = catalog[key].semantic || key;
         if (actor === "character") return catalog[key].characterKey || (semantic === "setApplyG" ? "isApplyG" : semantic);
         if (["gotoAndPlay", "gotoAndStop"].includes(semantic)) return actor + semantic[0].toUpperCase() + semantic.slice(1);
+        if (semantic === "addAttacker") return actor === "assister" ? "assisterAddAttacker" : key;
         if (["hp", "hpRate", "isInAir", "isAllowBeHit", "setHp", "setAllowBeHit", "setApplyG", "setDirectReverse", "setDirectToTarget", "moveToTarget", "move", "stopMove", "justHit", "setHitTarget"].includes(semantic)) {
             var contextual = actor + semantic[0].toUpperCase() + semantic.slice(1);
             return catalog[contextual] ? contextual : key;
@@ -378,6 +384,23 @@
         return Array.from(new Set(notes));
     }
     function blockById(graph, id) { return graph.bubbles.find(function (b) { return b.id === id; }); }
+    function branchParent(graph, id) { return graph.bubbles.find(function (b) {return b.elseBlock === id;}); }
+    function addBranch(graph, id, isElse) {
+        var root = blockById(graph,id), previous = root, seen = new Set();
+        if (!root || root.kind !== "condition" || root.isElse) throw new Error("请在“如果”或“否则如果”条件块上添加分支");
+        while (previous.elseBlock) {
+            if (seen.has(previous.id)) throw new Error("条件分支存在循环");
+            seen.add(previous.id);
+            var next = blockById(graph,previous.elseBlock);
+            if (!next) throw new Error("条件分支不存在");
+            if (next.isElse) {if (isElse) throw new Error("一个条件块只能有一个“否则”分支");break;}
+            previous = next;
+        }
+        var branch = addBubble(graph,{container:previous.id,isElse:!!isElse,elseBlock:previous.elseBlock || null});
+        if (branch.elseBlock) blockById(graph,branch.elseBlock).container = branch.id;
+        previous.elseBlock = branch.id;
+        return branch;
+    }
     function conditionsOf(block) {
         return (block.condition ? [{id:block.condition, operator:block.operator, value:block.value, join:"and"}] : []).concat(block.extraConditions || []);
     }
@@ -404,8 +427,12 @@
     }
     function promoteFrame(graph, block) {
         if (block.kind === "frame") return;
-        if (conditionsOf(block).length) {
+        if (branchParent(graph,block.id) || block.isElse) throw new Error("请将整组条件分支放入逐帧块，不能单独转换分支");
+        if (conditionsOf(block).length || block.elseBlock) {
             var child = addBubble(graph, {container:block.id, actions:block.actions.slice()});
+            child.elseBlock = block.elseBlock || null;
+            if (child.elseBlock) blockById(graph,child.elseBlock).container = child.id;
+            block.elseBlock = null;
             setConditions(child, conditionsOf(block));
             conditionsOf(child).map(function (r) {return r.id;}).concat(child.actions).forEach(function (id) {
                 (nodeById(graph,id) || blockById(graph,id)).container = child.id;
@@ -415,6 +442,7 @@
         block.kind = "frame";
     }
     function detach(graph, id) {
+        if (branchParent(graph,id)) throw new Error("条件分支不能独立移出，请删除分支或移动整组条件块");
         graph.bubbles.forEach(function (block) {
             setConditions(block, conditionsOf(block).filter(function (r) {return r.id !== id;}));
             block.actions = block.actions.filter(function (value) { return value !== id; });
@@ -425,6 +453,8 @@
     function place(graph, id, blockId, region, index) {
         var node = nodeById(graph, id), child = blockById(graph, id), block = blockById(graph, blockId);
         if ((!node && !child) || !block) throw new Error("卡片或执行块不存在");
+        if (child && (branchParent(graph,id) || child.isElse)) throw new Error("条件分支不能独立移动");
+        if (block.isElse && region === "condition") throw new Error("“否则”分支没有判断条件");
         if (region !== "condition" && region !== "actions") throw new Error("未知放置区域");
         if (region === "condition" && (!node || catalog[node.key].kind !== "value")) throw new Error("条件区需要数值、布尔值或文字卡片");
         if (region === "actions" && node && catalog[node.key].kind !== "action") throw new Error("执行区需要操作卡片或执行块");
@@ -436,7 +466,7 @@
                 if (!nested || visited.has(nested.id)) continue;
                 visited.add(nested.id);
                 if (nested.kind === "frame") throw new Error("已有逐帧子块，请将需要逐帧执行的卡片放入该子块");
-                pending = pending.concat(nested.actions);
+                pending = pending.concat(nested.actions, nested.elseBlock ? [nested.elseBlock] : []);
             }
         }
         if (child) {
@@ -453,6 +483,7 @@
                 seen.add(current.id);
                 if (current.kind === "frame" && hasFrameAncestor(graph, block)) throw new Error("逐帧块内请嵌套条件块，避免每帧重复登记循环");
                 current.actions.forEach(function (cid) { var nested = blockById(graph, cid); if (nested) descendants.push(nested); });
+                if (current.elseBlock) descendants.push(blockById(graph,current.elseBlock));
             }
         }
         var previous = node && conditionsOf(block).find(function (r) {return r.id === id;});
@@ -465,11 +496,17 @@
             block.actions.splice(index === undefined ? block.actions.length : index, 0, id);
         }
         (node || child).container = block.id;
-        if (promote) promoteFrame(graph,block);
+        if (promote) {var owner=block;while (branchParent(graph,owner.id)) owner=branchParent(graph,owner.id);promoteFrame(graph,owner);}
     }
     function remove(graph, id) {
         var block = blockById(graph, id);
         if (block) {
+            var branchOwner = branchParent(graph,id);
+            if (block.elseBlock) {
+                if (branchOwner) {branchOwner.elseBlock=block.elseBlock;blockById(graph,block.elseBlock).container=branchOwner.id;}
+                else {while (block.elseBlock) remove(graph,block.elseBlock);}
+                block.elseBlock=null;
+            } else if (branchOwner) branchOwner.elseBlock=null;
             var children = conditionsOf(block).map(function (r) {return r.id;}).concat(block.actions);
             var parent = blockById(graph, block.container), position = parent ? parent.actions.indexOf(id) : -1;
             detach(graph, id);
@@ -477,7 +514,7 @@
                 var item = nodeById(graph, cid) || blockById(graph, cid);
                 if (!item) return;
                 item.container = null; item.x = block.x + 440; item.y = block.y + i * 125;
-                if (parent && block.actions.includes(cid)) {parent.actions.splice(position++, 0, cid); item.container = parent.id;}
+                if (parent && !branchOwner && block.actions.includes(cid)) {parent.actions.splice(position++, 0, cid); item.container = parent.id;}
             });
             graph.bubbles = graph.bubbles.filter(function (b) {return b.id !== id;});
         } else {
@@ -499,6 +536,7 @@
         while (changed) {
             changed = false;
             graph.bubbles.slice().reverse().forEach(function (block) {
+                if (block.elseBlock || block.isElse || branchParent(graph,block.id)) return;
                 if (block.actions.length !== 1) return;
                 var node = nodeById(graph,block.actions[0]);
                 if (!node || node.key !== "setDisabled" || !node.release || !node.release.conditions.length) return;
@@ -690,13 +728,22 @@
             inFrame = inFrame || block.kind === "frame";
             try {
                 var rows = conditionsOf(block), combined = combinedConditions(rows), test = combined.test, prefix = combined.prefix;
-                if (!rows.length && block.kind !== "frame") errors.push("条件块缺少判断条件");
+                if (block.isElse && (rows.length || block.elseBlock || block.kind !== "condition" || !branchParent(graph,block.id))) throw new Error("“否则”分支配置无效");
+                if (!rows.length && block.kind !== "frame" && !block.isElse) errors.push("条件块缺少判断条件");
                 if (!block.actions.length) errors.push(block.kind === "frame" ? "逐帧执行块缺少执行内容" : "条件块缺少执行内容");
                 var actions = block.actions.map(function (id) {return attempt(function () {return emitAction(id, stack.concat(block.id));});}).filter(Boolean);
                 var body = actions.join("\n");
                 if (block.kind === "frame") return frameCode(body, block, combined);
+                if (block.isElse) return "{\n" + indent(body) + "\n}";
                 if (test) {
                     body = prefix + "if (" + test + ")\n{\n" + indent(body) + "\n}";
+                }
+                if (block.elseBlock) {
+                    var alternate = blockById(graph,block.elseBlock);
+                    if (!alternate || alternate.container !== block.id || alternate.kind !== "condition") throw new Error("条件分支配置无效");
+                    var tail = emitBlock(alternate,stack.concat(block.id));
+                    // Declarations for nullable and range reads must stay inside the unchosen branch
+                    body += alternate.isElse || tail.startsWith("if (") ? "\nelse " + tail : "\nelse\n{\n" + indent(tail) + "\n}";
                 }
                 return body;
             } finally { inFrame = wasInFrame; }
@@ -724,7 +771,7 @@
         graph.context = result.context;
         if (result.actor && !graph.root) graph.actor = result.actor;
         // A single positive hit-and-play operation has a native helper with the same defaults
-        if (!result.blocked && graph.actor === "character" && !graph.root && result.condition && (!result.conditions || result.conditions.length <= 1) && result.condition.key === "justHit" && result.condition.operator === "truthy" && result.actions.length === 1) {
+        if (!result.branches && !result.blocked && graph.actor === "character" && !graph.root && result.condition && (!result.conditions || result.conditions.length <= 1) && result.condition.key === "justHit" && result.condition.operator === "truthy" && result.actions.length === 1) {
             var jump = result.actions[0];
             if (jump.key === "goFrame" && jump.params.isPlay && !jump.params.playFrame && !jump.explicit) {
                 result.actions = [{ key: "justHitToPlay", params: { hitid: result.condition.params.hitId, frame: jump.params.name, noIdle: false, inCludeDefense: result.condition.params.includeDefense }, evidence: result.condition.evidence + " → " + jump.evidence, position: jump.position }];
@@ -732,15 +779,28 @@
             }
         }
         var requestedRoot = /从\s*FighterCtrler/.test(text) ? "fighter" : /从\s*(?:FighterMcCtrler|Mc控制器)/.test(text) ? "mc" : null;
-        var repeat = result.repeat || result.actions.some(function (a) { return a.key === "disableAction" && graph.version !== "3.8开发" || a.key === "clearBinding"; }) || result.condition && ["CDOK", "getCD", "isDisabled"].includes(result.condition.key);
+        var repeat = result.repeat || [result].concat(result.branches || []).some(function (row) {return row.actions.some(function (a) { return a.key === "disableAction" && graph.version !== "3.8开发" || a.key === "clearBinding"; });}) || result.condition && ["CDOK", "getCD", "isDisabled"].includes(result.condition.key);
         var bubble = result.condition || result.blocked || repeat ? addBubble(graph, { x: 560, y: 230, kind: repeat && !result.blocked ? "frame" : "condition", scheduler: result.scheduler || "auto" }) : null;
         if (bubble && bubble.kind === "frame" && result.condition) {
             var inner = addBubble(graph);
             place(graph,inner.id,bubble.id,"actions"); bubble = inner;
         }
-        var requestedConditions = result.conditions || (result.condition ? [result.condition] : []);
+        var branchResults=[result].concat(result.branches || []), branchBlocks=[bubble];
+        var chain=bubble;
+        (result.branches || []).forEach(function (row,index) {
+            if (row.independent) {
+                chain=addBubble(graph,{x:560,y:230+(index+1)*260});
+                if (bubble.container) place(graph,chain.id,bubble.container,"actions");
+                branchBlocks.push(chain);
+            } else branchBlocks.push(addBranch(graph,chain.id,row.isElse));
+        });
+        var branchActions=[];
+        branchResults.forEach(function (row,index) {row.actions.forEach(function (a) {branchActions.push(Object.assign({},a,{block:branchBlocks[index]}));});});
+        result.actions=branchActions;
+        var requestedConditions=[];
+        branchResults.forEach(function (row,index) {(row.conditions || (row.condition ? [row.condition] : [])).forEach(function (r) {requestedConditions.push(Object.assign({},r,{block:branchBlocks[index]}));});});
         if (!result.condition) requestedConditions = [];
-        var nativeDisable = graph.version === "3.8开发" && !result.blocked && !result.repeat && requestedConditions.length && result.actions.length && result.actions.every(function (a) {return a.key === "disableAction";}) && requestedConditions.every(function (row) {
+        var nativeDisable = !result.branches && graph.version === "3.8开发" && !result.blocked && !result.repeat && requestedConditions.length && result.actions.length && result.actions.every(function (a) {return a.key === "disableAction";}) && requestedConditions.every(function (row) {
             var spec = catalog[row.key];
             return spec && spec.kind === "value" && row.key !== "justHit" && !spec.watchCondition;
         });
@@ -751,8 +811,8 @@
             var condition = addNode(graph, contextualKey(key, graph.actor, {}), {params:row.params || {}, x:35, y:260});
             try {attachPath(graph,condition);} catch (error) {notes.push(error.message);}
             if (!result.blocked) {
-                place(graph, condition.id, bubble.id, "condition");
-                updateCondition(graph,bubble.id,condition.id,{operator:row.operator,value:row.value,join:row.join || "and"});
+                place(graph, condition.id, row.block.id, "condition");
+                updateCondition(graph,row.block.id,condition.id,{operator:row.operator,value:row.value,join:row.join || "and"});
             }
         });
         result.actions.forEach(function (action, index) {
@@ -772,7 +832,7 @@
                 var source = attachPath(graph, node, requestedRoot);
                 if (action.hitId && source.key === "getHitVO") source.params.id = action.hitId;
             } catch (error) { notes.push(error.message); }
-            if (bubble) place(graph, node.id, bubble.id, "actions");
+            if (action.block) place(graph, node.id, action.block.id, "actions");
         });
         if (nativeDisable) {
             var rows = conditionsOf(bubble), disabled = bubble.actions.map(function (id) {return nodeById(graph,id);});
@@ -790,7 +850,7 @@
     }
     function validateGraph(value) {
         if (!value || value.format !== 1 || !versions.includes(value.version) || (value.actor && !Object.hasOwn(actors, value.actor)) || !Array.isArray(value.nodes) || !Array.isArray(value.edges) || !Array.isArray(value.bubbles)) throw new Error("本地工作台数据无效");
-        if (value.revision !== undefined && ![1,2,3].includes(value.revision)) throw new Error("本地工作台版本不支持");
+        if (value.revision !== undefined && ![1,2,3,4].includes(value.revision)) throw new Error("本地工作台版本不支持");
         if (value.nodes.length > 150 || value.edges.length > 150 || value.bubbles.length > 40) throw new Error("卡片数量超出 demo 上限");
         if (value.context && !Object.hasOwn(contexts, value.context)) throw new Error("调用帧上下文无效");
         var graph = createGraph(); graph.context = value.context || null; graph.version = value.version; graph.actor = value.actor || "character";
@@ -822,7 +882,8 @@
             if (item.renderMode && !["animation","logic","global"].includes(item.renderMode)) throw new Error("逐帧回调分支无效");
             var frames = Number(item.frames === undefined || item.frames === 0 && (!value.revision || value.revision === 1) ? -1 : item.frames);
             if (item.frames === null || !Number.isInteger(frames) || frames < -1 || frames > 2147483647) throw new Error("执行帧数无效");
-            graph.bubbles.push(Object.assign(base, {kind:item.kind || "condition", scheduler:item.scheduler || "auto", renderMode:item.renderMode || "animation", frames:frames, container:null, condition:null, extraConditions:[], operator:item.operator, value:String(item.value), actions:[]}));
+            if (item.isElse !== undefined && typeof item.isElse !== "boolean" || item.elseBlock != null && typeof item.elseBlock !== "string") throw new Error("条件分支配置无效");
+            graph.bubbles.push(Object.assign(base, {kind:item.kind || "condition", scheduler:item.scheduler || "auto", renderMode:item.renderMode || "animation", frames:frames, container:null, condition:null, extraConditions:[], operator:item.operator, value:String(item.value), actions:[], isElse:item.isElse === true, elseBlock:item.elseBlock || null}));
         });
         value.bubbles.forEach(function (item) {
             var block = blockById(graph, item.id), rows = conditionsOf(item);
@@ -840,12 +901,19 @@
                 if (node && catalog[node.key].kind !== "action") throw new Error("执行卡片类型无效");
                 block.actions.push(id); target.container = block.id;
             });
+            if (block.elseBlock) {
+                var branch = blockById(graph,block.elseBlock);
+                if (block.kind !== "condition" || block.isElse || !branch || branch.kind !== "condition" || branch.container) throw new Error("条件分支配置无效或重复归属");
+                branch.container=block.id;
+            }
         });
+        graph.bubbles.forEach(function (block) {if (block.isElse && (block.kind !== "condition" || conditionsOf(block).length || block.elseBlock || !branchParent(graph,block.id))) throw new Error("“否则”分支配置无效");});
         function checkBlocks(block, trail, frame) {
             if (trail.includes(block.id)) throw new Error("执行块存在嵌套循环");
             if (trail.length >= 12) throw new Error("执行块嵌套过深");
             if (frame && block.kind === "frame") throw new Error("逐帧块内不能再次登记逐帧循环");
             block.actions.forEach(function (id) {var nested = blockById(graph,id); if (nested) checkBlocks(nested,trail.concat(block.id),frame || block.kind === "frame");});
+            if (block.elseBlock) checkBlocks(blockById(graph,block.elseBlock),trail.concat(block.id),frame);
         }
         graph.bubbles.forEach(function (block) {checkBlocks(block,[],false);});
         var targets = new Set();
@@ -877,5 +945,5 @@
         simplifyDisabledBlocks(graph);
         return graph;
     }
-    return { demoVersion: demoVersion, readRange: readRange, demoExamples: demoExamples, searchSpecs: searchSpecs, aliasTerms: language.aliasTerms, actors: actors, specs: specs, catalog: catalog, versions: versions, available: available, usable: usable, changeActor: changeActor, conditionsOf: conditionsOf, updateCondition: updateCondition, blockById: blockById, hasFrameAncestor: hasFrameAncestor, promoteFrame: promoteFrame, simplifyDisabledBlocks: simplifyDisabledBlocks, createGraph: createGraph, nodeById: nodeById, addNode: addNode, addBubble: addBubble, connect: connect, attachPath: attachPath, findPath: findPath, place: place, detach: detach, remove: remove, generate: generate, parse: parse, fromText: fromText, validateGraph: validateGraph };
+    return { demoVersion: demoVersion, readRange: readRange, demoExamples: demoExamples, searchSpecs: searchSpecs, aliasTerms: language.aliasTerms, actors: actors, specs: specs, catalog: catalog, versions: versions, available: available, usable: usable, changeActor: changeActor, conditionsOf: conditionsOf, updateCondition: updateCondition, addBranch: addBranch, branchParent: branchParent, blockById: blockById, hasFrameAncestor: hasFrameAncestor, promoteFrame: promoteFrame, simplifyDisabledBlocks: simplifyDisabledBlocks, createGraph: createGraph, nodeById: nodeById, addNode: addNode, addBubble: addBubble, connect: connect, attachPath: attachPath, findPath: findPath, place: place, detach: detach, remove: remove, generate: generate, parse: parse, fromText: fromText, validateGraph: validateGraph };
 }));

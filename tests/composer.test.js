@@ -6,6 +6,242 @@ const vm = require("node:vm");
 const { test } = require("node:test");
 const c = require("../tools/composer-core.js");
 
+function branchCondition(graph,block,key,operator,value) {
+    const node=c.addNode(graph,key);c.attachPath(graph,node);c.place(graph,node.id,block.id,"condition");
+    c.updateCondition(graph,block.id,node.id,{operator,value:String(value)});return node;
+}
+function branchJump(graph,block,name) {
+    const node=c.addNode(graph,"gotoAndPlay",{params:{name}});c.attachPath(graph,node);c.place(graph,node.id,block.id,"actions");return node;
+}
+function branchGraph() {
+    const graph=c.fromText('血量低于20时，播放“A”').graph,root=graph.bubbles[0];
+    const fallback=c.addBranch(graph,root.id,true);branchJump(graph,fallback,"C");
+    const second=c.addBranch(graph,root.id,false);branchCondition(graph,second,"getEnergy","<",10);branchJump(graph,second,"B");
+    return {graph,root,second,fallback};
+}
+test("else-if chains select exactly one action and retain their order after reload",()=>{
+    const {graph,root,second,fallback}=branchGraph();
+    assert.equal(root.elseBlock,second.id);assert.equal(second.elseBlock,fallback.id);
+    assert.throws(()=>c.addBranch(graph,root.id,true),/只能有一个“否则”/);
+    assert.throws(()=>c.place(graph,second.id,root.id,"actions"),/不能独立/);
+    const code=c.generate(c.validateGraph(JSON.parse(JSON.stringify(graph)))).code;
+    assert.match(code,/else if \(/);assert.match(code,/else \{/);
+    for(const [hp,energy,wanted] of [[10,0,"A"],[20,9,"B"],[20,10,"C"]]) {
+        const calls=[];
+        vm.runInNewContext(code,{parent:{$fighter_ctrler:{getSelf:()=>({hp}),getEnergy:()=>{assert.ok(hp >= 20);return energy;}},$mc_ctrler:{gotoAndPlay:name=>calls.push(name)}}});
+        assert.deepEqual(calls,[wanted]);
+    }
+});
+test("later branch nullable and range reads stay lazy and work with missing opponents",()=>{
+    for(const [key,op,value] of [["targetIsInAir","truthy",""],["getEnergy","between",JSON.stringify({lower:20,upper:50,includeLower:true,includeUpper:false})]]) {
+        const {graph,root,second}=branchGraph();c.remove(graph,c.conditionsOf(second)[0].id);
+        branchCondition(graph,second,key,op,value);
+        const generated=c.generate(graph);assert.deepEqual(generated.errors,[]);
+        const code=generated.code.replace(/var (\w+):(?:\*|Number)/g,"var $1");
+        for(const hp of [10,20]) {
+            let reads=0;const calls=[];
+            vm.runInNewContext(code,{parent:{$fighter_ctrler:{getSelf:()=>({hp}),getTargetSP:()=>{reads++;return null;},getEnergy:()=>{reads++;return 19;}},$mc_ctrler:{gotoAndPlay:name=>calls.push(name)}}});
+            assert.equal(reads,hp < 20 ? 0 : 1);assert.deepEqual(calls,[hp < 20 ? "A" : "C"]);
+        }
+    }
+});
+test("branch deletion, frame promotion and validation preserve ownership",()=>{
+    const {graph,root,second,fallback}=branchGraph();
+    c.promoteFrame(graph,root);assert.equal(root.kind,"frame");
+    const inner=c.blockById(graph,root.actions[0]);assert.equal(c.branchParent(graph,second.id),inner);
+    assert.deepEqual(c.generate(c.validateGraph(graph)).errors,[]);
+    c.remove(graph,second.id);assert.equal(inner.elseBlock,fallback.id);assert.equal(c.branchParent(graph,fallback.id),inner);
+    c.remove(graph,inner.id);assert.ok(graph.bubbles.every(b=>!b.isElse && !b.elseBlock));
+    assert.doesNotThrow(()=>c.validateGraph(graph));
+    const damaged=branchGraph();damaged.fallback.elseBlock=damaged.root.id;
+    assert.throws(()=>c.validateGraph(damaged.graph),/分支|循环/);
+    const other=branchGraph();other.fallback.isElse=false;other.fallback.kind="frame";
+    assert.throws(()=>c.validateGraph(other.graph),/分支/);
+});
+test("community binding verbs preserve their exact action mapping",()=>{
+    for(const [word,key,name] of [["纽zh2","setZhao2","招2"],["纽sj","setSkill1","砍技1"],["纽wj","setSkill2","砍技2"]]) {
+        assert.equal(c.generate(c.fromText(word).graph).code,'parent.$mc_ctrler.'+key+'('+JSON.stringify(name)+');');
+        assert.ok(c.searchSpecs(word,"character","3.8开发").some(s=>s.key === key));
+        assert.match(c.catalog[key].label,/纽带/);assert.doesNotMatch(c.catalog[key].label,/登记/);
+    }
+    const literal=c.fromText('播放“锁定”');assert.equal(literal.graph.actor,"character");assert.match(c.generate(literal.graph).code,/gotoAndPlay\("锁定"\)/);
+});
+
+test("Chinese binding card names and shorthand preserve the intended default actions",()=>{
+    const defaults={setSkill1:["砍技1"],setSkill2:["砍技2"],setZhao1:["招1"],setZhao2:["招2"],setZhao3:["招3"],setCatch1:["摔1"],setCatch2:["摔2"],setAllAct:[],setAirAllAct:[],setMove:[],setDefense:[],setJump:["跳"],setJumpDown:["落"],setDash:["瞬步"],setAttack:["砍1"],setAttackAIR:["跳砍"],setSkillAIR:["跳招"],setBisha:["必杀",100],setBishaUP:["上必杀",100],setBishaSUPER:["超必杀",300],setBishaAIR:["空中必杀",100]};
+    for(const [key,args] of Object.entries(defaults)) {
+        const name=c.catalog[key].label.replace(/^设置/,"").replace(/纽带$/,"");
+        assert.doesNotMatch(name,/[A-Za-z]/);
+        for(const text of [c.catalog[key].label,"纽"+name]) {
+            const result=c.fromText(text),output=c.generate(result.graph),calls=[];
+            assert.deepEqual(result.notes,[],text);assert.deepEqual(output.errors,[],text);
+            vm.runInNewContext(output.code,{parent:{$mc_ctrler:{[key]:(...values)=>calls.push(values)}}});
+            assert.deepEqual(calls,[args],text);
+            assert.ok(c.searchSpecs("纽"+name,"character","3.8开发").some(s=>s.key === key),text);
+        }
+        if(args.length) {
+            const output=c.generate(c.fromText('设置'+name+'纽带为“空中必杀_自定义”').graph),calls=[];
+            assert.deepEqual(output.errors,[]);
+            vm.runInNewContext(output.code,{parent:{$mc_ctrler:{[key]:(...values)=>calls.push(values)}}});
+            assert.deepEqual(calls,[["空中必杀_自定义",...args.slice(1)]]);
+        }
+    }
+});
+
+test("Chinese binding names stay literal in playback and never bypass unsupported or negative requests",()=>{
+    for(const text of ["不要设置超必杀纽带","不要纽防御","设置防御纽带为“新招”"]) assert.equal(c.generate(c.fromText(text).graph).code,"",text);
+    for(const text of ["设置防御纽带","设置空中必杀纽带","纽超必杀"]) assert.equal(c.generate(c.fromText('播放“'+text+'”').graph).code,'parent.$mc_ctrler.gotoAndPlay('+JSON.stringify(text)+');');
+    const result=c.generate(c.fromText("如果对方在空中，设置空中必杀纽带").graph);
+    assert.deepEqual(result.errors,[]);assert.match(result.code,/target1\.isInAir/);assert.match(result.code,/setBishaAIR/);
+});
+
+test("locked attackers are initialized by their creator without changing execution context",()=>{
+    for(const [actor,entry] of [["character","parent.$mc_ctrler"],["assister","$assisterCtrler"]]) for(const version of c.versions) {
+        for(const text of ['生成一个锁定的独立道具“bsmc”，无重力','创建一个无重力锁定攻击对象bsmc','生成独立道具“bsmc”，锁定对方，不受重力']) {
+            const result=c.fromText(text,version,actor),output=c.generate(result.graph),calls=[];
+            assert.equal(result.graph.actor,actor);assert.deepEqual(output.errors,[]);
+            assert.ok(output.code.startsWith(entry+'.addAttacker('));
+            vm.runInNewContext(output.code,{parent:{$mc_ctrler:{addAttacker:(...args)=>calls.push(args)}},$assisterCtrler:{addAttacker:(...args)=>calls.push(args)}});
+            assert.equal(calls.length,1);assert.equal(calls[0][0],"bsmc");
+            assert.deepEqual(JSON.parse(JSON.stringify(calls[0][1])),{x:{moveToTarget:true},y:{moveToTarget:true},applyG:false});
+            assert.doesNotMatch(output.code,/\$attacker_ctrler|addRenderFunc|setApplyG|isApplyG/);
+        }
+    }
+    const normal=c.fromText('生成锁定独立道具“bsmc”'),params=normal.graph.nodes.find(n=>n.key === "addAttacker").params;
+    assert.deepEqual(JSON.parse(params.params),{x:{moveToTarget:true},y:{moveToTarget:true}});
+    const named=c.fromText('生成独立道具“锁定对方”');assert.equal(named.graph.nodes.find(n=>n.key === "addAttacker").params.params,"");
+    assert.ok(c.searchSpecs("锁定","character","3.8开发").some(s=>s.key === "addAttacker"));
+});
+
+test("ambiguous locking and missing component names never invent an internal movement call",()=>{
+    for(const text of ["锁定","锁定对方","持续锁定","独立道具锁定对手","生成一个锁定的独立道具"]) {
+        const result=c.fromText(text);assert.equal(c.generate(result.graph).code,"");
+        assert.ok(!result.graph.nodes.some(n=>/MoveToTarget$|^moveToTarget$/.test(n.key)));
+        assert.ok(result.notes.length);
+    }
+    assert.equal(c.fromText("锁定对方").graph.actor,"character");
+    assert.equal(c.generate(c.fromText("独立道具内部移动到对方位置").graph).code,"$attacker_ctrler.moveToTarget(0, 0);");
+});
+
+test("quoted playback composes with resource consumption without treating label text as commands", () => {
+    const calls=[];
+    const output=c.generate(c.fromText('消耗20耐力，播放“招2”').graph);
+    assert.deepEqual(output.errors,[]);
+    vm.runInNewContext(output.code,{parent:{$fighter_ctrler:{loseEnergy:v=>calls.push(v)},$mc_ctrler:{gotoAndPlay:name=>calls.push(name)}}});
+    assert.deepEqual(calls,[20,"招2"]);
+    for(const name of ["我方血量低于20","否则闪白光","攻击力加12"]) assert.equal(c.generate(c.fromText('播放“'+name+'”').graph).code,'parent.$mc_ctrler.gotoAndPlay('+JSON.stringify(name)+');');
+    assert.match(c.generate(c.fromText("播放黑幕").graph).code,/\.bisha\(false\)/);
+});
+
+test("self-side qualifiers keep the condition on self and damage on the opponent", () => {
+    for(const hp of [19,20]) for(const targetPresent of [true,false]) {
+        let damage=0;
+        const output=c.generate(c.fromText("如果我方血量低于20，对方血量减1000").graph);
+        assert.ok(output.code);
+        vm.runInNewContext(output.code.replace(/var (target\d+):\*/g,"var $1"),{parent:{$fighter_ctrler:{getSelf:()=>({hp}),getTargetSP:()=>targetPresent ? {loseHp:v=>damage+=v} : null}}});
+        assert.equal(damage,hp < 20 && targetPresent ? 1000 : 0);
+    }
+    assert.match(c.generate(c.fromText('我方血量低于20且我方耐力不少于10时，播放“招2”').graph).code,/\.hp < 20 && .*getEnergy\(\) >= 10/);
+    assert.equal(c.generate(c.fromText('对方血量低于20时，播放“招2”').graph).code,"");
+});
+
+test("colloquial fallback and conditional alternatives keep exclusive execution",()=>{
+    const prefixes=["如果","如果说","假如","假若","假设","要是","若是","倘若","倘使","若"];
+    for(const prefix of prefixes) for(const fallback of ["反之","反之就","反之的话，","不然就","不然的话","不然的话，","要不然就","要不就","否则的话，那就","在其他情况下，","其他情况下就","其余情况下，"]) {
+        const text=prefix+'血量低于20，那么播放“A”；'+fallback+'播放“B”';
+        const result=c.fromText(text),output=c.generate(result.graph);assert.deepEqual(result.notes,[],text);assert.deepEqual(output.errors,[],text);
+        for(const hp of [19,20]) {const calls=[];vm.runInNewContext(output.code,{parent:{$fighter_ctrler:{getSelf:()=>({hp})},$mc_ctrler:{gotoAndPlay:v=>calls.push(v)}}});assert.deepEqual(calls,[hp < 20 ? "A" : "B"],text);}
+    }
+    for(const conditional of ["反之如果","反之，假如","不然的话，如果","否则的话，若是","要不然要是"]) {
+        const text='如果血量低于20，播放“A”；'+conditional+'耐力低于10，就播放“B”；反之播放“C”';
+        const result=c.fromText(text),output=c.generate(result.graph);assert.deepEqual(result.notes,[],text);assert.deepEqual(output.errors,[],text);
+        for(const [hp,energy,wanted] of [[19,0,"A"],[20,9,"B"],[20,10,"C"]]) {const calls=[];vm.runInNewContext(output.code,{parent:{$fighter_ctrler:{getSelf:()=>({hp}),getEnergy:()=>energy},$mc_ctrler:{gotoAndPlay:v=>calls.push(v)}}});assert.deepEqual(calls,[wanted],text);}
+    }
+});
+
+test("additional conditions remain independent and each fallback belongs to its own chain",()=>{
+    for(const connector of ["此外如果","另外如果","还有如果","同时如果","与此同时如果","除此之外，假如"]) for(const repeat of ["","每帧"]) {
+        const text=repeat+'如果血量低于20，播放“A”；不然就播放“B”；'+connector+'耐力低于10，播放“C”；不然的话播放“D”';
+        const result=c.fromText(text),graph=c.validateGraph(JSON.parse(JSON.stringify(result.graph))),output=c.generate(graph);
+        assert.deepEqual(result.notes,[],text);assert.deepEqual(output.errors,[],text);
+        assert.equal(graph.bubbles.filter(b=>b.kind === "frame").length,repeat ? 1 : 0);
+        const roots=graph.bubbles.filter(b=>b.kind === "condition" && !c.branchParent(graph,b.id));assert.equal(roots.length,2);
+        if(repeat) assert.equal(roots[0].container,roots[1].container);
+        else for(const [hp,energy,wanted] of [[19,9,["A","C"]],[19,10,["A","D"]],[20,9,["B","C"]],[20,10,["B","D"]]]) {
+            const calls=[];vm.runInNewContext(output.code,{parent:{$fighter_ctrler:{getSelf:()=>({hp}),getEnergy:()=>energy},$mc_ctrler:{gotoAndPlay:v=>calls.push(v)}}});assert.deepEqual(calls,wanted,text);
+        }
+    }
+    const bare=c.generate(c.fromText('如果血量低于20，播放“A”；此外如果耐力低于10，播放“B”').graph);assert.deepEqual(bare.errors,[]);assert.doesNotMatch(bare.code,/else/);
+});
+
+test("colloquial connectors are literal in names and incomplete alternatives cannot execute",()=>{
+    for(const name of ["反之","不然就","不然的话","此外如果","另外如果","其他情况下"]) {
+        const text='如果血量低于20，播放“'+name+'”；反之播放“B”',result=c.fromText(text);
+        assert.deepEqual(result.notes,[],text);assert.ok(c.generate(result.graph).code.includes('gotoAndPlay('+JSON.stringify(name)+')'));
+        assert.equal(c.generate(c.fromText('跳到'+name).graph).code,'parent.$mc_ctrler.gotoAndPlay('+JSON.stringify(name)+');');
+    }
+    for(const text of ['如果血量低于20，闪白光；反之','如果血量低于20，闪白光；此外如果','如果血量低于20，闪白光；反之不要震屏','如果血量低于20，闪白光；反之震屏；要不闪白光','如果血量低于20，闪白光；此外如果耐力低于10，未知操作']) {
+        const result=c.fromText(text);assert.ok(result.notes.length,text);assert.equal(c.generate(result.graph).code,"",text);
+    }
+});
+
+test("natural-language branch chains execute exclusively and survive workspace reload",()=>{
+    for(const connector of ["否则如果","不然如果","否则若","else if","elif"]) {
+        const source='如果血量低于20，播放“A”；'+connector+'耐力低于10且气量不少于100，播放“B”；否则如果耐力少于30，播放“C”；否则播放“D”';
+        const result=c.fromText(source);assert.deepEqual(result.notes,[],source);
+        const output=c.generate(c.validateGraph(JSON.parse(JSON.stringify(result.graph))));assert.deepEqual(output.errors,[]);
+        for(const [hp,energy,qi,wanted] of [[10,0,0,"A"],[20,9,100,"B"],[20,9,99,"C"],[20,29,0,"C"],[20,30,100,"D"]]) {
+            const calls=[];
+            vm.runInNewContext(output.code,{parent:{$fighter_ctrler:{getSelf:()=>({hp,qi}),getEnergy:()=>{assert.ok(hp >= 20);return energy;}},$mc_ctrler:{gotoAndPlay:v=>calls.push(v)}}});
+            assert.deepEqual(calls,[wanted],source);
+        }
+    }
+});
+
+test("natural-language branches preserve binding, nullable target and interval semantics",()=>{
+    const source='如果耐力在20到50之间（含下限、不含上限），纽sj；否则如果对方在空中，纽zh2；否则纽超必杀';
+    const result=c.fromText(source),output=c.generate(result.graph);assert.deepEqual(result.notes,[]);assert.deepEqual(output.errors,[]);
+    const code=output.code.replace(/var (\w+):(?:\*|Number)/g,"var $1");
+    for(const [energy,target,wanted] of [[20,null,"sj"],[49,null,"sj"],[50,{isInAir:true},"zh2"],[19,null,"super"],[50,{isInAir:false},"super"]]) {
+        const calls=[];
+        vm.runInNewContext(code,{parent:{$fighter_ctrler:{getEnergy:()=>energy,getTargetSP:()=>{assert.ok(energy < 20 || energy >= 50);return target;}},$mc_ctrler:{setSkill1:v=>calls.push(["sj",v]),setZhao2:v=>calls.push(["zh2",v]),setBishaSUPER:(...args)=>calls.push(["super",...args])}}});
+        assert.equal(calls.length,1);assert.equal(calls[0][0],wanted);
+    }
+    const disabled=c.generate(c.fromText('如果血量低于20，闪白光；否则禁用sj',"3.5").graph);
+    assert.deepEqual(disabled.errors,[]);assert.match(disabled.code,/skill1 = null/);assert.match(disabled.code,/delayCall/);
+    const modern=c.generate(c.fromText('如果血量低于20，禁用sj；否则纽zh2').graph);
+    assert.deepEqual(modern.errors,[]);assert.match(modern.code,/else \{/);assert.doesNotMatch(modern.code,/function\(\):Boolean/);
+});
+
+test("per-frame branch chains retain one scheduler around the full decision",()=>{
+    const result=c.fromText('每帧如果血量低于20，播放“A”；否则如果耐力低于10，播放“B”；否则播放“C”');
+    assert.deepEqual(result.notes,[]);assert.equal(result.graph.bubbles.filter(b=>b.kind === "frame").length,1);
+    assert.deepEqual(c.generate(c.validateGraph(JSON.parse(JSON.stringify(result.graph)))).errors,[]);
+    assert.match(c.generate(result.graph).code,/else if/);
+});
+
+test("malformed and ambiguous branch chains never apply partial operations",()=>{
+    for(const source of ['否则闪白光','闪白光，否则恢复100血量','如果血量低于20，闪白光；否则','如果血量低于20；否则闪白光','如果血量低于20，闪白光；否则如果闪白光','如果血量低于20，闪白光；否则耐力低于10时震屏','如果血量低于20，闪白光；否则震屏；否则闪白光','如果血量低于20，闪白光；否则震屏；否则如果耐力低于10，闪白光','如果血量低于20，如果耐力低于10，闪白光；否则震屏','如果血量低于20，闪白光；否则生成未知效果','如果血量低于20，闪白光；否则每帧震屏']) {
+        const result=c.fromText(source);assert.ok(result.notes.length,source);assert.equal(c.generate(result.graph).code,"",source);
+    }
+    for(const name of ['否则','否则如果血量低于20','不然闪白光','else if']) {
+        const result=c.fromText('如果血量低于20，播放“'+name+'”；否则播放“B”');
+        assert.deepEqual(result.notes,[]);assert.match(c.generate(result.graph).code,new RegExp('gotoAndPlay\\("'+name+'"\\)'));
+    }
+    assert.match(c.generate(c.fromText('如果血量低于20，跳到否则；否则跳到招2').graph).code,/gotoAndPlay\("否则"\)/);
+});
+
+test("movement search accepts community terms and simple fallback branches", () => {
+    for(const actor of Object.keys(c.actors)) for(const term of ["追踪","捕捉","跟踪"]) {
+        assert.ok(c.searchSpecs(term,actor,"3.8开发").some(s=>(s.semantic || s.key) === "moveToTarget"));
+    }
+    for(const branch of ["否则","不然","else"]) {
+        const result=c.fromText('如果血量低于20，播放“招2”，'+branch+'播放“招3”');
+        assert.deepEqual(result.notes,[]);
+        assert.match(c.generate(result.graph).code,/else \{/);
+    }
+});
+
 test("a natural-language condition generates a typed path that executes only when the condition holds", () => {
     const result = c.fromText("耐力不少于20时，跳到“招2”并播放");
     const output = c.generate(result.graph);
@@ -67,7 +303,7 @@ test("bubble placement validates return values, moves cards atomically and order
 });
 
 test("unsupported and negated conditions are never silently turned into unconditional operations", () => {
-    for (const text of ["如果目标在场，就震屏", "不要跳到“招2”", "在空中时闪白光，否则恢复100点血量"]) {
+    for (const text of ["如果目标在场，就震屏", "不要跳到“招2”", "在空中时闪白光，否则不要恢复100点血量"]) {
         const result = c.fromText(text);
         assert.ok(result.notes.length);
         assert.equal(c.generate(result.graph).code, "", text);
@@ -1047,7 +1283,7 @@ test("legacy conditional disabling migrates to a native predicate without redund
     [value,disable].forEach(n=>c.attachPath(graph,n));c.place(graph,value.id,frame.id,"condition");c.updateCondition(graph,frame.id,value.id,{operator:">=",value:"20"});c.place(graph,disable.id,frame.id,"actions");
     graph.revision=2;
     const restored=c.validateGraph(JSON.parse(JSON.stringify(graph)));
-    assert.equal(restored.revision,3);assert.equal(restored.bubbles.length,0);
+    assert.equal(restored.revision,4);assert.equal(restored.bubbles.length,0);
     assert.equal(c.nodeById(restored,disable.id).release.negate,true);
     let energy=30,predicate;const actions={setDisabled:(key,fn)=>predicate=fn};
     const output=c.generate(restored);assert.deepEqual(output.errors,[]);assert.doesNotMatch(output.code,/removeDisabled/);

@@ -151,13 +151,14 @@
         return host;
     }
     function bubbleElement(bubble) {
+        var branch=api.branchParent(graph,bubble.id);
         var card = el("section", "bubble"); card.dataset.bubble = bubble.id;
         if (!bubble.container) {card.style.left = bubble.x + "px"; card.style.top = bubble.y + "px";}
         if (selected === bubble.id) card.classList.add("selected");
-        var header = el("div", "bubble-header"); header.appendChild(el("strong", "", bubble.kind === "frame" ? "逐帧执行" : "如果"));
+        var header = el("div", "bubble-header"); header.appendChild(el("strong", "", bubble.kind === "frame" ? "逐帧执行" : bubble.isElse ? "否则" : branch ? "否则如果" : "如果"));
         var frequency = bubble.scheduler === "render" || bubble.scheduler === "auto" && graph.version === "3.8开发" ? {animation:"动画帧",logic:"逻辑帧",global:"全局常驻"}[bubble.renderMode || "animation"] : {auto:"自动",delay:"逻辑帧",animate:"动画帧"}[bubble.scheduler || "auto"];
-        header.appendChild(el("span", "", bubble.kind === "frame" ? "每帧 · " + frequency : "if (…) { … }")); card.appendChild(header);
-        card.tabIndex=0; card.setAttribute("aria-label",bubble.kind === "frame" ? "逐帧执行块" : "条件块");
+        header.appendChild(el("span", "", bubble.kind === "frame" ? "每帧 · " + frequency : bubble.isElse ? "else { … }" : branch ? "else if (…) { … }" : "if (…) { … }")); card.appendChild(header);
+        card.tabIndex=0; card.setAttribute("aria-label",bubble.kind === "frame" ? "逐帧执行块" : bubble.isElse ? "否则分支" : branch ? "否则如果分支" : "条件块");
         card.addEventListener("click",function (event) {
             if (event.target.closest(".node, input, select, button, a, label") || event.target.closest(".bubble") !== card) return;
             event.stopPropagation(); select(bubble.id);
@@ -181,12 +182,21 @@
             wrapper.appendChild(comparison); condition.appendChild(wrapper);
         });
         if (rows.length > 1) condition.appendChild(el("p","condition-order","按从上到下的顺序组合条件"));
-        card.appendChild(condition);
+        if (!bubble.isElse) card.appendChild(condition);
         var actions=el("div","drop-region"); actions.dataset.region="actions"; actions.dataset.bubble=bubble.id;
-        actions.appendChild(el("h3","",bubble.kind === "frame" ? "每帧执行 · 可嵌套条件块" : "成立时执行 · 可放卡片或执行块"));
+        actions.appendChild(el("h3","",bubble.kind === "frame" ? "每帧执行 · 可嵌套条件块" : bubble.isElse ? "前面条件均不成立时执行" : "成立时执行 · 可放卡片或执行块"));
         if (!bubble.actions.length) actions.appendChild(el("p","","将操作卡片或条件块拖到这里"));
         bubble.actions.forEach(function (id) {var node=api.nodeById(graph,id), child=api.blockById(graph,id); if (node) actions.appendChild(nodeElement(node)); else if (child) actions.appendChild(bubbleElement(child));});
-        card.appendChild(actions); return card;
+        card.appendChild(actions);
+        if (bubble.elseBlock) {var chain=el("div","branch-chain"),alternate=api.blockById(graph,bubble.elseBlock);if (alternate) chain.appendChild(bubbleElement(alternate));card.appendChild(chain);}
+        if (bubble.kind === "condition" && !branch) {
+            var controls=el("div","branch-controls");
+            controls.appendChild(button("＋ 否则如果",function () {update(function () {api.addBranch(graph,bubble.id,false);});}));
+            var addElse=button("＋ 否则",function () {update(function () {api.addBranch(graph,bubble.id,true);});});
+            var tail=bubble,seen=new Set();while (tail.elseBlock && !seen.has(tail.id)) {seen.add(tail.id);tail=api.blockById(graph,tail.elseBlock);}
+            addElse.disabled=!!tail.isElse;controls.appendChild(addElse);card.appendChild(controls);
+        }
+        return card;
     }
     function renderCanvas() {
         $("node-layer").replaceChildren(); $("bubble-layer").replaceChildren();
@@ -372,6 +382,7 @@
             host.appendChild(el("h3", "", "执行块"));
             var kindLabel=el("label", "", "执行方式"), kind=choice([["condition","满足条件时执行"],["frame","逐帧执行"]], bubble.kind || "condition");
             kind.addEventListener("change", function () { update(function () {if (kind.value === "frame") api.promoteFrame(graph,bubble); else bubble.kind=kind.value; api.validateGraph(graph);}); }); kindLabel.appendChild(kind); host.appendChild(kindLabel);
+            if (api.branchParent(graph,bubble.id)) kind.disabled=true;
             if (bubble.kind === "frame") {
                 var scheduleLabel=el("label", "", "调用方式"), schedule=choice([["auto","按版本自动选择"],["delay","delayCall · 逻辑帧"],["animate","setAnimateFrameOut · 动画帧"],["render","addRenderFunc · 3.8开发"]],bubble.scheduler || "auto");
                 schedule.addEventListener("change", function () { update(function () {bubble.scheduler=schedule.value;}); }); scheduleLabel.appendChild(schedule); host.appendChild(scheduleLabel);
@@ -383,8 +394,8 @@
                 frames.addEventListener("change",function () {update(function () {bubble.frames=Number(frames.value);});}); framesLabel.appendChild(frames); host.appendChild(framesLabel);
 
             }
-            if (bubble.container) host.appendChild(button("移回工作台",function () {update(function () {api.detach(graph,bubble.id);bubble.x=35;bubble.y=420;});}));
-            host.appendChild(el("p", "muted", bubble.kind === "frame" ? "停止条件在每次执行前检查；需要按条件执行的操作，可放进内层条件块。" : "条件区可放多个返回值；执行区可放操作或执行块。拖动可调整顺序。"));
+            if (bubble.container && !api.branchParent(graph,bubble.id)) host.appendChild(button("移回工作台",function () {update(function () {api.detach(graph,bubble.id);bubble.x=35;bubble.y=420;});}));
+            host.appendChild(el("p", "muted", bubble.kind === "frame" ? "停止条件在每次执行前检查；需要按条件执行的操作，可放进内层条件块。" : bubble.isElse ? "前面所有条件均不成立时执行；“否则”不需要条件。" : "条件区可放多个返回值；执行区可放操作或执行块。“否则如果”和“否则”按顺序判断，只执行命中的一个分支。"));
             host.appendChild(button("删除执行块，保留卡片", function () { update(function () { api.remove(graph, bubble.id); selected = null; }); }, "danger"));
             return;
         }
@@ -564,6 +575,7 @@
         if (!header) return;
         event.preventDefault();
         var card = header.parentElement, id = card.dataset.node || card.dataset.bubble;
+        if (api.branchParent(graph,id)) {select(id);return;}
         var rect = card.getBoundingClientRect(), point = position(event), base = world.getBoundingClientRect();
         selected = id; renderInspector();
         drag = { kind: "card", id: id, card: card, startX: event.clientX, startY: event.clientY, offsetX: point.x - (rect.left - base.left) / zoom, offsetY: point.y - (rect.top - base.top) / zoom, moved: false };
@@ -761,7 +773,7 @@
         if (document.body.classList.contains("workspace-mode") === compact) return introLayoutPending ? introReady : Promise.resolve();
         var transitionId=++introTransitionId;
         introLocked=true;introLayoutPending=true;topArmed=false;clearTimeout(topTimer);
-        if (!introScrollActive) introAnchor=compact ? 1 : 0;
+        if (!introScrollActive) introAnchor=0;
         document.documentElement.classList.add("intro-scroll-locked");
         window.scrollTo({top:introAnchor,behavior:"instant"});
         document.body.classList.toggle("workspace-mode",compact);
@@ -790,6 +802,7 @@
         return Math.max(1,document.querySelector(".basket").getBoundingClientRect().top+window.scrollY-stage.getBoundingClientRect().height+finalHeight-12);
     }
     function moveToWorkspace() {
+        introTopCollapsed=false;
         cancelAnimationFrame(introScrollFrame);
         introScrollActive=true;introLocked=true;topArmed=false;clearTimeout(topTimer);
         document.documentElement.classList.add("intro-scroll-locked");
@@ -806,13 +819,36 @@
         }
         introScrollFrame=requestAnimationFrame(advance);
     }
-    var introGestureUntil=0;
+    var pageScroll=$("page-scroll"), pageSeeking=false;
+    function syncPageScroll() {
+        if (pageSeeking) return;
+        var maximum=Math.max(0,document.documentElement.scrollHeight-window.innerHeight);
+        pageScroll.value=maximum ? Math.round(window.scrollY/maximum*1000) : 0;
+        pageScroll.setAttribute("aria-valuetext",Math.round(Number(pageScroll.value)/10)+"%");
+    }
+    pageScroll.addEventListener("input",function () {
+        pageSeeking=true;
+        setIntroMode(true).then(function () {
+            var maximum=Math.max(0,document.documentElement.scrollHeight-window.innerHeight);
+            window.scrollTo({top:maximum*Number(pageScroll.value)/1000,behavior:"instant"});
+            pageScroll.setAttribute("aria-valuetext",Math.round(Number(pageScroll.value)/10)+"%");
+            pageSeeking=false;
+        });
+    });
+    window.addEventListener("scroll",syncPageScroll,{passive:true});
+    window.addEventListener("resize",syncPageScroll);
+    new ResizeObserver(syncPageScroll).observe(document.body);
+    var introGestureUntil=0, introTopCollapsed=false;
     function scrollIntent(event,delta) {
         if (!delta) return;
         if ($("ai-dialog").open) return;
+        // Collapsing the intro alone does not count as leaving the page top
+        if (delta < 0 && introTopCollapsed && window.scrollY <= 0 && !introScrollActive) {
+            event.preventDefault();introTopCollapsed=false;introGestureUntil=0;setIntroMode(false);return;
+        }
         if (introLocked) {event.preventDefault();introGestureUntil=performance.now()+160;return;}
         var compact=document.body.classList.contains("workspace-mode");
-        if (!compact) {event.preventDefault();introGestureUntil=performance.now()+160;if (delta > 0) setIntroMode(true);return;}
+        if (!compact) {event.preventDefault();introGestureUntil=performance.now()+160;if (delta > 0) {introTopCollapsed=window.scrollY <= 0;setIntroMode(true);}return;}
         if (performance.now() < introGestureUntil) {event.preventDefault();introGestureUntil=performance.now()+160;return;}
         if (event.target.closest && event.target.closest("#board, #library-list, #inspector")) return;
         if (compact && delta < 0 && window.scrollY <= 0) {
@@ -829,6 +865,7 @@
         scrollIntent(event,delta);
     });
     window.addEventListener("scroll",function () {
+        if (window.scrollY > 0) introTopCollapsed=false;
         if (introInitializing) {document.body.classList.toggle("workspace-mode",window.scrollY > 0);return;}
         if (introLocked) return;
         if (!document.body.classList.contains("workspace-mode") && window.scrollY > 0) {setIntroMode(true);return;}

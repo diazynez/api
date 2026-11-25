@@ -152,6 +152,7 @@
         open:open,
         cancel:function () {if (active) active.abort();},
         run:async function (text,version,actor,result,onProgress) {
+            actor=result.graph.actor;
             if (active) active.abort();
             var controller=new AbortController();active=controller;
             var snapshot=Object.assign({},settings), credential=key, modelData=selectedMetadata(settings.model), used=null, plan=null, requestInfo=null, started=0;

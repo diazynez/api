@@ -6,20 +6,20 @@
     <title>接口拼装器 · BVN API</title>
     <link id="theme_css" rel="stylesheet" href="../css/theme-simple.css">
     <link rel="stylesheet" href="../css/tools.css">
-    <link rel="stylesheet" href="composer.css?v=0.14.12">
+    <link rel="stylesheet" href="composer.css?v=0.14.21">
     <script src="../js/theme.js" data-theme-root=".."></script>
     <script src="../js/search-aliases.js" defer></script>
-    <script src="composer-language.js?v=0.14.12" defer></script>
-    <script src="composer-core.js?v=0.14.12" defer></script>
-    <script src="composer-wires.js?v=0.14.12" defer></script>
-    <script src="composer-ai.js?v=0.14.12" defer></script>
-    <script src="composer-ai-ui.js?v=0.14.12" defer></script>
-    <script src="composer.js?v=0.14.12" defer></script>
+    <script src="composer-language.js?v=0.14.21" defer></script>
+    <script src="composer-core.js?v=0.14.21" defer></script>
+    <script src="composer-wires.js?v=0.14.21" defer></script>
+    <script src="composer-ai.js?v=0.14.21" defer></script>
+    <script src="composer-ai-ui.js?v=0.14.21" defer></script>
+    <script src="composer.js?v=0.14.21" defer></script>
 </head>
 <body class="tool-page composer-page intro-initializing">
 <main class="composer-shell">
     <header class="composer-header">
-        <div class="header-identity"><div class="title-row"><h1>接口拼装器</h1><span class="demo-tag">DEMO v0.14.12</span></div><span id="save-state" role="status"></span></div>
+        <div class="header-identity"><div class="title-row"><h1>接口拼装器</h1><span class="demo-tag">DEMO v0.14.21</span></div><span id="save-state" role="status"></span></div>
         <div class="header-actions">
             <div class="header-settings" role="group" aria-label="工具设置">
                 <label class="global-version">目标版本<select id="version" aria-label="目标版本"></select></label>
@@ -40,7 +40,7 @@
         <aside id="library" class="library panel" aria-label="接口库">
             <div class="panel-heading"><h2>接口库</h2><span id="library-count"></span></div>
             <label class="sr-only" for="library-search">搜索接口</label><input id="library-search" type="search" placeholder="接口名或用途，如耐力">
-            <label class="compact-field">逻辑归属<select id="actor"><option value="character">人物</option><option value="assister">辅助</option><option value="attacker">攻击对象</option></select></label>
+            <label class="compact-field">逻辑归属<select id="actor"><option value="character">人物</option><option value="assister">辅助</option><option value="attacker">攻击对象（独立道具）</option></select></label>
             <label class="compact-field">分类<select id="library-grouping"><option value="function">按功能</option><option value="type">按类型</option></select></label>
             <label class="auto-path"><input id="auto-path" type="checkbox" checked> 自动补齐对象路径</label>
             <div id="library-list"></div>
@@ -54,7 +54,7 @@
                     <div class="toolbar-group" role="group" aria-label="编辑工作台"><span class="toolbar-group-label">编辑</span><button id="undo" title="撤销上一次修改">撤销</button><button id="clear" class="danger">清空</button></div>
                 </div>
             </div>
-            <div class="basket-help">拖动标题移动卡片，拖动空白处平移画布；从右侧圆点连到另一张卡片的左侧圆点。将读取值和操作分别放进条件块。</div>
+            <div class="basket-help">拖动标题移动卡片，拖动空白处平移画布；从右侧圆点连到另一张卡片的左侧圆点。将读取值和操作分别放进条件块；条件块底部可添加“否则如果”和“否则”，按顺序只执行一个分支。</div>
             <div class="canvas-frame" id="canvas-frame">
               <div id="board" class="board" tabindex="0" aria-label="可滚动的卡片画布">
                 <div id="world" class="world" data-drop="board"><svg id="wires" class="wires" aria-hidden="true"></svg><div id="bubble-layer"></div><div id="node-layer"></div><div id="empty-board">从接口库加入卡片<br><small>也可以在上方输入一句需求</small></div></div>
@@ -117,6 +117,7 @@
         <div class="ai-form-footer"><div><button id="ai-test" type="button">测试连接</button><small>会发送一次小型请求，可能产生费用</small></div><button type="submit" class="primary">保存配置</button></div>
     </form>
 </dialog>
+<input id="page-scroll" class="page-scroll" type="range" min="0" max="1000" value="0" aria-label="页面滚动" aria-valuetext="页面顶部">
 <noscript>请启用 JavaScript 以使用接口拼装器。</noscript>
 </body>
 </html>
